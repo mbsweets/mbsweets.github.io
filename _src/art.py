@@ -192,3 +192,33 @@ def vine_uri():
         "</svg>"
     )
     return "url(\"data:image/svg+xml," + svg.replace('#', '%23').replace('<', '%3C').replace('>', '%3E') + "\")"
+
+
+def milkcan(width=120):
+    """Milk can — calm, for the bulk dairy page."""
+    return (
+        f'<svg viewBox="0 0 120 150" width="{width}" aria-hidden="true">'
+        f'<path d="M42 10H78V22H42Z" fill="{HALDI}" stroke="{INK}" stroke-width="2.4" stroke-linejoin="round"/>'
+        f'<path d="M46 22H74L80 40H40Z" fill="{CREAM}" stroke="{INK}" stroke-width="2.4" stroke-linejoin="round"/>'
+        f'<path d="M40 40H80C92 46 96 56 96 68V132C96 138 92 142 86 142H34C28 142 24 138 24 132V68C24 56 28 46 40 40Z" fill="#E9EEF0" stroke="{INK}" stroke-width="2.6" stroke-linejoin="round"/>'
+        f'<path d="M24 84H96M24 118H96" stroke="{INK}" stroke-width="2"/>'
+        f'<rect x="24" y="90" width="72" height="22" fill="{LEAF}"/>'
+        f'<path d="M34 101H86" stroke="{CREAM}" stroke-width="2" stroke-dasharray="4 5"/>'
+        f'<path d="M24 60C12 60 10 76 24 78M96 60C108 60 110 76 96 78" stroke="{INK}" stroke-width="3" fill="none" stroke-linecap="round"/>'
+        f'<path d="M36 52Q38 66 34 76" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".8"/>'
+        f'</svg>'
+    )
+
+
+def matka(width=110):
+    """Clay curd pot (matka) with a cloth tie."""
+    return (
+        f'<svg viewBox="0 0 120 130" width="{width}" aria-hidden="true">'
+        f'<path d="M30 30H90L84 44H36Z" fill="{CREAM}" stroke="{INK}" stroke-width="2.4" stroke-linejoin="round"/>'
+        f'<path d="M24 22Q60 8 96 22L90 32Q60 22 30 32Z" fill="#fff" stroke="{INK}" stroke-width="2.2" stroke-linejoin="round"/>'
+        f'<path d="M36 44C12 56 10 96 32 112C44 121 76 121 88 112C110 96 108 56 84 44Z" fill="#B5582C" stroke="{INK}" stroke-width="2.6" stroke-linejoin="round"/>'
+        f'<path d="M20 74Q60 86 100 74" stroke="{HALDI}" stroke-width="4" fill="none"/>'
+        f'<path d="M24 88Q60 100 96 88" stroke="{CREAM}" stroke-width="2" fill="none" stroke-dasharray="3 5"/>'
+        f'<path d="M34 56Q28 70 32 84" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".35"/>'
+        f'</svg>'
+    )

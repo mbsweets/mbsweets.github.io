@@ -98,9 +98,52 @@ function setupForm(){
   });
 }
 
+/* ---------- bulk dairy form → WhatsApp (tomorrow if before 2 pm India time) ---------- */
+function istNow(){var d=new Date();return new Date(d.getTime()+(330+d.getTimezoneOffset())*60000);}
+function setupDairy(){
+  var f=$('#dairyform');if(!f)return;
+  var now=istNow(),min=new Date(now.getFullYear(),now.getMonth(),now.getDate()+(now.getHours()<14?1:2));
+  var di=$('#d-date');di.min=dateKey(min);
+  function ruleText(){
+    var E=lang==='en',d=min.getDate()+' '+(E?['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][min.getMonth()]:MONTHS[min.getMonth()]);
+    return E?('Earliest date for a new order: '+d+'.'):('नए ऑर्डर की सबसे जल्दी तारीख: '+d+'।');
+  }
+  var rule=$('#d-rule');if(rule)rule.textContent=ruleText();
+  document.addEventListener('click',function(ev){if(ev.target.closest('#lang')&&rule)setTimeout(function(){rule.textContent=ruleText();},0);});
+  f.addEventListener('submit',function(ev){
+    ev.preventDefault();
+    var err=$('#d-err');err.textContent='';
+    var E=lang==='en';
+    function q(id){var v=parseFloat(($(id).value||'').replace(',','.'));return isFinite(v)&&v>0?v:0;}
+    var fc=q('#d-fc'),tm=q('#d-tm'),dahi=q('#d-dahi'),pn=q('#d-paneer');
+    var name=$('#d-name').value.trim(),phone=$('#d-phone').value.replace(/\D/g,'').slice(-10);
+    if(!di.value){err.textContent=E?'Please choose the date.':'तारीख चुनिए।';di.focus();return;}
+    if(di.value<dateKey(min)){err.textContent=E?'That date is too soon — for tomorrow, order by 2 pm today. Please pick a later date, or call us.':'यह तारीख बहुत जल्दी है — कल के लिए आज दोपहर 2 बजे तक ऑर्डर देना होता है। आगे की तारीख चुनें, या कॉल करें।';di.focus();return;}
+    if(!(fc||tm||dahi||pn)){err.textContent=E?'Write how much milk, curd or paneer you need.':'कितना दूध, दही या पनीर चाहिए — लिखिए।';$('#d-fc').focus();return;}
+    if(!name){err.textContent=E?'Please write your name.':'अपना नाम लिखिए।';$('#d-name').focus();return;}
+    if(!/^[6-9]\d{9}$/.test(phone)){err.textContent=E?'Please write a 10-digit mobile number.':'10 अंकों का मोबाइल नंबर लिखिए।';$('#d-phone').focus();return;}
+    var p=di.value.split('-');
+    var L=['नमस्ते MB Sweets 🙏','*थोक दूध-दही-पनीर (वेबसाइट से)*',
+      'अवसर: '+$('#d-occ').value,
+      'तारीख: '+(+p[2])+' '+MONTHS[+p[1]-1]+' '+p[0]+', '+$('#d-time').value];
+    if(fc)L.push('• दूध फुल क्रीम: '+fc+' लीटर');
+    if(tm)L.push('• दूध टोंड: '+tm+' लीटर');
+    if(dahi)L.push('• दही: '+dahi+' किलो');
+    if(pn)L.push('• पनीर: '+pn+' किलो');
+    var br=$('#d-brand').value.trim();if(br)L.push('कंपनी: '+br);
+    L.push('लेने का तरीका: '+$('#d-mode').value,'नाम: '+name,'मोबाइल: '+phone);
+    var place=$('#d-place').value.trim(),note=$('#d-note').value.trim();
+    if(place)L.push('जगह: '+place);
+    if(note)L.push('नोट: '+note);
+    L.push('बड़ी मात्रा का रेट बताइए।');
+    var url='https://api.whatsapp.com/send?phone=918002010218&text='+encodeURIComponent(L.join('\n'));
+    var w=window.open(url,'_blank');if(!w)location.href=url;
+  });
+}
+
 function start(){
   var y=$('#yr');if(y)y.textContent=new Date().getFullYear();
-  applyCatalog();applyLang();setupForm();
+  applyCatalog();applyLang();setupForm();setupDairy();
   setInterval(status,60000);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();

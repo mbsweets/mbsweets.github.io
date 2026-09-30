@@ -90,7 +90,8 @@ def icon(name):
 
 
 NAV = [('/', 'होम', 'Home'), ('/sweets/', 'मिठाइयाँ', 'Sweets'), ('/cakes/', 'केक', 'Cakes'),
-       ('/products/', 'दूध-दही व सामान', 'Dairy & more'), ('/wedding/', 'शादी व गिफ्ट', 'Weddings & gifts'),
+       ('/products/', 'दूध-दही व सामान', 'Dairy & more'), ('/bulk-dairy/', 'थोक दूध-दही', 'Bulk dairy'),
+       ('/wedding/', 'शादी व गिफ्ट', 'Weddings & gifts'),
        ('/contact/', 'संपर्क', 'Contact')]
 
 WA_HELLO = 'नमस्ते MB Sweets 🙏 '
@@ -369,6 +370,20 @@ def home():
  </div>
 </section>
 
+<section class="soft">
+ <div class="wrap">
+  <div class="dcard">
+   <div class="dart" aria-hidden="true">{art.milkcan(84)}{art.matka(80)}</div>
+   <div>
+    <div class="eyebrow">{T("भोज · भंडारा · हर आयोजन", "Feasts · bhandara · every gathering")}</div>
+    <h2>{T("थोक में दूध, दही और पनीर", "Milk, curd & paneer in bulk")}</h2>
+    <p>{T("शादी-ब्याह, श्राद्ध-ब्रह्मभोज, भंडारा — सुधा, राज फ्रेश, अमृत, अमूल; 15 किलो दही पैक ₹1300 से। बड़ी मात्रा पर कम रेट।", "Weddings, shraddh and brahmbhoj, bhandara — Sudha, Raj Fresh, Amrit, Amul; 15 kg curd packs from ₹1300. Lower rates in bulk.")}</p>
+    <a class="btn btn-main" href="/bulk-dairy/">{T("थोक ऑर्डर दें", "Order in bulk")}</a>
+   </div>
+  </div>
+ </div>
+</section>
+
 <section>
  <div class="wrap">
   {shead("केक", "Cakes", "हर जश्न के लिए केक", "Cakes for every celebration", "वनीला ½ किलो ₹" + str(price("i26")) + " से। रेड वेलवेट, ब्लैक फॉरेस्ट, बटरस्कॉच, फोटो और थीम केक भी।", "Vanilla from ₹" + str(price("i26")) + " for ½ kg. Red velvet, black forest, butterscotch, photo and theme cakes too.")}
@@ -632,7 +647,7 @@ def products_page():
   <article class="cat"><div class="pics">{simg("menu-milk.webp", "सुधा दूध")}{simg("menu-paneer.webp", "पनीर")}</div><div>
    <div class="eyebrow">{T("रोज़ ताज़ा", "Fresh every day")}</div><h2>{T("दूध, दही और पनीर", "Milk, curd & paneer")}</h2>
    <ul class="plist">{dairy}</ul>
-   <div class="row"><a class="btn btn-main" href="{olink(tab="dairy")}" data-order>{icon("bag")}{T("दूध-दही ऑर्डर करें", "Order dairy")}</a></div>
+   <div class="row"><a class="btn btn-main" href="{olink(tab="dairy")}" data-order>{icon("bag")}{T("दूध-दही ऑर्डर करें", "Order dairy")}</a><a class="btn btn-line" href="/bulk-dairy/">{T("थोक में चाहिए?", "Need it in bulk?")}</a></div>
   </div></article>
   {cat([pic("real-chips", "नमकीन और चिप्स का रैक", "(min-width:880px) 500px, 92vw")],
        ("नमकीन · भुजिया · चिप्स", "Namkeen · bhujia · chips"), ("नमकीन और स्नैक्स", "Namkeen & snacks"),
@@ -714,6 +729,7 @@ def wedding_page():
     <a class="btn btn-wa" href="{wa("नमस्ते MB Sweets 🙏 मुझे मिठाई गिफ्ट पैकिंग में चाहिए। कौन-कौन से डिब्बे हैं और दाम क्या है?")}" target="_blank" rel="noopener">{icon("wa")}{T("गिफ्ट पैकिंग पूछें", "Ask about gift packing")}</a>
    </div>
   </div>
+  <p class="center mt">🥛 {T("भोज के लिए दूध-दही-पनीर भी चाहिए?", "Need milk, curd and paneer for the feast?")} <a href="/bulk-dairy/">{T("थोक दूध-दही का ऑर्डर", "Bulk dairy order")}</a></p>
  </div>
 </section>'''
     return page('/wedding/', 'शादी, तिलक, मुंडन के लिए मिठाई का बड़ा ऑर्डर | MB Sweets ननौरा, दरभंगा',
@@ -785,6 +801,116 @@ def contact_page():
                 body, ld=[crumbs_ld('Contact', '/contact/'), business_ld(), faq_ld])
 
 
+# ================= BULK DAIRY =================
+def bulk_dairy_page():
+    occ = ['शादी-ब्याह|Wedding', 'श्राद्ध / ब्रह्मभोज|Shraddh / Brahmbhoj', 'भंडारा|Bhandara', 'पूजा-यज्ञ|Puja / yagya',
+           'तिलक / मुंडन / जनेऊ|Tilak / mundan / janeu', 'भोज / पार्टी|Feast / party', 'होटल / दुकान|Hotel / shop', 'कुछ और|Other']
+    occ_opts = ''.join(f'<option value="{o.split("|")[0]}" data-en="{o.split("|")[1]}">{o.split("|")[0]}</option>' for o in occ)
+
+    def row(iid, hi, en):
+        return f'<li><span>{T(hi, en)}</span><b data-pid="{iid}">₹{ITEMS[iid]["price"]}</b></li>'
+    prices = ''.join([
+        row('i14', 'सुधा दूध फुल क्रीम — 1 लीटर', 'Sudha full-cream milk — 1 L'),
+        row('i15', 'सुधा दूध टोंड — 1 लीटर', 'Sudha toned milk — 1 L'),
+        f'<li><span>{T("दही — 15 किलो पैक (कंपनी के हिसाब से)", "Curd — 15 kg pack (by brand)")}</span><b>₹1300–1600</b></li>',
+        row('i19', 'दही — 5 किलो पैक', 'Curd — 5 kg pack'),
+        row('i18', 'दही — 2 किलो पैक', 'Curd — 2 kg pack'),
+        row('i17', 'खुला पनीर — 1 किलो', 'Loose paneer — 1 kg'),
+    ])
+    wa_bulk = wa('नमस्ते MB Sweets 🙏 मुझे थोक में दूध/दही/पनीर चाहिए। बड़ी मात्रा का रेट बताइए।')
+    body = f'''
+<section class="phead calm">
+ <div class="wrap">
+  <div class="crumb"><a href="/">{T("होम", "Home")}</a> › {T("थोक दूध-दही", "Bulk dairy")}</div>
+  <div class="dhero">
+   <div>
+    <div class="eyebrow">{T("भोज · भंडारा · हर आयोजन", "Feasts · bhandara · every gathering")}</div>
+    <h1>{T("थोक में दूध, दही और पनीर", "Milk, curd & paneer in bulk")}</h1>
+    <p class="lead">{T("शादी-ब्याह हो, श्राद्ध-ब्रह्मभोज हो या भंडारा — जितना दूध-दही-पनीर चाहिए, समय पर तैयार मिलेगा।", "Weddings, shraddh and brahmbhoj, bhandara — whatever milk, curd and paneer you need, ready on time.")}</p>
+    <div class="row">
+     <a class="btn btn-main" href="#dairyform">{T("थोक ऑर्डर दें", "Place a bulk order")}</a>
+     <a class="btn btn-wa" href="{wa_bulk}" target="_blank" rel="noopener">{icon("wa")}{T("रेट पूछें", "Ask the rate")}</a>
+    </div>
+   </div>
+   <div class="dart" aria-hidden="true">{art.milkcan(118)}{art.matka(112)}</div>
+  </div>
+ </div>
+</section>
+
+<section style="padding-top:12px">
+ <div class="wrap">
+  <div class="dnote">
+   <b>⏰ {T("कल सुबह के लिए — आज दोपहर 2 बजे तक बताइए।", "For tomorrow morning — tell us by 2 pm today.")}</b>
+   <span>{T("2 बजे के बाद दिया गया ऑर्डर परसों के लिए होगा। बड़ी मात्रा हो तो जितना पहले बताएँ, उतना अच्छा।", "Orders after 2 pm are for the day after tomorrow. For large quantities, the earlier the better.")}</span>
+  </div>
+  <div class="feats dfeats">
+   <div class="feat"><div class="dico">✓</div><h3>{T("समय पर पक्की सप्लाई", "Reliable, on time")}</h3><p>{T("तय तारीख और समय पर पूरा माल।", "The full quantity on the agreed date and time.")}</p></div>
+   <div class="feat"><div class="dico">🥛</div><h3>{T("सभी कंपनियों का", "All leading brands")}</h3><p>{T("सुधा, राज फ्रेश, अमृत, अमूल — जो चाहिए।", "Sudha, Raj Fresh, Amrit, Amul — your choice.")}</p></div>
+   <div class="feat"><div class="dico">🚚</div><h3>{T("6 km तक पहुँचाएँगे", "Delivered within 6 km")}</h3><p>{T("या दुकान से खुद ले जाइए।", "Or pick up from the shop.")}</p></div>
+   <div class="feat"><div class="dico">₹</div><h3>{T("बड़ी मात्रा पर कम रेट", "Lower rate in bulk")}</h3><p>{T("मात्रा बताइए, रेट WhatsApp पर तय।", "Tell us the quantity — we fix the rate on WhatsApp.")}</p></div>
+  </div>
+ </div>
+</section>
+
+<section class="soft">
+ <div class="wrap brandgrid">
+  <div class="info">
+   <div class="eyebrow">{T("क्या-क्या मिलेगा", "What we supply")}</div>
+   <h2>{T("दूध, दही, पनीर", "Milk, curd, paneer")}</h2>
+   <dl class="mt">
+    <div><dt>🥛 {T("दूध", "Milk")}</dt><dd>{T("सुधा, राज फ्रेश, अमृत और अमूल — फुल क्रीम और टोंड।", "Sudha, Raj Fresh, Amrit and Amul — full cream and toned.")}</dd></div>
+    <div><dt>🍶 {T("दही", "Curd")}</dt><dd>{T("सभी कंपनियों का दही। <b>15 किलो के पैक ₹1300 से ₹1600 तक</b> — कंपनी के हिसाब से। 2 और 5 किलो के पैक भी।", "Curd from all brands. <b>15 kg packs from ₹1300 to ₹1600</b> depending on brand. 2 kg and 5 kg packs too.")}</dd></div>
+    <div><dt>🧀 {T("पनीर", "Paneer")}</dt><dd>{T("खुला पनीर किलो में, और 200 ग्राम के पैकेट।", "Loose paneer by the kg, and 200 g packets.")}</dd></div>
+   </dl>
+   <p class="mt">{T("कौन-सी कंपनी का चाहिए, फ़ॉर्म में लिख दीजिए या पूछ लीजिए।", "Tell us the brand you want in the form, or just ask.")}</p>
+  </div>
+  <div class="info">
+   <div class="eyebrow">{T("आज के दाम", "Today's prices")}</div>
+   <h2>{T("दुकान वाले दाम", "Shop prices")}</h2>
+   <ul class="plist">{prices}</ul>
+   <div class="discount">💰 {T("<b>बड़ी मात्रा में ऑर्डर देने पर रेट कम कर दिया जाएगा।</b> मात्रा बताइए — सही रेट WhatsApp पर बताएँगे।", "<b>Bulk orders get a lower rate.</b> Tell us the quantity and we'll quote the right rate on WhatsApp.")}</div>
+  </div>
+ </div>
+</section>
+
+<section id="order-form">
+ <div class="wrap narrow">
+  {shead("फ़ॉर्म भरें, WhatsApp पर भेजें", "Fill in, send on WhatsApp", "थोक ऑर्डर फ़ॉर्म", "Bulk order form", "भरते ही पूरा ऑर्डर हमारे WhatsApp पर पहुँचेगा। हम रेट और समय पक्का करके जवाब देंगे।", "Your whole order reaches our WhatsApp. We'll reply to confirm the rate and time.")}
+  <form class="form" id="dairyform" novalidate>
+   <div class="two">
+    <div class="f"><label for="d-occ">{T("अवसर", "Occasion")}</label><select id="d-occ">{occ_opts}</select></div>
+    <div class="f"><label for="d-date">{T("किस दिन चाहिए", "Date needed")}</label><input id="d-date" type="date"></div>
+   </div>
+   <div class="f"><label for="d-time">{T("किस समय तक", "By what time")}</label><select id="d-time"><option value="सुबह" data-en="Morning">सुबह</option><option value="दोपहर" data-en="Afternoon">दोपहर</option><option value="शाम" data-en="Evening">शाम</option></select></div>
+   <fieldset class="qty">
+    <legend>{T("कितना चाहिए", "Quantities")}</legend>
+    <div class="qrow"><label for="d-fc">{T("दूध फुल क्रीम", "Full-cream milk")}</label><input id="d-fc" type="number" inputmode="decimal" min="0" step="any" placeholder="0"><span>{T("लीटर", "L")}</span></div>
+    <div class="qrow"><label for="d-tm">{T("दूध टोंड", "Toned milk")}</label><input id="d-tm" type="number" inputmode="decimal" min="0" step="any" placeholder="0"><span>{T("लीटर", "L")}</span></div>
+    <div class="qrow"><label for="d-dahi">{T("दही", "Curd")}</label><input id="d-dahi" type="number" inputmode="decimal" min="0" step="any" placeholder="0"><span>{T("किलो", "kg")}</span></div>
+    <div class="qrow"><label for="d-paneer">{T("पनीर", "Paneer")}</label><input id="d-paneer" type="number" inputmode="decimal" min="0" step="any" placeholder="0"><span>{T("किलो", "kg")}</span></div>
+   </fieldset>
+   <div class="f"><label for="d-brand">{T("पसंद की कंपनी (अगर हो)", "Preferred brand (if any)")}</label><input id="d-brand" type="text" placeholder="जैसे सुधा / अमूल / कोई भी" data-en-ph="e.g. Sudha / Amul / any"></div>
+   <div class="two">
+    <div class="f"><label for="d-name">{T("आपका नाम", "Your name")}</label><input id="d-name" type="text" autocomplete="name"></div>
+    <div class="f"><label for="d-phone">{T("मोबाइल", "Mobile")}</label><input id="d-phone" type="tel" inputmode="numeric" autocomplete="tel" placeholder="10 अंक" data-en-ph="10 digits"></div>
+   </div>
+   <div class="two">
+    <div class="f"><label for="d-place">{T("गाँव / जगह", "Village / place")}</label><input id="d-place" type="text"></div>
+    <div class="f"><label for="d-mode">{T("कैसे लेंगे", "Delivery or pickup")}</label><select id="d-mode"><option value="डिलीवरी चाहिए" data-en="Delivery">डिलीवरी चाहिए</option><option value="दुकान से ले जाएँगे" data-en="Pickup">दुकान से ले जाएँगे</option></select></div>
+   </div>
+   <div class="f"><label for="d-note">{T("और कुछ", "Anything else")}</label><textarea id="d-note"></textarea></div>
+   <p class="hint" id="d-rule"></p>
+   <div class="err" id="d-err" role="alert"></div>
+   <button class="btn btn-wa" type="submit" style="width:100%">{icon("wa")}{T("WhatsApp पर भेजें", "Send on WhatsApp")}</button>
+  </form>
+  <p class="center mt">{T("मिठाई भी चाहिए?", "Need sweets too?")} <a href="/wedding/">{T("शादी व गिफ्ट — मिठाई का बड़ा ऑर्डर", "Weddings & gifts — bulk sweets")}</a></p>
+ </div>
+</section>'''
+    return page('/bulk-dairy/', 'थोक दूध, दही, पनीर — शादी, श्राद्ध-भोज, भंडारा | MB Sweets ननौरा, दरभंगा',
+                'शादी-ब्याह, श्राद्ध-ब्रह्मभोज, भंडारा और हर आयोजन के लिए थोक में दूध, दही, पनीर — सुधा, राज फ्रेश, अमृत, अमूल। 15 किलो दही पैक ₹1300–1600। कल के लिए आज 2 बजे तक ऑर्डर। ननौरा, दरभंगा।',
+                body, ld=[crumbs_ld('Bulk dairy', '/bulk-dairy/')])
+
+
 def notfound_page():
     body = f'''<section class="phead center"><div class="wrap">{art.fish_pair(260)}<h1>{T("यह पेज नहीं मिला", "Page not found")}</h1>
 <p class="lead" style="margin:0 auto 18px">{T("शायद लिंक पुराना है। नीचे से आगे बढ़िए।", "The link may be old. Carry on from here.")}</p>
@@ -806,12 +932,12 @@ def main():
     jsv = hashlib.md5(js.encode()).hexdigest()[:8]
     pages = {'index.html': home(), 'sweets/index.html': sweets_page(), 'cakes/index.html': cakes_page(),
              'products/index.html': products_page(), 'wedding/index.html': wedding_page(),
-             'contact/index.html': contact_page(), '404.html': notfound_page()}
+             'contact/index.html': contact_page(), 'bulk-dairy/index.html': bulk_dairy_page(), '404.html': notfound_page()}
     for p, h in pages.items():
         h = h.replace('CSSV', cssv).replace('JSV', jsv)
         os.makedirs(os.path.dirname(os.path.join(OUT, p)) or OUT, exist_ok=True)
         open(os.path.join(OUT, p), 'w', encoding='utf-8').write(h)
-    urls = ['/', '/sweets/', '/cakes/', '/products/', '/wedding/', '/contact/']
+    urls = ['/', '/sweets/', '/cakes/', '/products/', '/bulk-dairy/', '/wedding/', '/contact/']
     sm = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + ''.join(
         f'  <url><loc>{SITE}{u}</loc><lastmod>{TODAY}</lastmod></url>\n' for u in urls) + '</urlset>\n'
     open(OUT + '/sitemap.xml', 'w').write(sm)
