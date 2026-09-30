@@ -45,7 +45,8 @@ p{margin:0 0 12px}
 .pills::-webkit-scrollbar{display:none}
 .pills a{flex:none;text-decoration:none;color:var(--ink);background:var(--card);border:1px solid var(--line);font-weight:600;font-size:15px;padding:6px 14px;border-radius:999px}
 .pills a[aria-current=page]{background:var(--maroon);color:#FFF3DC;border-color:var(--maroon)}
-@media(min-width:960px){.nav{display:flex}.pills{display:none}.hdr .order-top{display:inline-flex}.hdr .bar{height:74px}.brand img{width:58px;height:54px}.brand b{font-size:24px}}
+@media(min-width:960px){.hdr .order-top{display:inline-flex}.hdr .bar{height:74px}.brand img{width:58px;height:54px}.brand b{font-size:24px}}
+@media(min-width:1200px){.nav{display:flex}.pills{display:none}.brand{flex:0 1 auto;margin-right:auto}}
 
 /* ---------- buttons ---------- */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:50px;padding:0 22px;border-radius:999px;font:700 17px/1.1 'Mukta',sans-serif;text-decoration:none;border:0;cursor:pointer;transition:transform .15s,box-shadow .15s;white-space:nowrap}
