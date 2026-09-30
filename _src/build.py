@@ -136,7 +136,7 @@ def footer():
   </div>
   <div><h3>{T("ऑनलाइन ऑर्डर", "Order online")}</h3><ul>
    <li><a href="{ORDER}" data-order>{T("🛍️ मेन्यू खोलें और ऑर्डर करें", "🛍️ Open the menu & order")}</a></li>
-   <li><a href="{ORDER}#install">{T("📲 मेन्यू ऐप फ़ोन में रखें", "📲 Add the menu app to your phone")}</a></li>
+   <li><a href="{ORDER}?app=1">{T("📲 मेन्यू ऐप फ़ोन में रखें", "📲 Add the menu app to your phone")}</a></li>
    <li><a href="{REVIEW}" target="_blank" rel="noopener">{T("⭐ Google पर रिव्यू लिखें", "⭐ Review us on Google")}</a></li>
    <li><a href="{MAPS}" target="_blank" rel="noopener">{T("📍 Google Maps पर रास्ता", "📍 Directions on Google Maps")}</a></li>
   </ul></div>
@@ -166,6 +166,7 @@ def business_ld():
                                        'dayOfWeek': ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
                                        'opens': '07:00', 'closes': '21:00'}],
         'hasMenu': SITE + '/sweets/', 'acceptsReservations': False, 'foundingDate': '2000',
+        'founder': {'@type': 'Person', 'name': 'Dinesh Kumar Sahu'},
         'areaServed': 'Nanaura, Darbhanga (6 km)', 'sameAs': [IG, FB],
         'potentialAction': {'@type': 'OrderAction', 'target': SITE + ORDER},
     }
@@ -348,7 +349,7 @@ def home():
   {shead("क्यों MB Sweets", "Why MB Sweets", "भरोसा जो 2000 से चला आ रहा है", "Trusted since 2000", center=True)}
   <div class="feats">
    <div class="feat">{art.kadhai(62)}<h3>{T("अपने हाथ से बनी", "Made by hand")}</h3><p>{T("छेना और खोआ दुकान में ही बनता है — बाहर से नहीं आता।", "Our chhena and khoa are made right here, not bought in.")}</p></div>
-   <div class="feat">{art.diya(62)}<h3>{T("2000 से", "Since 2000")}</h3><p>{T("पापा ने शुरू की, आज भी वही स्वाद और भरोसा।", "Started by our father — the same taste and trust today.")}</p></div>
+   <div class="feat">{art.diya(62)}<h3>{T("2000 से", "Since 2000")}</h3><p>{T("पापा श्री दिनेश कुमार साहू ने शुरू की — आज भी वही स्वाद और भरोसा।", "Started by our father Shri Dinesh Kumar Sahu — the same taste and trust today.")}</p></div>
    <div class="feat">{art.vegmark(62)}<h3>{T("100% अंडा-रहित केक", "100% eggless cakes")}</h3><p>{T("जन्मदिन, सालगिरह, फोटो और थीम केक।", "Birthday, anniversary, photo and theme cakes.")}</p></div>
    <div class="feat">{art.scooter(62)}<h3>{T("घर तक डिलीवरी", "Home delivery")}</h3><p>{T("₹499 या ज़्यादा पर 6 km तक फ्री।", "Free within 6 km on ₹499 or more.")}</p></div>
   </div>
@@ -405,7 +406,7 @@ def home():
    {art.sun(110)}
   </div>
   <ol class="tl">
-   <li><span class="yr">2000</span><h3>{T("शुरुआत", "The beginning")}</h3><p>{T("पापा ने ननौरा में यह दुकान खोली — अपने हाथ से बने छेना-खोआ की मिठाई के साथ।", "Our father opened this shop in Nanaura — with sweets made by hand from chhena and khoa.")}</p></li>
+   <li><span class="yr">2000</span><h3>{T("शुरुआत", "The beginning")}</h3><p>{T("पापा <b>श्री दिनेश कुमार साहू</b> ने ननौरा में यह दुकान खोली — अपने हाथ से बने छेना-खोआ की मिठाई के साथ।", "Our father <b>Shri Dinesh Kumar Sahu</b> opened this shop in Nanaura — with sweets made by hand from chhena and khoa.")}</p></li>
    <li class="fire"><span class="yr">2006</span><h3>{T("आग", "The fire")}</h3><p>{T("दुकान में आग लग गई और दुकान बंद करनी पड़ी।", "A fire broke out in the shop and it had to close.")}</p></li>
    <li><span class="yr">2017</span><h3>{T("फिर से शुरुआत", "A new start")}</h3><p>{T("हिम्मत नहीं हारी — दुकान फिर से खुली। वही हाथ का बना स्वाद, वही भरोसा।", "We didn't give up — the shop reopened. The same handmade taste, the same trust.")}</p></li>
    <li class="now"><span class="yr">{T("आज", "Now")}</span><h3>{T("आपके घर तक", "To your door")}</h3><p>{T("मिठाई, केक, दूध-दही — और अब ऑनलाइन ऑर्डर व घर तक डिलीवरी।", "Sweets, cakes, milk and curd — now with online orders and home delivery.")}</p></li>
@@ -775,7 +776,7 @@ def contact_page():
 <section class="band">
  <div class="wrap story">
   <div><div class="eyebrow">{T("हमारी कहानी", "Our story")}</div><h2>{T("2000 से, आपके साथ", "With you since 2000")}</h2>{art.lotus(120)}</div>
-  <div><p>{T("पापा ने सन् 2000 में ननौरा में यह दुकान शुरू की। 2006 में दुकान में आग लगी और दुकान बंद करनी पड़ी। 2017 में दुकान फिर से खुली — और तब से वही हाथ का बना छेना-खोआ, वही भरोसा। आज हम मिठाई के साथ केक, दूध-दही और घर तक डिलीवरी भी देते हैं।", "Our father started this shop in Nanaura in 2000. In 2006 a fire forced it to close. It reopened in 2017 — with the same handmade chhena and khoa and the same trust. Today we also offer cakes, dairy and home delivery.")}</p>
+  <div><p>{T("पापा श्री दिनेश कुमार साहू ने सन् 2000 में ननौरा में यह दुकान शुरू की। 2006 में दुकान में आग लगी और दुकान बंद करनी पड़ी। 2017 में दुकान फिर से खुली — और तब से वही हाथ का बना छेना-खोआ, वही भरोसा। आज हम मिठाई के साथ केक, दूध-दही और घर तक डिलीवरी भी देते हैं।", "Our father, Shri Dinesh Kumar Sahu, started this shop in Nanaura in 2000. In 2006 a fire forced it to close. It reopened in 2017 — with the same handmade chhena and khoa and the same trust. Today we also offer cakes, dairy and home delivery.")}</p>
   <p>{T("— पंकज कुमार गुप्ता, माँ भगवती मिष्ठान भंडार", "— Pankaj Kumar Gupta, Maa Bhagwati Misthan Bhandar")}</p></div>
  </div>
 </section>'''
