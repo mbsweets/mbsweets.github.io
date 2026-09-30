@@ -1,15 +1,15 @@
 import sys,os; sys.path.insert(0,'.')
 from crops import CROPS
 from PIL import Image, ImageOps
-OUT='/home/claude/mbsweets-site/assets/img/'
+OUT='/home/claude/mbsweets.github.io/assets/img/'
 os.makedirs(OUT,exist_ok=True)
 SQUARE=lambda n: n in('balushahi','rasgulla','gulabjamun','chamcham','rasmalai','peda','laddoo') or n.startswith('cake-')
 def widths(n,w,h):
     if n=='shop-front-wide': return [960,1600]
     if n=='shop-front-43': return [640,1000]
     if n.startswith('banner-'): return [800,1400]
-    if SQUARE(n): return [400,800]
-    return [480,900]
+    if SQUARE(n): return [400,560,800]
+    return [480,640,900]
 meta={}
 for n,(src,(a,b,c,e)) in CROPS.items():
     im=ImageOps.exif_transpose(Image.open(src)).convert('RGB')
@@ -25,4 +25,4 @@ for n,(src,(a,b,c,e)) in CROPS.items():
         out.append((w,r.height,os.path.getsize(p)//1024))
     meta[n]=out
     print(n,out)
-import json; json.dump(meta,open(OUT+'../img-meta.json','w'))
+import json; json.dump(meta,open('/tmp/claude-0/-home-claude-mb-sweets/cd0ff99b-ecff-5326-bef3-9062146669c5/scratchpad/site-build/img-meta.json','w'))

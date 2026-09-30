@@ -9,7 +9,7 @@ CROPS = {
  'rasgulla':   ('sweets/rasgulla.png', (0.04,0.04,0.96,0.96)),
  'gulabjamun': ('sweets/gulabjamun.png', (0.04,0.04,0.96,0.96)),
  'chamcham':   ('sweets/chamcham.png', (0.04,0.04,0.96,0.96)),
- 'rasmalai':   (R+'rasmalai-bowl.png', (0.21,0.19,0.97,0.95)),
+ 'rasmalai':   (R+'rasmalai-bowl.png', (0.26,0.24,1.0,0.98)),
  'peda':   ('social/peda-poster.png', (0.19,0.25,0.81,0.84)),
  'laddoo': ('social/ladoo-poster.png', (0.2,0.26,0.8,0.82)),
  # real shop (strip camera bar)

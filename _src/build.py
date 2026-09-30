@@ -19,7 +19,7 @@ REVIEW = 'https://g.page/r/CZ_aeVeX-ilKEBE/review'
 IG = 'https://www.instagram.com/maabhagwatimisthanbhandar/'
 FB = 'https://www.facebook.com/share/1CdTxjHLrT/'
 MAP_EMBED = 'https://maps.google.com/maps?q=26.2379445,85.904298&z=16&output=embed'
-RATING, RATING_N = '5.0', '15+'
+RATING = '5.0'   # Google रेटिंग बदले तो यहाँ बदलें
 TODAY = datetime.date.today().isoformat()
 PREVIEW = os.environ.get('PREVIEW') == '1'   # preview: hidden from Google until the owner approves
 
@@ -142,7 +142,7 @@ def footer():
    <li><a href="{MAPS}" target="_blank" rel="noopener">{T("📍 Google Maps पर रास्ता", "📍 Directions on Google Maps")}</a></li>
   </ul></div>
  </div>
- <div class="wrap fine">{T("डिलीवरी की उपलब्धता देखकर ही डिलीवरी कन्फर्म की जाएगी। ₹499 या ज़्यादा के ऑर्डर पर 6 km तक डिलीवरी फ्री। दाम वही जो दुकान में।", "Delivery is confirmed only after checking availability. Free delivery within 6 km on orders of ₹499 or more. Same prices as in the shop.")}<br>© <span id="yr">2026</span> MB Sweets · {T("माँ भगवती मिष्ठान भंडार, ननौरा, दरभंगा", "Maa Bhagwati Misthan Bhandar, Nanaura, Darbhanga")}</div>
+ <div class="wrap fine">{T("घर तक डिलीवरी 6 km तक — ऑर्डर कम से कम ₹499 का, डिलीवरी का कोई चार्ज नहीं। डिलीवरी की उपलब्धता देखकर ही डिलीवरी कन्फर्म की जाएगी। पेमेंट: ऑर्डर कन्फर्म होने के बाद UPI से। दाम वही जो दुकान में।", "Home delivery within 6 km — minimum order ₹499, no delivery charge. Delivery is confirmed only after checking availability. Payment: by UPI after your order is confirmed. Same prices as in the shop.")}<br>© <span id="yr">2026</span> MB Sweets · {T("माँ भगवती मिष्ठान भंडार, ननौरा, दरभंगा", "Maa Bhagwati Misthan Bhandar, Nanaura, Darbhanga")}</div>
 </footer>
 <nav class="dock" aria-label="जल्दी संपर्क">
  <a class="o" href="{ORDER}" data-order>{icon("bag")}{T("ऑर्डर करें", "Order")}</a>
@@ -157,7 +157,7 @@ def business_ld():
         '@context': 'https://schema.org', '@type': 'FoodEstablishment', '@id': SITE + '/#shop',
         'name': 'MB Sweets — Maa Bhagwati Misthan Bhandar', 'alternateName': ['माँ भगवती मिष्ठान भंडार', 'MB Sweets Nanaura'],
         'description': 'Sweet shop in Nanaura, Darbhanga since 2000 — handmade chhena and khoa sweets (balushahi, rasgulla, gulab jamun, cham cham, rasmalai, peda), eggless cakes, milk, curd and paneer. Home delivery within 6 km.',
-        'url': SITE + '/', 'telephone': '+91-' + PHONE1, 'image': [SITE + '/assets/img/shop-front-wide-1600.webp', SITE + '/assets/img/og.jpg'],
+        'url': SITE + '/', 'telephone': '+91-' + PHONE1, 'image': [SITE + '/assets/img/og-site.jpg', SITE + '/assets/img/shop-front-wide-1600.webp'],
         'logo': SITE + '/assets/img/icon-512.png', 'priceRange': '₹', 'servesCuisine': ['Indian sweets', 'Mithai', 'Cakes'],
         'address': {'@type': 'PostalAddress', 'streetAddress': 'Nanaura (Koilasthan), on NH', 'addressLocality': 'Darbhanga',
                     'addressRegion': 'Bihar', 'postalCode': '846005', 'addressCountry': 'IN'},
@@ -168,7 +168,7 @@ def business_ld():
                                        'opens': '07:00', 'closes': '21:00'}],
         'hasMenu': SITE + '/sweets/', 'acceptsReservations': False, 'foundingDate': '2000',
         'founder': {'@type': 'Person', 'name': 'Dinesh Kumar Sahu'},
-        'areaServed': 'Nanaura, Darbhanga (6 km)', 'sameAs': [IG, FB],
+        'areaServed': 'Nanaura, Darbhanga (6 km)', 'sameAs': [IG],
         'potentialAction': {'@type': 'OrderAction', 'target': SITE + ORDER},
     }
 
@@ -188,22 +188,23 @@ def page(path, title, desc, body, active=None, ld=(), extra_head=''):
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>{e(title)}</title>
 <meta name="description" content="{e(desc)}">
-<link rel="canonical" href="{SITE}{path}">
+{'' if path == '/404.html' else f'<link rel="canonical" href="{SITE}{path}">'}
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="MB Sweets">
 <meta property="og:title" content="{e(title)}">
 <meta property="og:description" content="{e(desc)}">
 <meta property="og:url" content="{SITE}{path}">
-<meta property="og:image" content="{SITE}/assets/img/og.jpg">
+<meta property="og:image" content="{SITE}/assets/img/og-site.jpg">
+<meta property="og:image:alt" content="MB Sweets — मिथिला की मिठास, ननौरा, दरभंगा">
 <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta property="og:locale" content="hi_IN">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#6A1222">
 <meta name="format-detection" content="telephone=no">
-<link rel="icon" href="/assets/img/icon-192.png" type="image/png">
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="/assets/img/icon-192.png">
-<link rel="preload" href="/assets/fonts/baloo2-800.woff" as="font" type="font/woff" crossorigin>
-<link rel="preload" href="/assets/fonts/mukta-400.woff" as="font" type="font/woff" crossorigin>
+<link rel="preload" href="/assets/fonts/baloo2-800.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/mukta-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/assets/site.css?v=CSSV">
 {'<meta name="robots" content="noindex">' if PREVIEW and 'noindex' not in extra_head else ''}{extra_head}{lds}
 </head>
@@ -257,20 +258,51 @@ def sweet_card(s, sizes='(min-width:900px) 340px, 50vw'):
     first = ITEMS[s['ids'][0]]
     ptag = f'<span class="ptag"><b data-pid="{first["id"]}">₹{first["price"]}</b>/{T(first["unit"], UNIT_EN.get(first["unit"], first["unit"]))}</span>'
     if s['img']:
-        top = f'<div class="pic">{pic(s["img"], s["hi"] + " — MB Sweets, ननौरा", sizes)}{ptag}</div>'
+        top = f'<div class="pic">{pic(s["img"], s["hi"] + " (नमूना फोटो)", sizes)}<span class="note-sample">{T("नमूना फोटो", "Sample photo")}</span>{ptag}</div>'
     else:
         top = f'<div class="pic"><div class="art-tile"><span>{T(s["hi"], s["en"])}</span></div>{ptag}</div>'
     tags = ''.join(tag(i) for i in s['ids'])
-    badge = f'<span class="ribbon">{T(*s["badge"])}</span>' if s.get('badge') else ''
+    badge = f'<div class="bestline">⭐ {T(*s["badge"])}</div>' if s.get('badge') else ''
     return f'''<article class="pcard" id="{s["key"]}" data-ids="{ids}">
- {top.replace('<div class="pic">', '<div class="pic">' + badge, 1)}
+ {top}
  <div class="body">
-  <h3>{T(s["hi"], s["en"])}<span class="off-badge">{T("आज खत्म", "Sold out today")}</span><small>{T(s["en"], s["hi"])}</small></h3>
+  {badge}<h3>{T(s["hi"], s["en"])}<span class="off-badge">{T("आज खत्म", "Sold out today")}</span><small>{T(s["en"], s["hi"])}</small></h3>
   <p>{T(s["d_hi"], s["d_en"])}</p>
   <div class="prices">{tags}</div>
   <div class="acts"><a class="btn btn-main" href="{olink(item=s["key"])}" data-order>{icon("bag")}{T("ऑर्डर करें", "Order")}</a></div>
  </div>
 </article>'''
+
+
+# ---------- English versions of the ready-made WhatsApp messages ----------
+WA_EN = {
+    WA_HELLO: 'Hello MB Sweets 🙏 ',
+    'नमस्ते MB Sweets 🙏 मुझे शादी/पूजा के लिए मिठाई का बड़ा ऑर्डर देना है।': "Hello MB Sweets 🙏 I'd like to place a bulk sweets order for a wedding / puja.",
+    'नमस्ते MB Sweets 🙏 मैं दरभंगा एयरपोर्ट जा रहा/रही हूँ। मुझे मिठाई पैक करवानी है:\n• \nमैं लगभग ___ बजे दुकान पर पहुँचूँगा/पहुँचूँगी।':
+        "Hello MB Sweets 🙏 I'm heading to Darbhanga airport and would like sweets packed:\n• \nI'll reach the shop at about ___.",
+    'नमस्ते MB Sweets 🙏 आज कौन-कौन सी मिठाई मिलेगी?': 'Hello MB Sweets 🙏 Which sweets are available today?',
+    'नमस्ते MB Sweets 🙏 केक के साथ कैंडल/टॉपर/गुब्बारे चाहिए। क्या-क्या मिलेगा?': "Hello MB Sweets 🙏 I need candles / toppers / balloons with a cake. What's available?",
+    'नमस्ते MB Sweets 🙏 क्या यह सामान मिलेगा: ': 'Hello MB Sweets 🙏 Do you have: ',
+    'नमस्ते MB Sweets 🙏 मुझे मिठाई गिफ्ट पैकिंग में चाहिए। कौन-कौन से डिब्बे हैं और दाम क्या है?': "Hello MB Sweets 🙏 I'd like sweets gift-packed. Which boxes do you have and what do they cost?",
+    'नमस्ते MB Sweets 🙏 मुझे थोक में दूध/दही/पनीर चाहिए। बड़ी मात्रा का रेट बताइए।': 'Hello MB Sweets 🙏 I need milk / curd / paneer in bulk. Please tell me the bulk rate.',
+}
+
+
+def cake_msg_en(name):
+    return f"Hello MB Sweets 🙏 I'd like a {name} cake.\nWeight: ½ kg / 1 kg\nDate and time:\nMessage on the cake:\n(from the website)"
+
+
+def add_wa_english(h):
+    """Give every WhatsApp link an English message for the language switch."""
+    def fix(m):
+        url = html.unescape(m.group(1))
+        q = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
+        hi = q.get('text', [''])[0]
+        en = WA_EN.get(hi)
+        if en is None:
+            raise SystemExit('WhatsApp message without English version: ' + hi[:60])
+        return f'href="{m.group(1)}" data-en-href="{e(wa(en))}"'
+    return re.sub(r'href="(https://api\.whatsapp\.com/send\?[^"]+)"', fix, h)
 
 
 # ================= HOME =================
@@ -292,7 +324,7 @@ def home():
    </div>
    <div class="trust">
     <span><span class="star">★★★★★</span> {RATING} Google</span>
-    <span>🚚 {T("₹499+ पर 6 km तक फ्री डिलीवरी", "Free delivery within 6 km on ₹499+")}</span>
+    <span>🚚 {T("6 km तक फ्री डिलीवरी (₹499+ ऑर्डर)", "Free delivery within 6 km (orders ₹499+)")}</span>
     <span>🟢 {T("100% अंडा-रहित केक", "100% eggless cakes")}</span>
    </div>
   </div>
@@ -307,7 +339,7 @@ def home():
 <section class="soft" id="balushahi">
  <div class="wrap">
   <div class="spot" data-ids="i3,i4">
-   <div class="pic">{pic("balushahi", "ननौरा की बालूशाही", "(min-width:820px) 520px, 92vw")}<span class="ribbon">{T("इलाके की पहचान", "Famous in the area")}</span></div>
+   <div class="pic">{pic("balushahi", "बालूशाही (नमूना फोटो)", "(min-width:820px) 520px, 92vw")}<span class="note-sample">{T("नमूना फोटो", "Sample photo")}</span><span class="ribbon">{T("इलाके की पहचान", "Famous in the area")}</span></div>
    <div class="txt">
     <div class="eyebrow">{T("सबसे ज़्यादा बिकने वाली", "Our best seller")}</div>
     <h2>{T("ननौरा की बालूशाही", "Nanaura's Balushahi")}<span class="off-badge">{T("आज खत्म", "Sold out today")}</span></h2>
@@ -330,6 +362,18 @@ def home():
  </div>
 </section>
 
+<section class="howto">
+ <div class="wrap">
+  {shead("आसान तरीका", "Simple steps", "घर बैठे ऑर्डर कैसे करें", "How to order from home", center=True)}
+  <ol class="steps3">
+   <li><span class="n">1</span><h3>{T("मेन्यू से चुनें", "Pick from the menu")}</h3><p>{T("मिठाई, दूध-दही, केक चुनें, समय बताएँ और “ऑर्डर भेजें” दबाएँ।", "Choose sweets, dairy or cakes, pick a time and tap “Send order”.")}</p></li>
+   <li><span class="n">2</span><h3>{T("दुकान कन्फर्म करेगी", "We confirm")}</h3><p>{T("उपलब्धता देखकर दुकान WhatsApp पर ऑर्डर पक्का करेगी।", "We check availability and confirm on WhatsApp.")}</p></li>
+   <li><span class="n">3</span><h3>{T("पेमेंट और डिलीवरी", "Pay & receive")}</h3><p>{T("UPI से पेमेंट करें — फिर ऑर्डर घर पहुँचेगा। दुकान से ले जाने पर वहीं पेमेंट।", "Pay by UPI and your order is delivered. For pickup, pay at the shop.")}</p></li>
+  </ol>
+  <div class="center"><a class="btn btn-main" href="{ORDER}" data-order>{icon("bag")}{T("मेन्यू खोलें", "Open the menu")}</a></div>
+ </div>
+</section>
+
 <section class="soft">
  <div class="wrap">
   {shead("असली दुकान, असली मिठाई", "Real shop, real sweets", "आज दुकान के शोकेस से", "Straight from our showcase", "ये फोटो हमारी दुकान की हैं — जैसी मिठाई दिखती है, वैसी ही मिलती है।", "These photos are from our shop — what you see is what you get.")}
@@ -341,7 +385,7 @@ def home():
    <figure>{pic("real-mix-tray", "छेना की मिठाइयाँ", "(min-width:900px) 280px, 50vw")}<figcaption>{T("छेना की मिठाइयाँ", "Chhena sweets")}</figcaption></figure>
    <figure class="w">{pic("real-white", "सफ़ेद चमचम", "(min-width:900px) 560px, 100vw")}<figcaption>{T("सफ़ेद चमचम", "White cham cham")}</figcaption></figure>
   </div>
-  <div class="realnote">📸 {T("कोई स्टॉक फोटो नहीं — सब हमारी दुकान की असली फोटो हैं।", "No stock photos — every picture here is from our own shop.")}</div>
+  <div class="realnote">📸 {T("इस हिस्से की सारी फोटो हमारी दुकान की असली फोटो हैं।", "Every photo in this section is from our own shop.")}</div>
  </div>
 </section>
 
@@ -352,7 +396,7 @@ def home():
    <div class="feat">{art.kadhai(62)}<h3>{T("अपने हाथ से बनी", "Made by hand")}</h3><p>{T("छेना और खोआ दुकान में ही बनता है — बाहर से नहीं आता।", "Our chhena and khoa are made right here, not bought in.")}</p></div>
    <div class="feat">{art.diya(62)}<h3>{T("2000 से", "Since 2000")}</h3><p>{T("पापा श्री दिनेश कुमार साहू ने शुरू की — आज भी वही स्वाद और भरोसा।", "Started by our father Shri Dinesh Kumar Sahu — the same taste and trust today.")}</p></div>
    <div class="feat">{art.vegmark(62)}<h3>{T("100% अंडा-रहित केक", "100% eggless cakes")}</h3><p>{T("जन्मदिन, सालगिरह, फोटो और थीम केक।", "Birthday, anniversary, photo and theme cakes.")}</p></div>
-   <div class="feat">{art.scooter(62)}<h3>{T("घर तक डिलीवरी", "Home delivery")}</h3><p>{T("₹499 या ज़्यादा पर 6 km तक फ्री।", "Free within 6 km on ₹499 or more.")}</p></div>
+   <div class="feat">{art.scooter(62)}<h3>{T("घर तक डिलीवरी", "Home delivery")}</h3><p>{T("6 km तक, ₹499 या ज़्यादा के ऑर्डर पर — कोई डिलीवरी चार्ज नहीं।", "Within 6 km on orders of ₹499 or more — no delivery charge.")}</p></div>
   </div>
  </div>
 </section>
@@ -363,7 +407,7 @@ def home():
    <div class="eyebrow">{T("शादी · तिलक · मुंडन · पूजा", "Weddings · Tilak · Mundan · Puja")}</div>
    <h2>{T("हर शुभ अवसर की मिठास", "Sweetness for every auspicious day")}</h2>
    <div class="chips"><span>{T("शादी-ब्याह", "Weddings")}</span><span>{T("तिलक", "Tilak")}</span><span>{T("मुंडन", "Mundan")}</span><span>{T("जनेऊ", "Janeu")}</span><span>{T("गृह प्रवेश", "Housewarming")}</span><span>{T("पूजा-पाठ", "Puja")}</span><span>{T("जन्मदिन", "Birthdays")}</span></div>
-   <p>{T("2 किलो हो या 50 किलो — बस <b>कम से कम 2 दिन पहले</b> बता दें। ताज़ी बनाकर समय पर देंगे।", "2 kg or 50 kg — just tell us <b>at least 2 days ahead</b>. Made fresh and ready on time.")}</p>
+   <p>{T("शादी-भोज के ऑर्डर में मात्रा कितनी भी हो — बस <b>कम से कम 2 दिन पहले</b> बता दें, ताज़ी बनाकर समय पर देंगे। (रोज़ का छोटा ऑर्डर उसी दिन भी मिलता है।)", "Any quantity for weddings and feasts — just tell us <b>at least 2 days ahead</b> and we'll make it fresh, on time. (Everyday small orders come the same day.)")}</p>
    <div class="row mt"><a class="btn btn-main" href="/wedding/">{T("बड़ा ऑर्डर बुक करें", "Book a bulk order")}</a><a class="btn btn-wa" href="{wa("नमस्ते MB Sweets 🙏 मुझे शादी/पूजा के लिए मिठाई का बड़ा ऑर्डर देना है।")}" target="_blank" rel="noopener">{icon("wa")}WhatsApp</a></div>
   </div>
   <div class="fishbox">{art.fish_pair(380)}<p class="center" style="margin-top:10px;font-size:15px">{T("मिथिला में मछली का जोड़ा शुभ माना जाता है", "In Mithila, a pair of fish is a symbol of good fortune")}</p></div>
@@ -389,10 +433,10 @@ def home():
   {shead("केक", "Cakes", "हर जश्न के लिए केक", "Cakes for every celebration", "वनीला ½ किलो ₹" + str(price("i26")) + " से। रेड वेलवेट, ब्लैक फॉरेस्ट, बटरस्कॉच, फोटो और थीम केक भी।", "Vanilla from ₹" + str(price("i26")) + " for ½ kg. Red velvet, black forest, butterscotch, photo and theme cakes too.")}
   <span class="egg">{T("100% अंडा-रहित (Eggless)", "100% eggless")}</span>
   <div class="cakerow mt">
-   <figure>{pic("cake-chocolate", "चॉकलेट केक", "(min-width:900px) 270px, 50vw")}<figcaption>{T("चॉकलेट", "Chocolate")}</figcaption></figure>
-   <figure>{pic("cake-redvelvet", "रेड वेलवेट केक", "(min-width:900px) 270px, 50vw")}<figcaption>{T("रेड वेलवेट", "Red velvet")}</figcaption></figure>
-   <figure>{pic("cake-photo", "फोटो केक", "(min-width:900px) 270px, 50vw")}<figcaption>{T("फोटो केक", "Photo cake")}</figcaption></figure>
-   <figure>{pic("cake-princess", "थीम केक", "(min-width:900px) 270px, 50vw")}<figcaption>{T("थीम केक", "Theme cake")}</figcaption></figure>
+   <figure><span class="note-sample">{T("नमूना फोटो", "Sample photo")}</span>{pic("cake-chocolate", "चॉकलेट केक", "(min-width:900px) 270px, 50vw")}<figcaption>{T("चॉकलेट", "Chocolate")}</figcaption></figure>
+   <figure><span class="note-sample">{T("नमूना फोटो", "Sample photo")}</span>{pic("cake-redvelvet", "रेड वेलवेट केक", "(min-width:900px) 270px, 50vw")}<figcaption>{T("रेड वेलवेट", "Red velvet")}</figcaption></figure>
+   <figure><span class="note-sample">{T("नमूना फोटो", "Sample photo")}</span>{pic("cake-photo", "फोटो केक", "(min-width:900px) 270px, 50vw")}<figcaption>{T("फोटो केक", "Photo cake")}</figcaption></figure>
+   <figure><span class="note-sample">{T("नमूना फोटो", "Sample photo")}</span>{pic("cake-princess", "थीम केक", "(min-width:900px) 270px, 50vw")}<figcaption>{T("थीम केक", "Theme cake")}</figcaption></figure>
   </div>
   <a class="more" href="/cakes/">{T("सारे केक और दाम", "All cakes & prices")}</a>
  </div>
@@ -433,7 +477,7 @@ def home():
  <div class="wrap">
   <div class="rate">
    <div><div class="big">{RATING}</div><div class="stars" aria-label="5 में से 5 स्टार">★★★★★</div></div>
-   <div><h2 style="font-size:clamp(24px,5vw,32px)">{T("ग्राहकों का भरोसा", "Loved by our customers")}</h2><p class="g">{T(f"Google पर {RATING_N} ग्राहकों की रेटिंग", f"Rated by {RATING_N} customers on Google")}</p></div>
+   <div><h2 style="font-size:clamp(24px,5vw,32px)">{T("ग्राहकों का भरोसा", "Loved by our customers")}</h2><p class="g">{T("Google पर हमारी रेटिंग", "Our rating on Google")}</p></div>
    <div class="row" style="justify-content:center">
     <a class="btn btn-line btn-sm" href="{MAPS}" target="_blank" rel="noopener">{T("रिव्यू पढ़ें", "Read reviews")}</a>
     <a class="btn btn-main btn-sm" href="{REVIEW}" target="_blank" rel="noopener">{icon("star")}{T("रिव्यू लिखें", "Write a review")}</a>
@@ -455,13 +499,23 @@ def visit_section(title=True):
  <div class="wrap">
   {head}
   <div class="visit">
-   <div class="map"><iframe src="{MAP_EMBED}" title="MB Sweets का नक्शा" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe></div>
+   <div class="map" data-map="{MAP_EMBED}">
+    <div class="mapface">
+     <div class="mappin" aria-hidden="true">{icon("pin")}</div>
+     <b>{T("ननौरा, दरभंगा", "Nanaura, Darbhanga")}</b>
+     <span>{T("NH किनारे · दरभंगा एयरपोर्ट से ~5 km", "On the NH · ~5 km from Darbhanga airport")}</span>
+     <div class="row" style="justify-content:center">
+      <button class="btn btn-line btn-sm" type="button" data-loadmap>{T("🗺️ यहीं नक्शा दिखाएँ", "🗺️ Show map here")}</button>
+      <a class="btn btn-main btn-sm" href="{MAPS}" target="_blank" rel="noopener">{icon("pin")}{T("Google Maps में खोलें", "Open in Google Maps")}</a>
+     </div>
+    </div>
+   </div>
    <div class="info">
     <dl>
      <div><dt>{T("पता", "Address")}</dt><dd>{T("माँ भगवती मिष्ठान भंडार, ननौरा (कोइलास्थान), दरभंगा, बिहार 846005 — NH किनारे, दरभंगा एयरपोर्ट से ~5 km", "Maa Bhagwati Misthan Bhandar, Nanaura (Koilasthan), Darbhanga, Bihar 846005 — on the NH, ~5 km from Darbhanga airport")}</dd></div>
      <div><dt>{T("समय", "Hours")}</dt><dd>{T("रोज़ सुबह 7 से रात 9 बजे तक · ऑनलाइन ऑर्डर सुबह 7 से शाम 7 बजे तक (उसके बाद अगले दिन के लिए)", "Daily 7 am – 9 pm · online orders 7 am – 7 pm (later ones for the next day)")}</dd></div>
-     <div><dt>{T("फ़ोन", "Phone")}</dt><dd><a href="tel:+91{PHONE1}">{PHONE1}</a> · <a href="tel:+91{PHONE2}">{PHONE2}</a></dd></div>
-     <div><dt>{T("डिलीवरी", "Delivery")}</dt><dd>{T("6 km तक · ₹499 या ज़्यादा पर फ्री · दुकान से खुद ले जाने पर कोई न्यूनतम रकम नहीं", "Within 6 km · free on ₹499 or more · no minimum for pickup")}</dd></div>
+     <div><dt>{T("फ़ोन", "Phone")}</dt><dd class="tels"><a href="tel:+91{PHONE1}">📞 {PHONE1}</a><a href="tel:+91{PHONE2}">📞 {PHONE2}</a></dd></div>
+     <div><dt>{T("डिलीवरी", "Delivery")}</dt><dd>{T("6 km तक · ऑर्डर कम से कम ₹499, डिलीवरी चार्ज नहीं · दुकान से खुद ले जाने पर कोई न्यूनतम रकम नहीं", "Within 6 km · minimum order ₹499, no delivery charge · no minimum for pickup")}</dd></div>
     </dl>
     <div class="row mt">
      <a class="btn btn-main btn-sm" href="{MAPS}" target="_blank" rel="noopener">{icon("pin")}{T("रास्ता देखें", "Get directions")}</a>
@@ -476,15 +530,19 @@ def visit_section(title=True):
 # ================= SWEETS =================
 def sweets_page():
     cards = ''.join(sweet_card(s) for s in SWEETS)
-    items_ld = {'@context': 'https://schema.org', '@type': 'ItemList', 'name': 'MB Sweets — मिठाइयाँ', 'itemListElement': []}
-    for n, s in enumerate(SWEETS, 1):
-        it = ITEMS[s['ids'][0]]
-        prod = {'@type': 'Product', 'name': f"{s['en']} ({s['hi']})", 'description': s['d_en'],
-                'offers': {'@type': 'Offer', 'price': it['price'], 'priceCurrency': 'INR', 'availability': 'https://schema.org/InStock',
-                           'url': SITE + '/sweets/#' + s['key']}}
-        if s['img']:
-            prod['image'] = SITE + f"/assets/img/{s['img']}-{IMG[s['img']][-1][0]}.webp"
-        items_ld['itemListElement'].append({'@type': 'ListItem', 'position': n, 'item': prod})
+    UNIT_CODE = {'किलो': ('KGM', 'per kg'), 'पीस': ('C62', 'per piece'), 'प्लेट': ('C62', 'per plate')}
+    menu_items = []
+    for s in SWEETS:
+        offers = []
+        for iid in s['ids']:
+            it = ITEMS[iid]
+            code, label = UNIT_CODE.get(it['unit'], ('C62', ''))
+            offers.append({'@type': 'Offer', 'price': it['price'], 'priceCurrency': 'INR', 'description': label,
+                           'priceSpecification': {'@type': 'UnitPriceSpecification', 'price': it['price'], 'priceCurrency': 'INR',
+                                                  'referenceQuantity': {'@type': 'QuantitativeValue', 'value': 1, 'unitCode': code}}})
+        menu_items.append({'@type': 'MenuItem', 'name': f"{s['en']} ({s['hi']})", 'description': s['d_en'], 'offers': offers})
+    items_ld = {'@context': 'https://schema.org', '@type': 'Menu', '@id': SITE + '/sweets/#menu', 'name': 'MB Sweets — sweets menu',
+                'inLanguage': 'hi', 'hasMenuSection': [{'@type': 'MenuSection', 'name': 'Sweets (मिठाइयाँ)', 'hasMenuItem': menu_items}]}
     body = f'''
 <section class="phead">
  <div class="wrap">
@@ -492,8 +550,13 @@ def sweets_page():
   <div class="eyebrow">{T("दुकान में अपने हाथ से बनी", "Made by hand in our shop")}</div>
   <h1>{T("मिठाइयाँ और दाम", "Sweets & prices")}</h1>
   <p class="lead">{T("शुद्ध छेना और खोआ से बनी मिठाई — वही दाम जो दुकान में। किसी भी मिठाई पर “ऑर्डर करें” दबाइए, मेन्यू सीधे वहीं खुलेगा।", "Sweets made from pure chhena and khoa — the same prices as in the shop. Tap “Order” on any sweet and the menu opens right there.")}</p>
-  <div class="infochips"><span>⚖️ {T("कम से कम 250 ग्राम या पीस में", "Min. 250 g or by the piece")}</span><span>🚚 {T("₹499+ पर 6 km तक फ्री डिलीवरी", "Free delivery within 6 km on ₹499+")}</span><span>🏪 {T("दुकान से ले जाने पर कोई न्यूनतम नहीं", "No minimum for pickup")}</span></div>
-  <div class="banner-img">{pic("banner-sweets-wide", "MB Sweets की मिठाइयाँ", "(min-width:1140px) 1108px, 100vw")}</div>
+  <div class="infochips"><span>⚖️ {T("कम से कम 250 ग्राम या पीस में", "Min. 250 g or by the piece")}</span><span>🚚 {T("6 km तक फ्री डिलीवरी (₹499+ ऑर्डर)", "Free delivery within 6 km (orders ₹499+)")}</span><span>🏪 {T("दुकान से ले जाने पर कोई न्यूनतम नहीं", "No minimum for pickup")}</span></div>
+  <div class="realstrip">
+   <figure>{pic("real-trays", "दुकान की ट्रे में बालूशाही और चमचम", "(min-width:900px) 360px, 33vw")}</figure>
+   <figure>{pic("real-mix-tray", "दुकान की ट्रे में छेना की मिठाइयाँ", "(min-width:900px) 360px, 33vw")}</figure>
+   <figure>{pic("real-rasgulla-tray", "दुकान की ट्रे में रसगुल्ला", "(min-width:900px) 360px, 33vw")}</figure>
+   <figcaption>📸 {T("हमारी दुकान के शोकेस की असली फोटो", "Real photos from our showcase")}</figcaption>
+  </div>
  </div>
 </section>
 <section style="padding-top:26px">
@@ -515,7 +578,7 @@ def sweets_page():
  <div class="wrap">
   <div class="fly">
    <div class="plane" aria-hidden="true">🎉</div>
-   <div><div class="eyebrow">{T("शादी · पूजा · भोज", "Weddings · Puja · Feasts")}</div><h2>{T("बड़ा ऑर्डर? 2 दिन पहले बताइए", "Bulk order? Tell us 2 days ahead")}</h2><p>{T("बालूशाही, रसगुल्ला, गुलाब जामुन, बूंदी, लड्डू — जितना चाहिए उतना।", "Balushahi, rasgulla, gulab jamun, boondi, laddoo — as much as you need.")}</p></div>
+   <div><div class="eyebrow">{T("शादी · पूजा · भोज", "Weddings · Puja · Feasts")}</div><h2>{T("शादी-भोज का ऑर्डर? 2 दिन पहले बताइए", "Wedding or feast order? Tell us 2 days ahead")}</h2><p>{T("बालूशाही, रसगुल्ला, गुलाब जामुन, बूंदी, लड्डू — जितना चाहिए उतना।", "Balushahi, rasgulla, gulab jamun, boondi, laddoo — as much as you need.")}</p></div>
    <a class="btn btn-main" href="/wedding/">{T("बड़ा ऑर्डर बुक करें", "Book a bulk order")}</a>
   </div>
  </div>
@@ -547,6 +610,10 @@ def cake_msg(name):
 
 
 def cakes_page():
+    for key, hi, en, custom in FLAVORS:
+        WA_EN[cake_msg(hi)] = cake_msg_en(en)
+    for key, hi, en, s_hi, s_en, custom in OCCASIONS:
+        WA_EN[cake_msg(hi.replace(" केक", ""))] = cake_msg_en(en.replace(' cake', ''))
     fixed = ''
     for key, hi, en, half, full, img, alt in [('cake-vanilla', 'वनीला केक', 'Vanilla cake', 'i26', 'i27', 'cake-vanilla', 'वनीला केक'),
                                               ('cake-choco', 'चॉकलेट केक', 'Chocolate cake', 'i29', 'i28', 'cake-chocolate', 'चॉकलेट केक')]:
@@ -559,8 +626,8 @@ def cakes_page():
     flav = ''
     for key, hi, en, custom in FLAVORS:
         btn = (f'<a class="btn btn-main" href="{olink(cake=custom)}" data-order>{icon("bag")}{T("ऑर्डर करें", "Order")}</a>' if custom else
-               f'<a class="btn btn-wa" href="{wa(cake_msg(hi))}" target="_blank" rel="noopener">{icon("wa")}{T("दाम पूछें", "Ask price")}</a>')
-        flav += f'''<article class="pcard"><div class="pic">{pic("cake-" + key, hi + " केक", "(min-width:1040px) 260px, (min-width:720px) 30vw, 50vw")}<span class="note-sample">{T("नमूना फोटो", "Sample photo")}</span></div>
+               f'<a class="btn btn-wa" href="{wa(cake_msg(hi))}" target="_blank" rel="noopener">{icon("wa")}{T("दाम पूछें", "Ask the price")}</a>')
+        flav += f'''<article class="pcard"><div class="pic">{pic("cake-" + key, (hi if "केक" in hi else hi + " केक") + " (नमूना फोटो)", "(min-width:1040px) 260px, (min-width:720px) 30vw, 50vw")}<span class="note-sample">{T("नमूना फोटो", "Sample photo")}</span></div>
  <div class="body"><h3>{T(hi, en)}</h3><p>{T("दाम साइज़ और डिज़ाइन के हिसाब से", "Price depends on size & design")}</p><div class="acts">{btn}</div></div></article>'''
     occ = ''
     for key, hi, en, s_hi, s_en, custom in OCCASIONS:
@@ -668,7 +735,7 @@ def products_page():
 # ================= WEDDING & GIFTS =================
 def wedding_page():
     sweets_opts = ['बालूशाही|Balushahi', 'रसगुल्ला|Rasgulla', 'गुलाब जामुन|Gulab jamun', 'चमचम|Cham cham', 'रसमलाई|Rasmalai',
-                   'पेड़ा|Peda', 'लड्डू|Laddoo', 'बूंदी|Boondi', 'जलेबी|Jalebi', 'मिल्क केक|Milk cake', 'दही|Curd']
+                   'पेड़ा|Peda', 'लड्डू|Laddoo', 'बूंदी|Boondi', 'जलेबी|Jalebi', 'मिल्क केक|Milk cake']
     checks = ''.join(f'<label><input type="checkbox" name="sw" value="{v.split("|")[0]}">{T(*v.split("|"))}</label>' for v in sweets_opts)
     occ = ['शादी|Wedding', 'तिलक|Tilak', 'मुंडन|Mundan', 'जनेऊ|Janeu', 'गृह प्रवेश|Housewarming', 'पूजा / भोज|Puja / feast', 'जन्मदिन / पार्टी|Birthday / party', 'कुछ और|Other']
     occ_opts = ''.join(f'<option value="{o.split("|")[0]}" data-en="{o.split("|")[1]}">{o.split("|")[0]}</option>' for o in occ)
@@ -690,7 +757,7 @@ def wedding_page():
    <h2>{T("बड़ा ऑर्डर — बिना झंझट", "Bulk orders, hassle-free")}</h2>
    <ul class="points mt">
     <li>📅 <span>{T("<b>कम से कम 2 दिन पहले</b> बताइए — ताज़ी बनाकर देंगे।", "Tell us <b>at least 2 days ahead</b> — we make it fresh.")}</span></li>
-    <li>⚖️ <span>{T("<b>मात्रा कितनी भी</b> — 1 किलो से 50 किलो तक, जितना चाहिए।", "<b>Any quantity</b> — from 1 kg to 50 kg, whatever you need.")}</span></li>
+    <li>⚖️ <span>{T("<b>मात्रा कितनी भी</b> — जितना चाहिए, उतना बनाएँगे।", "<b>Any quantity</b> — as much as you need.")}</span></li>
     <li>🤝 <span>{T("दाम और डिलीवरी <b>WhatsApp पर पक्की</b> करेंगे। 6 km तक डिलीवरी, या दुकान से ले जाइए।", "We <b>confirm price and delivery on WhatsApp</b>. Delivery within 6 km, or pick up from the shop.")}</span></li>
     <li>💰 <span>{T("दाम वही जो दुकान में — नीचे आज के दाम देख लीजिए।", "Same prices as in the shop — see today's prices below.")}</span></li>
    </ul>
@@ -743,14 +810,17 @@ FAQ = [
      'दुकान से 6 km तक (जैसे खिरमा, एयरपोर्ट, केवटी रनवे, पिंडारुच की तरफ)। डिलीवरी की उपलब्धता देखकर ही डिलीवरी कन्फर्म की जाती है।',
      'Within 6 km of the shop (towards Khirma, the airport, Kewti runway, Pindaruch and so on). Delivery is confirmed only after checking availability.'),
     ('कम से कम कितने का ऑर्डर देना होगा?', 'Is there a minimum order?',
-     'डिलीवरी के लिए कम से कम ₹499 — ₹499 या ज़्यादा पर डिलीवरी फ्री। दुकान से खुद ले जाने पर कोई न्यूनतम रकम नहीं।',
-     'For delivery the minimum is ₹499, and delivery is free at ₹499 or more. There is no minimum for pickup.'),
+     'घर पर डिलीवरी के लिए ऑर्डर कम से कम ₹499 का होना चाहिए — इस पर कोई डिलीवरी चार्ज नहीं लगता। दुकान से खुद ले जाने पर कोई न्यूनतम रकम नहीं।',
+     'Home delivery needs an order of at least ₹499 — with no delivery charge. There is no minimum for pickup.'),
     ('पेमेंट कैसे करें?', 'How do I pay?',
-     'पहले दुकान WhatsApp पर ऑर्डर कन्फर्म करती है, उसके बाद UPI से पूरा पेमेंट करके स्क्रीनशॉट भेजें। पेमेंट के बाद डिलीवरी निकलती है। दुकान से ले जाने पर पेमेंट लेते समय।',
+     'पहले दुकान WhatsApp पर ऑर्डर कन्फर्म करती है, उसके बाद UPI से पूरा पेमेंट करके स्क्रीनशॉट भेजें। पेमेंट के बाद डिलीवरी निकलती है। दुकान से खुद ले जाने पर सामान लेते समय दुकान पर पेमेंट करें।',
      'The shop first confirms your order on WhatsApp; then pay the full amount by UPI and send the screenshot. Delivery leaves after payment. For pickup, pay at the shop.'),
     ('ऑर्डर कब तक दे सकते हैं?', 'Until when can I order?',
      'ऑनलाइन ऑर्डर सुबह 7 से शाम 7 बजे तक। शाम 7 के बाद अगले दिन या आगे की तारीख के लिए ऑर्डर दे सकते हैं। "जल्दी" वाले ऑर्डर आम तौर पर 30–60 मिनट में।',
      'Online orders from 7 am to 7 pm. After 7 pm you can order for the next day or a later date. "As soon as possible" orders usually take 30–60 minutes.'),
+    ('बड़ा ऑर्डर कितने पहले देना होगा?', 'How early should I place a big order?',
+     'शादी-भोज जैसे बड़े मिठाई ऑर्डर: कम से कम 2 दिन पहले। थोक दूध-दही-पनीर: कल के लिए आज दोपहर 2 बजे तक। रोज़ का छोटा ऑर्डर उसी दिन भी मिल जाता है।',
+     'Big sweets orders for weddings and feasts: at least 2 days ahead. Bulk milk, curd and paneer: by 2 pm for the next day. Everyday small orders can be delivered the same day.'),
     ('ऑर्डर कैंसिल हो सकता है?', 'Can I cancel?',
      'पेमेंट के बाद ग्राहक खुद कैंसिल करे तो पैसा वापस नहीं होता। अगर दुकान ने कन्फर्म करके भी समय पर डिलीवरी नहीं की, तो आप कैंसिल कर सकते हैं और पूरा पैसा वापस मिलेगा।',
      'If you cancel after paying, the money is not refunded. If we confirmed but could not deliver on time, you can cancel and get a full refund.'),
@@ -934,7 +1004,7 @@ def main():
              'products/index.html': products_page(), 'wedding/index.html': wedding_page(),
              'contact/index.html': contact_page(), 'bulk-dairy/index.html': bulk_dairy_page(), '404.html': notfound_page()}
     for p, h in pages.items():
-        h = h.replace('CSSV', cssv).replace('JSV', jsv)
+        h = add_wa_english(h.replace('CSSV', cssv).replace('JSV', jsv))
         os.makedirs(os.path.dirname(os.path.join(OUT, p)) or OUT, exist_ok=True)
         open(os.path.join(OUT, p), 'w', encoding='utf-8').write(h)
     urls = ['/', '/sweets/', '/cakes/', '/products/', '/bulk-dairy/', '/wedding/', '/contact/']

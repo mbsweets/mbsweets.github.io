@@ -22,15 +22,26 @@ function applyLang(){
     if(el.dataset.hiPh==null)el.dataset.hiPh=el.getAttribute('placeholder')||'';
     el.setAttribute('placeholder',lang==='en'?el.dataset.enPh:el.dataset.hiPh);
   });
+  $all('[data-en-href]').forEach(function(el){
+    if(el.dataset.hiHref==null)el.dataset.hiHref=el.getAttribute('href');
+    el.setAttribute('href',lang==='en'?el.dataset.enHref:el.dataset.hiHref);
+  });
   var b=$('#lang');if(b)b.textContent=lang==='en'?'हिंदी':'English';
   status();
 }
 document.addEventListener('click',function(ev){
   if(ev.target.closest('#lang')){lang=lang==='en'?'hi':'en';try{localStorage.setItem(LS,lang);}catch(e){}applyLang();return;}
   var a=ev.target.closest('a[data-order]');
-  if(a&&lang==='en'){
-    var h=a.getAttribute('href');
-    if(h.indexOf('lang=')<0){var i=h.indexOf('#');a.setAttribute('href',i<0?h+'?lang=en':h.slice(0,i)+'?lang=en'+h.slice(i));}
+  if(a){
+    // the order menu opens in the same language as the website
+    var h=a.getAttribute('href').replace(/([?&])lang=(hi|en)&?/,'$1').replace(/[?&]$/,'').replace(/[?&](#|$)/,'$1');
+    var i=h.indexOf('#'),base=i<0?h:h.slice(0,i),hash=i<0?'':h.slice(i);
+    a.setAttribute('href',base+(base.indexOf('?')<0?'?':'&')+'lang='+lang+hash);
+  }
+  var mb=ev.target.closest('[data-loadmap]');
+  if(mb){
+    var box=mb.closest('[data-map]');
+    if(box)box.innerHTML='<iframe src="'+box.getAttribute('data-map')+'" title="MB Sweets map" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>';
   }
 });
 
@@ -66,6 +77,21 @@ function applyCatalog(){
 
 /* ---------- bulk order form → WhatsApp ---------- */
 function pad(n){return n<10?'0'+n:''+n;}
+/* show a form error where the customer can see it (not hidden under the bottom bar) */
+function showErr(box,msg,field){
+  var form=box.closest('form');
+  $all('[aria-invalid]',form).forEach(function(x){x.removeAttribute('aria-invalid');});
+  $all('.ferr',form).forEach(function(x){x.remove();});
+  box.textContent=msg;
+  if(field){
+    field.setAttribute('aria-invalid','true');
+    var host=field.closest('.qty')||field.closest('.f');
+    if(host){var d=document.createElement('div');d.className='ferr';d.setAttribute('role','alert');d.textContent=msg;host.appendChild(d);}
+    try{field.focus({preventScroll:true});}catch(e){}
+  }
+  var target=field||box;
+  try{target.scrollIntoView({block:'center',behavior:'smooth'});}catch(e){target.scrollIntoView();}
+}
 function dateKey(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
 var MONTHS=['जनवरी','फरवरी','मार्च','अप्रैल','मई','जून','जुलाई','अगस्त','सितंबर','अक्टूबर','नवंबर','दिसंबर'];
 function setupForm(){
@@ -77,17 +103,19 @@ function setupForm(){
     var err=$('#b-err');err.textContent='';
     var name=$('#b-name').value.trim(),phone=$('#b-phone').value.replace(/\D/g,'').slice(-10);
     var sw=$all('input[name=sw]:checked').map(function(x){return x.value;});
+    var qty=$('#b-qty').value.trim();
     var E=lang==='en';
-    if(!di.value){err.textContent=E?'Please choose the date.':'तारीख चुनिए।';di.focus();return;}
-    if(di.value<dateKey(min)){err.textContent=E?'Bulk orders need at least 2 days — please pick a later date, or call us.':'बड़े ऑर्डर के लिए कम से कम 2 दिन चाहिए — आगे की तारीख चुनें, या कॉल करें।';di.focus();return;}
-    if(!name){err.textContent=E?'Please write your name.':'अपना नाम लिखिए।';$('#b-name').focus();return;}
-    if(!/^[6-9]\d{9}$/.test(phone)){err.textContent=E?'Please write a 10-digit mobile number.':'10 अंकों का मोबाइल नंबर लिखिए।';$('#b-phone').focus();return;}
+    if(!di.value){showErr(err,E?'Please choose the date.':'तारीख चुनिए।',di);return;}
+    if(di.value<dateKey(min)){showErr(err,E?'Bulk orders need at least 2 days — please pick a later date, or call us.':'बड़े ऑर्डर के लिए कम से कम 2 दिन चाहिए — आगे की तारीख चुनें, या कॉल करें।',di);return;}
+    if(!sw.length&&!qty){showErr(err,E?'Tick the sweets you need, or write the total quantity.':'कौन-सी मिठाई चाहिए उस पर टिक करें, या कुल मात्रा लिखें।',$('#b-qty'));return;}
+    if(!name){showErr(err,E?'Please write your name.':'अपना नाम लिखिए।',$('#b-name'));return;}
+    if(!/^[6-9]\d{9}$/.test(phone)){showErr(err,E?'Please write a 10-digit mobile number.':'10 अंकों का मोबाइल नंबर लिखिए।',$('#b-phone'));return;}
     var p=di.value.split('-');
     var L=['नमस्ते MB Sweets 🙏','*बड़ा ऑर्डर (वेबसाइट से)*',
       'मौका: '+$('#b-occ').value,
       'तारीख: '+(+p[2])+' '+MONTHS[+p[1]-1]+' '+p[0],
       'मिठाई: '+(sw.length?sw.join(', '):'—'),
-      'मात्रा: '+($('#b-qty').value.trim()||'—'),
+      'मात्रा: '+(qty||'—'),
       'लेने का तरीका: '+$('#b-mode').value,
       'नाम: '+name,'मोबाइल: '+phone];
     var place=$('#b-place').value.trim(),note=$('#b-note').value.trim();
@@ -117,11 +145,11 @@ function setupDairy(){
     function q(id){var v=parseFloat(($(id).value||'').replace(',','.'));return isFinite(v)&&v>0?v:0;}
     var fc=q('#d-fc'),tm=q('#d-tm'),dahi=q('#d-dahi'),pn=q('#d-paneer');
     var name=$('#d-name').value.trim(),phone=$('#d-phone').value.replace(/\D/g,'').slice(-10);
-    if(!di.value){err.textContent=E?'Please choose the date.':'तारीख चुनिए।';di.focus();return;}
-    if(di.value<dateKey(min)){err.textContent=E?'That date is too soon — for tomorrow, order by 2 pm today. Please pick a later date, or call us.':'यह तारीख बहुत जल्दी है — कल के लिए आज दोपहर 2 बजे तक ऑर्डर देना होता है। आगे की तारीख चुनें, या कॉल करें।';di.focus();return;}
-    if(!(fc||tm||dahi||pn)){err.textContent=E?'Write how much milk, curd or paneer you need.':'कितना दूध, दही या पनीर चाहिए — लिखिए।';$('#d-fc').focus();return;}
-    if(!name){err.textContent=E?'Please write your name.':'अपना नाम लिखिए।';$('#d-name').focus();return;}
-    if(!/^[6-9]\d{9}$/.test(phone)){err.textContent=E?'Please write a 10-digit mobile number.':'10 अंकों का मोबाइल नंबर लिखिए।';$('#d-phone').focus();return;}
+    if(!di.value){showErr(err,E?'Please choose the date.':'तारीख चुनिए।',di);return;}
+    if(di.value<dateKey(min)){showErr(err,E?'That date is too soon — for tomorrow, order by 2 pm today. Please pick a later date, or call us.':'यह तारीख बहुत जल्दी है — कल के लिए आज दोपहर 2 बजे तक ऑर्डर देना होता है। आगे की तारीख चुनें, या कॉल करें।',di);return;}
+    if(!(fc||tm||dahi||pn)){showErr(err,E?'Write how much milk, curd or paneer you need.':'कितना दूध, दही या पनीर चाहिए — लिखिए।',$('#d-fc'));return;}
+    if(!name){showErr(err,E?'Please write your name.':'अपना नाम लिखिए।',$('#d-name'));return;}
+    if(!/^[6-9]\d{9}$/.test(phone)){showErr(err,E?'Please write a 10-digit mobile number.':'10 अंकों का मोबाइल नंबर लिखिए।',$('#d-phone'));return;}
     var p=di.value.split('-');
     var L=['नमस्ते MB Sweets 🙏','*थोक दूध-दही-पनीर (वेबसाइट से)*',
       'अवसर: '+$('#d-occ').value,
@@ -141,9 +169,13 @@ function setupDairy(){
   });
 }
 
+function showCurrentPill(){
+  var strip=$('.pills'),on=strip&&strip.querySelector('[aria-current=page]');
+  if(on&&strip.scrollWidth>strip.clientWidth)strip.scrollLeft=Math.max(0,on.offsetLeft-strip.clientWidth/2+on.offsetWidth/2);
+}
 function start(){
   var y=$('#yr');if(y)y.textContent=new Date().getFullYear();
-  applyCatalog();applyLang();setupForm();setupDairy();
+  applyCatalog();applyLang();setupForm();setupDairy();showCurrentPill();
   setInterval(status,60000);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
