@@ -199,6 +199,7 @@ def page(path, title, desc, body, active=None, ld=(), extra_head=''):
 <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta property="og:locale" content="hi_IN">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="google-site-verification" content="Vm67PoSV5XHzENlAlZc9Rm4jAQmM6H2biQfGY-9qMtw">
 <meta name="theme-color" content="#6A1222">
 <meta name="format-detection" content="telephone=no">
 <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32">
