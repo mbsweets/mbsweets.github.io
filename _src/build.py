@@ -131,7 +131,7 @@ def footer():
   </div>
   <div><h3>{T("पेज", "Pages")}</h3><ul>{links}</ul></div>
   <div><h3>{T("पता और समय", "Address & hours")}</h3>
-   <p>{T("ननौरा (कोइलास्थान), दरभंगा, बिहार 846005<br>NH किनारे · दरभंगा एयरपोर्ट से ~5 km", "Nanaura (Koilasthan), Darbhanga, Bihar 846005<br>On the NH · ~5 km from Darbhanga airport")}</p>
+   <p>{T("ननौरा मेन रोड (NH 527B), दरभंगा एयरपोर्ट के पास<br>दरभंगा, बिहार 846005 · एयरपोर्ट से ~5 km", "Nanaura Main Rd (NH 527B), near Darbhanga Airport<br>Darbhanga, Bihar 846005 · ~5 km from the airport")}</p>
    <p>{T("रोज़ सुबह 7 से रात 9 बजे तक", "Daily 7 am – 9 pm")}</p>
    <p><a href="tel:+91{PHONE1}">📞 {PHONE1}</a><br><a href="tel:+91{PHONE2}">📞 {PHONE2}</a></p>
   </div>
@@ -159,7 +159,7 @@ def business_ld():
         'description': 'Sweet shop in Nanaura, Darbhanga since 2000 — handmade chhena and khoa sweets (balushahi, rasgulla, gulab jamun, cham cham, rasmalai, peda), eggless cakes, milk, curd and paneer. Home delivery within 6 km.',
         'url': SITE + '/', 'telephone': '+91-' + PHONE1, 'image': [SITE + '/assets/img/og-site.jpg', SITE + '/assets/img/shop-front-wide-1600.webp'],
         'logo': SITE + '/assets/img/icon-512.png', 'priceRange': '₹', 'servesCuisine': ['Indian sweets', 'Mithai', 'Cakes'],
-        'address': {'@type': 'PostalAddress', 'streetAddress': 'Nanaura (Koilasthan), on NH', 'addressLocality': 'Darbhanga',
+        'address': {'@type': 'PostalAddress', 'streetAddress': 'Nanaura Main Rd (NH 527B), Near Darbhanga Airport', 'addressLocality': 'Darbhanga',
                     'addressRegion': 'Bihar', 'postalCode': '846005', 'addressCountry': 'IN'},
         'geo': {'@type': 'GeoCoordinates', 'latitude': SHOP['lat'], 'longitude': SHOP['lng']},
         'hasMap': MAPS,
@@ -513,7 +513,7 @@ def visit_section(title=True):
    </div>
    <div class="info">
     <dl>
-     <div><dt>{T("पता", "Address")}</dt><dd>{T("माँ भगवती मिष्ठान भंडार, ननौरा (कोइलास्थान), दरभंगा, बिहार 846005 — NH किनारे, दरभंगा एयरपोर्ट से ~5 km", "Maa Bhagwati Misthan Bhandar, Nanaura (Koilasthan), Darbhanga, Bihar 846005 — on the NH, ~5 km from Darbhanga airport")}</dd></div>
+     <div><dt>{T("पता", "Address")}</dt><dd>{T("माँ भगवती मिष्ठान भंडार, ननौरा मेन रोड (NH 527B), दरभंगा एयरपोर्ट के पास, दरभंगा, बिहार 846005 — एयरपोर्ट से ~5 km", "Maa Bhagwati Misthan Bhandar, Nanaura Main Rd (NH 527B), near Darbhanga Airport, Darbhanga, Bihar 846005 — ~5 km from the airport")}</dd></div>
      <div><dt>{T("समय", "Hours")}</dt><dd>{T("रोज़ सुबह 7 से रात 9 बजे तक · ऑनलाइन ऑर्डर सुबह 7 से शाम 7 बजे तक (उसके बाद अगले दिन के लिए)", "Daily 7 am – 9 pm · online orders 7 am – 7 pm (later ones for the next day)")}</dd></div>
      <div><dt>{T("फ़ोन", "Phone")}</dt><dd class="tels"><a href="tel:+91{PHONE1}">📞 {PHONE1}</a><a href="tel:+91{PHONE2}">📞 {PHONE2}</a></dd></div>
      <div><dt>{T("डिलीवरी", "Delivery")}</dt><dd>{T("6 km तक · ऑर्डर कम से कम ₹499, डिलीवरी चार्ज नहीं · दुकान से खुद ले जाने पर कोई न्यूनतम रकम नहीं", "Within 6 km · minimum order ₹499, no delivery charge · no minimum for pickup")}</dd></div>
