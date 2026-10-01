@@ -688,9 +688,11 @@ def products_page():
     dairy = ''.join([
         row('i14', 'सुधा दूध फुल क्रीम — 1 लीटर', 'Sudha full-cream milk — 1 L'),
         row('i15', 'सुधा दूध टोंड (हाफ क्रीम) — 1 लीटर', 'Sudha toned milk — 1 L'),
-        row('i25', 'अमूल दही — 200 ग्राम', 'Amul curd — 200 g'), row('i24', 'अमूल दही — 400 ग्राम', 'Amul curd — 400 g'),
-        row('i23', 'अमूल दही — 1 किलो', 'Amul curd — 1 kg'), row('i18', 'अमूल दही — 2 किलो पैक', 'Amul curd — 2 kg pack'),
-        row('i19', 'अमूल दही — 5 किलो पैक', 'Amul curd — 5 kg pack'), row('i20', 'अमूल दही — 15 किलो पैक', 'Amul curd — 15 kg pack'),
+        row('i25', 'अमूल दही — 200 ग्राम', 'Amul curd — 200 g'), row('i30', 'अमृत दही — 200 ग्राम', 'Amrit curd — 200 g'),
+        row('i24', 'अमूल दही — 400 ग्राम', 'Amul curd — 400 g'), row('i31', 'अमृत दही — 400 ग्राम', 'Amrit curd — 400 g'),
+        row('i23', 'अमूल दही — 1 किलो', 'Amul curd — 1 kg'), row('i32', 'अमृत दही — 1 किलो', 'Amrit curd — 1 kg'),
+        row('i18', 'अमृत दही — 2 किलो पैक', 'Amrit curd — 2 kg pack'),
+        row('i19', 'अमूल दही — 5 किलो पैक', 'Amul curd — 5 kg pack'), row('i20', 'दही — 15 किलो पैक', 'Curd — 15 kg pack'),
         row('i16', 'पनीर पैकेट — 200 ग्राम', 'Paneer packet — 200 g'), row('i17', 'खुला पनीर — 1 किलो', 'Loose paneer — 1 kg'),
     ])
     pack_btn = f'<a class="btn btn-main" href="{olink(tab="pack")}" data-order>{icon("bag")}{T("मेन्यू में लिखकर ऑर्डर करें", "Order via the menu")}</a>'
@@ -707,7 +709,7 @@ def products_page():
   <div class="crumb"><a href="/">{T("होम", "Home")}</a> › {T("दूध-दही व सामान", "Dairy & more")}</div>
   <div class="eyebrow">{T("मिठाई के साथ रोज़ की ज़रूरत", "Everyday needs, along with sweets")}</div>
   <h1>{T("दूध-दही, नमकीन और पैकेट सामान", "Dairy, namkeen & packaged goods")}</h1>
-  <p class="lead">{T("सुधा दूध, अमूल दही, पनीर, नमकीन-भुजिया, बिस्किट-चॉकलेट और ठंडी कोल्ड ड्रिंक — मिठाई के ऑर्डर के साथ घर मँगवाइए। पैकेट सामान MRP पर।", "Sudha milk, Amul curd, paneer, namkeen, biscuits, chocolates and chilled drinks — add them to your sweets order. Packaged goods at MRP.")}</p>
+  <p class="lead">{T("सुधा दूध, अमूल और अमृत दही, पनीर, नमकीन-भुजिया, बिस्किट-चॉकलेट और ठंडी कोल्ड ड्रिंक — मिठाई के ऑर्डर के साथ घर मँगवाइए। पैकेट सामान MRP पर।", "Sudha milk, Amul and Amrit curd, paneer, namkeen, biscuits, chocolates and chilled drinks — add them to your sweets order. Packaged goods at MRP.")}</p>
  </div>
 </section>
 <section style="padding-top:22px">
@@ -728,8 +730,8 @@ def products_page():
        ("कोल्ड ड्रिंक, जूस और पानी की बोतल — पार्टी और सफ़र के लिए।", "Soft drinks, juices and bottled water — for parties and journeys."))}
  </div>
 </section>'''
-    return page('/products/', 'सुधा दूध, अमूल दही, पनीर, नमकीन, बिस्किट | MB Sweets ननौरा, दरभंगा',
-                f'MB Sweets ननौरा में सुधा दूध ₹{price("i14")}/लीटर, अमूल दही, पनीर, नमकीन-भुजिया, बिस्किट, चॉकलेट और कोल्ड ड्रिंक। मिठाई के साथ घर मँगवाइए।',
+    return page('/products/', 'सुधा दूध, अमूल-अमृत दही, पनीर, नमकीन | MB Sweets ननौरा, दरभंगा',
+                f'MB Sweets ननौरा में सुधा दूध ₹{price("i14")}/लीटर, अमूल और अमृत दही, पनीर, नमकीन-भुजिया, बिस्किट, चॉकलेट और कोल्ड ड्रिंक। मिठाई के साथ घर मँगवाइए।',
                 body, ld=[crumbs_ld('Dairy & more', '/products/')])
 
 
