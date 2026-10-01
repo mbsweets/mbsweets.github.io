@@ -422,7 +422,7 @@ def home():
    <div>
     <div class="eyebrow">{T("भोज · भंडारा · हर आयोजन", "Feasts · bhandara · every gathering")}</div>
     <h2>{T("थोक में दूध, दही और पनीर", "Milk, curd & paneer in bulk")}</h2>
-    <p>{T("शादी-ब्याह, श्राद्ध-ब्रह्मभोज, भंडारा — सुधा, राज फ्रेश, अमृत, अमूल; 15 किलो दही पैक ₹1300 से। बड़ी मात्रा पर कम रेट।", "Weddings, shraddh and brahmbhoj, bhandara — Sudha, Raj Fresh, Amrit, Amul; 15 kg curd packs from ₹1300. Lower rates in bulk.")}</p>
+    <p>{T("शादी-ब्याह, श्राद्ध-ब्रह्मभोज, भंडारा — सुधा, राज फ्रेश, अमृत, अमूल; 15 किलो दही पैक ₹" + str(price("i20")) + "। बड़ी मात्रा पर कम रेट।", "Weddings, shraddh and brahmbhoj, bhandara — Sudha, Raj Fresh, Amrit, Amul; 15 kg curd packs ₹" + str(price("i20")) + ". Lower rates in bulk.")}</p>
     <a class="btn btn-main" href="/bulk-dairy/">{T("थोक ऑर्डर दें", "Order in bulk")}</a>
    </div>
   </div>
@@ -692,7 +692,8 @@ def products_page():
         row('i24', 'अमूल दही — 400 ग्राम', 'Amul curd — 400 g'), row('i31', 'अमृत दही — 400 ग्राम', 'Amrit curd — 400 g'),
         row('i23', 'अमूल दही — 1 किलो', 'Amul curd — 1 kg'), row('i32', 'अमृत दही — 1 किलो', 'Amrit curd — 1 kg'),
         row('i18', 'अमृत दही — 2 किलो पैक', 'Amrit curd — 2 kg pack'),
-        row('i19', 'अमूल दही — 5 किलो पैक', 'Amul curd — 5 kg pack'), row('i20', 'दही — 15 किलो पैक', 'Curd — 15 kg pack'),
+        row('i19', 'अमूल दही — 5 किलो पैक', 'Amul curd — 5 kg pack'),
+        row('i20', 'अमूल दही — 15 किलो पैक', 'Amul curd — 15 kg pack'), row('i33', 'अमृत दही — 15 किलो पैक', 'Amrit curd — 15 kg pack'),
         row('i16', 'पनीर पैकेट — 200 ग्राम', 'Paneer packet — 200 g'), row('i17', 'खुला पनीर — 1 किलो', 'Loose paneer — 1 kg'),
     ])
     pack_btn = f'<a class="btn btn-main" href="{olink(tab="pack")}" data-order>{icon("bag")}{T("मेन्यू में लिखकर ऑर्डर करें", "Order via the menu")}</a>'
@@ -885,9 +886,9 @@ def bulk_dairy_page():
     prices = ''.join([
         row('i14', 'सुधा दूध फुल क्रीम — 1 लीटर', 'Sudha full-cream milk — 1 L'),
         row('i15', 'सुधा दूध टोंड — 1 लीटर', 'Sudha toned milk — 1 L'),
-        f'<li><span>{T("दही — 15 किलो पैक (कंपनी के हिसाब से)", "Curd — 15 kg pack (by brand)")}</span><b>₹1300–1600</b></li>',
-        row('i19', 'दही — 5 किलो पैक', 'Curd — 5 kg pack'),
-        row('i18', 'दही — 2 किलो पैक', 'Curd — 2 kg pack'),
+        row('i20', 'दही — 15 किलो पैक (अमूल या अमृत)', 'Curd — 15 kg pack (Amul or Amrit)'),
+        row('i19', 'अमूल दही — 5 किलो पैक', 'Amul curd — 5 kg pack'),
+        row('i18', 'अमृत दही — 2 किलो पैक', 'Amrit curd — 2 kg pack'),
         row('i17', 'खुला पनीर — 1 किलो', 'Loose paneer — 1 kg'),
     ])
     wa_bulk = wa('नमस्ते MB Sweets 🙏 मुझे थोक में दूध/दही/पनीर चाहिए। बड़ी मात्रा का रेट बताइए।')
@@ -932,7 +933,7 @@ def bulk_dairy_page():
    <h2>{T("दूध, दही, पनीर", "Milk, curd, paneer")}</h2>
    <dl class="mt">
     <div><dt>🥛 {T("दूध", "Milk")}</dt><dd>{T("सुधा, राज फ्रेश, अमृत और अमूल — फुल क्रीम और टोंड।", "Sudha, Raj Fresh, Amrit and Amul — full cream and toned.")}</dd></div>
-    <div><dt>🍶 {T("दही", "Curd")}</dt><dd>{T("सभी कंपनियों का दही। <b>15 किलो के पैक ₹1300 से ₹1600 तक</b> — कंपनी के हिसाब से। 2 और 5 किलो के पैक भी।", "Curd from all brands. <b>15 kg packs from ₹1300 to ₹1600</b> depending on brand. 2 kg and 5 kg packs too.")}</dd></div>
+    <div><dt>🍶 {T("दही", "Curd")}</dt><dd>{T("अमूल और अमृत का पैक वाला दही। <b>15 किलो का पैक ₹" + str(price("i20")) + "</b> (दोनों कंपनी)। 2 और 5 किलो के पैक भी।", "Packed curd from Amul and Amrit. <b>15 kg pack ₹" + str(price("i20")) + "</b> (either brand). 2 kg and 5 kg packs too.")}</dd></div>
     <div><dt>🧀 {T("पनीर", "Paneer")}</dt><dd>{T("खुला पनीर किलो में, और 200 ग्राम के पैकेट।", "Loose paneer by the kg, and 200 g packets.")}</dd></div>
    </dl>
    <p class="mt">{T("कौन-सी कंपनी का चाहिए, फ़ॉर्म में लिख दीजिए या पूछ लीजिए।", "Tell us the brand you want in the form, or just ask.")}</p>
@@ -980,7 +981,7 @@ def bulk_dairy_page():
  </div>
 </section>'''
     return page('/bulk-dairy/', 'थोक दूध, दही, पनीर — शादी, श्राद्ध-भोज, भंडारा | MB Sweets ननौरा, दरभंगा',
-                'शादी-ब्याह, श्राद्ध-ब्रह्मभोज, भंडारा और हर आयोजन के लिए थोक में दूध, दही, पनीर — सुधा, राज फ्रेश, अमृत, अमूल। 15 किलो दही पैक ₹1300–1600। कल के लिए आज 2 बजे तक ऑर्डर। ननौरा, दरभंगा।',
+                f'शादी-ब्याह, श्राद्ध-ब्रह्मभोज, भंडारा और हर आयोजन के लिए थोक में दूध, दही, पनीर — सुधा, राज फ्रेश, अमृत, अमूल। 15 किलो दही पैक ₹{price("i20")} (अमूल/अमृत)। कल के लिए आज 2 बजे तक ऑर्डर। ननौरा, दरभंगा।',
                 body, ld=[crumbs_ld('Bulk dairy', '/bulk-dairy/')])
 
 
