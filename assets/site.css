@@ -123,6 +123,13 @@ section{padding:44px 0}
 .hcard .btn svg{width:18px;height:18px}
 .is-off .hpic img,.is-off.why img{filter:grayscale(.6)}
 .dline{font-size:15px;font-weight:600;color:#4B2A20;margin:10px 0 12px}
+.pure{background:linear-gradient(135deg,#F1FAF3,#FFFCF6);border:1.5px solid #9ED3B0;border-left:6px solid var(--leaf);border-radius:16px;padding:10px 14px;margin:2px 0 12px}
+.pure-top{display:flex;align-items:center;gap:8px}
+.pure-top b{font:800 clamp(21px,5.6vw,26px)/1.15 var(--hd);color:#14592F}
+.pure-tick{flex:none;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--leaf);color:#fff;font-weight:800;font-size:16px}
+.pure p{margin:4px 0 0;font-size:15px;line-height:1.4;font-weight:600;color:#2C4A35}
+.pure .pure-q{font-weight:400;font-style:italic;font-size:14px;color:#4B5E50}
+.pure .pure-q span{font-style:normal;font-size:12.5px;color:var(--muted);white-space:nowrap}
 .btn-big{min-height:54px;font-size:18px;padding:0 26px}
 .hcta .btn-big{flex:1 1 auto;min-width:0}
 .trust a{display:inline-flex;align-items:center;gap:6px;color:inherit;text-decoration:none;min-height:40px}

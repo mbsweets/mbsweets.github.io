@@ -371,9 +371,14 @@ def home():
    <div class="hwel"><div class="welcome">🙏 {T("अहाँक स्वागत अछि", "Welcome — अहाँक स्वागत अछि")}</div>
    <span class="status" id="status"><i></i><span>{T("रोज़ सुबह 7 से रात 9 बजे तक", "Open daily 7 am – 9 pm")}</span></span></div>
    <h1><small>{T("ननौरा, दरभंगा · 2000 से", "Nanaura, Darbhanga · since 2000")}</small><span class="ink">{T("मिथिला की मिठास", "The sweetness of Mithila")}</span></h1>
+   <div class="pure">
+    <div class="pure-top"><span class="pure-tick" aria-hidden="true">✓</span><b>{T("शुद्ध छेना की मिठाई", "Pure chhena sweets")}</b></div>
+    <p>{T("न मैदा, न सूजी — कुछ भी मिलाया नहीं। दुकान में अपने हाथ से बनती है।", "No maida, no suji — nothing mixed in. Made by hand in our shop.")}</p>
+    <p class="pure-q" lang="hi">“हर मिठाई में शुद्धता, स्वच्छता और शानदार स्वाद!” <span>— Irafn Alam, {T("Google रिव्यू", "Google review")}</span></p>
+   </div>
    <div class="hpair">
     {hero_card("balushahi", "⭐ हमारी ख़ास", "⭐ Our special", "ऊपर से नरम, अंदर से खस्ता", "Soft outside, crisp inside")}
-    {hero_card("rasgulla", "❤️ ग्राहकों की पसंद", "❤️ Most loved", "सिर्फ़ छेना + हाथ से पिसी इलायची", "Only chhena + hand-ground cardamom")}
+    {hero_card("rasgulla", "❤️ ग्राहकों की पसंद", "❤️ Most loved", "शुद्ध छेना + हाथ से पिसी इलायची", "Pure chhena + hand-ground cardamom")}
    </div>
    <p class="dline">🛵 {T('<span class="nw">6 km तक घर पर डिलीवरी</span> · <span class="nw">कम से कम ₹499, कोई चार्ज नहीं</span> · <span class="nw">"जल्दी" वाला ऑर्डर आम तौर पर 30–60 मिनट में</span>', '<span class="nw">Home delivery within 6 km</span> · <span class="nw">minimum ₹499, no charge</span> · <span class="nw">"ASAP" orders usually in 30–60 minutes</span>')}</p>
    <div class="row hcta">
@@ -408,8 +413,8 @@ def home():
    <article class="why" data-ids="i1,i2">
     <div class="pic">{pic("real-rasgulla-tray", "दुकान में ताज़े रसगुल्ले की ट्रे", "(min-width:900px) 240px, 40vw")}<span class="realtag">📸 {T("असली फोटो", "Real photo")}</span></div>
     <div class="txt">
-     <h3>{T("रसगुल्ला — सिर्फ़ छेना", "Rasgulla — only chhena")}<span class="off-badge">{T("आज खत्म", "Sold out today")}</span></h3>
-     <p>{T("हमारे रसगुल्ले में सिर्फ़ छेना है — न मैदा, न सूजी। बस हल्की इलायची, जो हम ख़ुद पीसकर डालते हैं।", "Our rasgulla is only chhena — no maida, no suji. Just a light touch of cardamom that we grind ourselves.")}</p>
+     <h3>{T("रसगुल्ला — शुद्ध छेना", "Rasgulla — pure chhena")}<span class="off-badge">{T("आज खत्म", "Sold out today")}</span></h3>
+     <p>{T("हमारे रसगुल्ले में सिर्फ़ शुद्ध छेना है — न मैदा, न सूजी, कुछ भी मिलाया नहीं। बस हल्की इलायची, जो हम ख़ुद पीसकर डालते हैं।", "Our rasgulla is pure chhena only — no maida, no suji, nothing mixed in. Just a light touch of cardamom that we grind ourselves.")}</p>
      <a class="more" href="{olink(item="rasgulla")}" data-order>{T("रसगुल्ला ऑर्डर करें", "Order rasgulla")}</a>
     </div>
    </article>
@@ -541,7 +546,7 @@ def home():
 {visit_section()}
 '''
     return page('/', 'MB Sweets, ननौरा दरभंगा — मिथिला की मिठास | Sweet Shop near Darbhanga Airport',
-                'माँ भगवती मिष्ठान भंडार (MB Sweets), ननौरा, दरभंगा — 2000 से। हाथ से बनी बालूशाही, रसगुल्ला, गुलाब जामुन, अंडा-रहित केक, दूध-दही। घर बैठे ऑनलाइन ऑर्डर, 6 km तक डिलीवरी।',
+                'माँ भगवती मिष्ठान भंडार (MB Sweets), ननौरा, दरभंगा — 2000 से। शुद्ध छेना की मिठाई, हाथ से बनी बालूशाही, रसगुल्ला, गुलाब जामुन, अंडा-रहित केक, दूध-दही। घर बैठे ऑनलाइन ऑर्डर, 6 km तक डिलीवरी।',
                 body, ld=[business_ld()])
 
 
@@ -601,7 +606,7 @@ def sweets_page():
   <div class="crumb"><a href="/">{T("होम", "Home")}</a> › {T("मिठाइयाँ", "Sweets")}</div>
   <div class="eyebrow">{T("दुकान में अपने हाथ से बनी", "Made by hand in our shop")}</div>
   <h1>{T("मिठाइयाँ और दाम", "Sweets & prices")}</h1>
-  <p class="lead">{T("दुकान में अपने हाथ से छेना और खोआ से बनी मिठाई — वही दाम जो दुकान में। किसी भी मिठाई पर “ऑर्डर करें” दबाइए, मेन्यू सीधे वहीं खुलेगा।", "Sweets made by hand in our shop from chhena and khoa — the same prices as in the shop. Tap “Order” on any sweet and the menu opens right there.")}</p>
+  <p class="lead">{T("शुद्ध छेना और खोआ से बनी मिठाई — वही दाम जो दुकान में। किसी भी मिठाई पर “ऑर्डर करें” दबाइए, मेन्यू सीधे वहीं खुलेगा।", "Sweets made from pure chhena and khoa — the same prices as in the shop. Tap “Order” on any sweet and the menu opens right there.")}</p>
   <div class="infochips"><span>⚖️ {T("कम से कम 250 ग्राम या पीस में", "Min. 250 g or by the piece")}</span><span>🚚 {T("6 km तक डिलीवरी — कम से कम ₹499, कोई चार्ज नहीं", "Delivery within 6 km — minimum ₹499, no charge")}</span><span>🏪 {T("दुकान से ले जाने पर कोई न्यूनतम नहीं", "No minimum for pickup")}</span></div>
   <div class="realstrip">
    <figure>{pic("real-trays", "दुकान की ट्रे में बालूशाही और चमचम", "(min-width:900px) 360px, 33vw", lazy=False)}</figure>
