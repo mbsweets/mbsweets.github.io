@@ -28,6 +28,7 @@ function applyLang(){
   });
   var b=$('#lang');if(b)b.textContent=lang==='en'?'हिंदी':'English';
   status();
+  applyPrices();applyNotice();
 }
 document.addEventListener('click',function(ev){
   if(ev.target.closest('#lang')){lang=lang==='en'?'hi':'en';try{localStorage.setItem(LS,lang);}catch(e){}applyLang();return;}
@@ -57,32 +58,41 @@ function status(){
 }
 
 /* ---------- live prices & stock from the shop's list ---------- */
-function applyCatalog(){
+function applyPrices(){
   var C=window.MB_CATALOG;if(!C||!C.items)return;
   var P={};C.items.forEach(function(r){P[r[0]]=r[4];});
   $all('[data-pid]').forEach(function(el){var v=P[el.getAttribute('data-pid')];if(v!=null)el.textContent='₹'+v;});
+}
+function applyNotice(){
+  var C=window.MB_CATALOG,n=$('#notice');if(!C||!n)return;
+  var msg='';
+  if(C.pause)msg=lang==='en'?'Online orders are closed today — you can still buy at the shop.':'आज ऑनलाइन ऑर्डर बंद है — दुकान पर आकर ले सकते हैं।';
+  else if(C.noticeHi)msg=lang==='en'&&C.noticeEn?C.noticeEn:C.noticeHi;
+  n.textContent=msg;n.classList.toggle('on',!!msg);
+}
+function applyCatalog(){
+  var C=window.MB_CATALOG;if(!C||!C.items)return;
+  applyPrices();
   var off={};(C.off||[]).forEach(function(id){off[id]=1;});
   $all('[data-ids]').forEach(function(el){
     var ids=el.getAttribute('data-ids').split(',');
     el.classList.toggle('is-off',ids.every(function(id){return off[id];}));
   });
-  var n=$('#notice');
-  if(n){
-    var msg='';
-    if(C.pause)msg=lang==='en'?'Online orders are closed today — you can still buy at the shop.':'आज ऑनलाइन ऑर्डर बंद है — दुकान पर आकर ले सकते हैं।';
-    else if(C.noticeHi)msg=lang==='en'&&C.noticeEn?C.noticeEn:C.noticeHi;
-    n.textContent=msg;n.classList.toggle('on',!!msg);
-  }
+  applyNotice();
 }
 
 /* ---------- bulk order form → WhatsApp ---------- */
 function pad(n){return n<10?'0'+n:''+n;}
 /* show a form error where the customer can see it (not hidden under the bottom bar) */
-function showErr(box,msg,field){
+function clearErr(box){
   var form=box.closest('form');
   $all('[aria-invalid]',form).forEach(function(x){x.removeAttribute('aria-invalid');});
   $all('.ferr',form).forEach(function(x){x.remove();});
-  box.textContent=msg;
+  box.textContent='';
+}
+function showErr(box,msg,field){
+  clearErr(box);
+  box.textContent=field?'':msg;
   if(field){
     field.setAttribute('aria-invalid','true');
     var host=field.closest('.qty')||field.closest('.f');
@@ -100,7 +110,7 @@ function setupForm(){
   var di=$('#b-date');di.min=dateKey(min);
   f.addEventListener('submit',function(ev){
     ev.preventDefault();
-    var err=$('#b-err');err.textContent='';
+    var err=$('#b-err');clearErr(err);
     var name=$('#b-name').value.trim(),phone=$('#b-phone').value.replace(/\D/g,'').slice(-10);
     var sw=$all('input[name=sw]:checked').map(function(x){return x.value;});
     var qty=$('#b-qty').value.trim();
@@ -140,7 +150,9 @@ function setupDairy(){
   document.addEventListener('click',function(ev){if(ev.target.closest('#lang')&&rule)setTimeout(function(){rule.textContent=ruleText();},0);});
   f.addEventListener('submit',function(ev){
     ev.preventDefault();
-    var err=$('#d-err');err.textContent='';
+    var err=$('#d-err');clearErr(err);
+    // the page may have been open since before 2 pm — work the earliest date out again
+    var n2=istNow();min=new Date(n2.getFullYear(),n2.getMonth(),n2.getDate()+(n2.getHours()<14?1:2));di.min=dateKey(min);
     var E=lang==='en';
     function q(id){var v=parseFloat(($(id).value||'').replace(',','.'));return isFinite(v)&&v>0?v:0;}
     var fc=q('#d-fc'),tm=q('#d-tm'),dahi=q('#d-dahi'),pn=q('#d-paneer');
