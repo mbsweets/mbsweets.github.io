@@ -20,6 +20,7 @@ IG = 'https://www.instagram.com/maabhagwatimisthanbhandar/'
 FB = 'https://www.facebook.com/share/1CdTxjHLrT/'
 MAP_EMBED = 'https://maps.google.com/maps?q=26.2379445,85.904298&z=16&output=embed'
 RATING = '5.0'   # Google रेटिंग बदले तो यहाँ बदलें
+REVIEW_COUNT = 15   # Google पर कुल रिव्यू — बढ़ें तो यहाँ बदलें
 TODAY = datetime.date.today().isoformat()
 PREVIEW = os.environ.get('PREVIEW') == '1'   # preview: hidden from Google until the owner approves
 
@@ -340,13 +341,13 @@ def reviews_section():
     return f'''<section id="reviews">
  <div class="wrap">
   <div class="rtop">
-   {shead("Google रिव्यू", "Google reviews", "ग्राहक क्या कहते हैं", "What our customers say", "Google पर ग्राहकों के अपने शब्द — बिना बदले।", "Our customers' own words on Google — unchanged.")}
-   <a class="rscore" href="{MAPS}" target="_blank" rel="noopener"><b>{RATING}</b><span class="stars" role="img" aria-label="5 में से 5 स्टार">★★★★★</span><small>{T("Google पर रेटिंग", "Rating on Google")}</small></a>
+   {shead("Google रिव्यू", "Google reviews", "ग्राहक क्या कहते हैं", "What our customers say", f"Google पर {REVIEW_COUNT} रिव्यू — यहाँ उनमें से कुछ, ग्राहकों के अपने शब्दों में, बिना बदले।", f"{REVIEW_COUNT} reviews on Google — here are a few, in our customers' own words, unchanged.")}
+   <a class="rscore" href="{MAPS}" target="_blank" rel="noopener"><b>{RATING}</b><span class="stars" role="img" aria-label="5 में से 5 स्टार">★★★★★</span><small>{T(f"Google पर {REVIEW_COUNT} रिव्यू", f"{REVIEW_COUNT} reviews on Google")}</small></a>
   </div>
   <div class="rlist">{cards}</div>
   <p class="rnote">{T("“…” = रिव्यू का बाकी हिस्सा छोड़ा गया है। पूरे रिव्यू Google पर पढ़ें।", "“…” = part of the review is left out. Read the full reviews on Google.")}</p>
   <div class="row">
-   <a class="btn btn-line btn-sm" href="{MAPS}" target="_blank" rel="noopener">{T("सारे रिव्यू पढ़ें", "Read all reviews")}</a>
+   <a class="btn btn-line btn-sm" href="{MAPS}" target="_blank" rel="noopener">{T(f"सारे {REVIEW_COUNT} रिव्यू पढ़ें", f"Read all {REVIEW_COUNT} reviews")}</a>
    <a class="btn btn-main btn-sm" href="{REVIEW}" target="_blank" rel="noopener">{icon("star")}{T("रिव्यू लिखें", "Write a review")}</a>
   </div>
  </div>
@@ -374,7 +375,7 @@ def home():
     <a class="btn btn-wa" href="{wa(WA_HELLO)}" target="_blank" rel="noopener">{icon("wa")}WhatsApp</a>
    </div>
    <div class="trust">
-    <a href="#reviews"><span class="star">★★★★★</span> {RATING} Google</a>
+    <a href="#reviews"><span class="star">★★★★★</span> {RATING} · {T(f"Google पर {REVIEW_COUNT} रिव्यू", f"{REVIEW_COUNT} Google reviews")}</a>
     <span>🟢 {T("100% अंडा-रहित केक", "100% eggless cakes")}</span>
    </div>
   </div>
