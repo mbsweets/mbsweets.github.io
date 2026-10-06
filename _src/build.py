@@ -229,11 +229,12 @@ def shead(eyebrow_hi, eyebrow_en, h_hi, h_en, p_hi=None, p_en=None, center=False
 
 # ---------- sweets data ----------
 SWEETS = [
-    dict(key='balushahi', hi='बालूशाही', en='Balushahi', img='balushahi', ids=['i3', 'i4'],
-         d_hi='इलाके की सबसे पसंदीदा — बाहर से कुरकुरी परतें, अंदर से नरम और रसीली।',
-         d_en='The local favourite — flaky and crisp outside, soft and syrupy inside.', badge=('सबसे ज़्यादा बिकने वाली', 'Our best seller')),
-    dict(key='rasgulla', hi='रसगुल्ला', en='Rasgulla', img='rasgulla', ids=['i1', 'i2'],
-         d_hi='अपने हाथ से बने शुद्ध छेना का — नरम, स्पंजी, चाशनी में डूबा।', d_en='Made from our own fresh chhena — soft, spongy, soaked in syrup.'),
+    dict(key='balushahi', hi='बालूशाही', en='Balushahi', img='real-balushahi', real=True, ids=['i3', 'i4'],
+         d_hi='हमारी ख़ास — ऊपर से नरम, अंदर से खस्ता। दुकान में अपने हाथ से बनती है।',
+         d_en='Our special — soft outside, crisp inside. Made by hand in our shop.', badge=('⭐ हमारी ख़ास', '⭐ Our special')),
+    dict(key='rasgulla', hi='रसगुल्ला', en='Rasgulla', img='real-rasgulla-bowl', real=True, ids=['i1', 'i2'],
+         d_hi='सिर्फ़ छेना — न मैदा, न सूजी। हल्की इलायची, जो हम ख़ुद पीसकर डालते हैं।',
+         d_en='Only chhena — no maida, no suji. A light touch of cardamom we grind ourselves.', badge=('❤️ ग्राहकों की पसंद', '❤️ Customer favourite')),
     dict(key='gulabjamun', hi='गुलाब जामुन', en='Gulab Jamun', img='gulabjamun', ids=['i5', 'i6'],
          d_hi='खोआ से बना, नरम और रसीला — हर मौके की शान।', d_en='Made with khoa — soft, juicy and perfect for every occasion.'),
     dict(key='chamcham', hi='चमचम', en='Cham Cham', img='chamcham', ids=['i7', 'i8'],
@@ -244,11 +245,11 @@ SWEETS = [
          d_hi='खोआ का पारंपरिक पेड़ा — पूजा और खुशी के मौकों के लिए।', d_en='Traditional khoa peda — for pujas and happy occasions.'),
     dict(key='laddoo', hi='लड्डू', en='Laddoo', img='laddoo', ids=['i11'],
          d_hi='पूजा, प्रसाद और हर शुभ काम के लिए।', d_en='For pujas, prasad and every auspicious start.'),
-    dict(key='milkcake', hi='मिल्क केक', en='Milk Cake', img=None, ids=['i10'],
+    dict(key='milkcake', hi='मिल्क केक', en='Milk Cake', img='real-milkcake', real=True, ids=['i10'],
          d_hi='दूध से बनी दानेदार, हल्की मीठी मिठाई।', d_en='Grainy, mildly sweet milk fudge.'),
     dict(key='jalebi', hi='जलेबी', en='Jalebi', img=None, ids=['i12'],
          d_hi='कुरकुरी और रसीली जलेबी।', d_en='Crisp, syrupy jalebi.'),
-    dict(key='boondi', hi='बूंदी', en='Boondi', img=None, ids=['i13'],
+    dict(key='boondi', hi='बूंदी', en='Boondi', img='real-boondi', real=True, ids=['i13'],
          d_hi='मीठी बूंदी — प्रसाद और भोज के लिए।', d_en='Sweet boondi — for prasad and feasts.'),
 ]
 SW = {s['key']: s for s in SWEETS}
@@ -258,12 +259,14 @@ def sweet_card(s, sizes='(min-width:900px) 340px, 50vw'):
     ids = ','.join(s['ids'])
     first = ITEMS[s['ids'][0]]
     ptag = f'<span class="ptag"><b data-pid="{first["id"]}">₹{first["price"]}</b>/{T(first["unit"], UNIT_EN.get(first["unit"], first["unit"]))}</span>'
-    if s['img']:
+    if s['img'] and s.get('real'):
+        top = f'<div class="pic">{pic(s["img"], s["hi"] + " — हमारी दुकान की असली फोटो", sizes)}<span class="realtag">📸 {T("असली फोटो", "Real photo")}</span>{ptag}</div>'
+    elif s['img']:
         top = f'<div class="pic">{pic(s["img"], s["hi"] + " (नमूना फोटो)", sizes)}<span class="note-sample">{T("नमूना फोटो", "Sample photo")}</span>{ptag}</div>'
     else:
         top = f'<div class="pic"><div class="art-tile"><span>{T(s["hi"], s["en"])}</span></div>{ptag}</div>'
     tags = ''.join(tag(i) for i in s['ids'])
-    badge = f'<div class="bestline">⭐ {T(*s["badge"])}</div>' if s.get('badge') else ''
+    badge = f'<div class="bestline">{T(*s["badge"])}</div>' if s.get('badge') else ''
     return f'''<article class="pcard" id="{s["key"]}" data-ids="{ids}">
  {top}
  <div class="body">
@@ -306,59 +309,113 @@ def add_wa_english(h):
     return re.sub(r'href="(https://api\.whatsapp\.com/send\?[^"]+)"', fix, h)
 
 
+# ---------- home: hero cards and Google reviews ----------
+def hero_card(key, label_hi, label_en, line_hi, line_en):
+    s = SW[key]
+    a, b = s['ids']
+    ia, ib = ITEMS[a], ITEMS[b]
+    unit = lambda it: T(it['unit'], UNIT_EN.get(it['unit'], it['unit']))
+    return f'''<article class="hcard" data-ids="{a},{b}">
+     <a class="hpic" href="{olink(item=key)}" data-order tabindex="-1" aria-hidden="true">{pic(s["img"], s["hi"] + " — हमारी दुकान की असली फोटो", "(min-width:900px) 270px, 46vw", eager=True)}<span class="hlabel">{T(label_hi, label_en)}</span><span class="realtag">📸 {T("असली फोटो", "Real photo")}</span></a>
+     <div class="hbody">
+      <h2>{T(s["hi"], s["en"])}<span class="off-badge">{T("आज खत्म", "Sold out today")}</span></h2>
+      <p class="hline">{T(line_hi, line_en)}</p>
+      <p class="hprice"><span class="nw"><b data-pid="{a}">₹{ia["price"]}</b>/{unit(ia)} ·</span> <span class="nw"><b data-pid="{b}">₹{ib["price"]}</b>/{unit(ib)}</span></p>
+      <a class="btn btn-main" href="{olink(item=key)}" data-order>{icon("bag")}{T("ऑर्डर करें", "Order")}</a>
+     </div>
+    </article>'''
+
+
+# Customers' own words from Google, copied exactly ("…" = part left out). Never edit the words.
+REVIEWS = [
+    ('Abhishek Kumar', 'en', 'Their Balushahi is incredibly delicious and definitely a crowd-pleaser! … The shop is also highly hygienic and well-maintained.'),
+    ('Mohammad Adnan', 'en', 'Mere hisaab se poore Darbhanga District mein itna soft, fresh aur delicious Rasgulla … kahin aur nahi mili, Yahan ka taste waqai lajawab hai aur quality hamesha consistent rehti hai'),
+    ('Kuldeep Mahto', 'hi', 'बेहतरीन क्वालिटी और स्वाद ! यहा की मिठाइया बेहद स्वादिष्ट और हमेशा फ्रेश मिलती हैं।'),
+    ('Irafn Alam', 'hi', 'हर मिठाई में शुद्धता, स्वच्छता और शानदार स्वाद!😋😋'),
+]
+
+
+def reviews_section():
+    cards = ''.join(f'''<figure class="rv"><div class="st" role="img" aria-label="5 में से 5 स्टार">★★★★★</div><blockquote lang="{lang}">“{e(text)}”</blockquote><figcaption><b>{e(name)}</b><span>{T("Google रिव्यू", "Google review")}</span></figcaption></figure>''' for name, lang, text in REVIEWS)
+    return f'''<section id="reviews">
+ <div class="wrap">
+  <div class="rtop">
+   {shead("Google रिव्यू", "Google reviews", "ग्राहक क्या कहते हैं", "What our customers say", "Google पर ग्राहकों के अपने शब्द — बिना बदले।", "Our customers' own words on Google — unchanged.")}
+   <a class="rscore" href="{MAPS}" target="_blank" rel="noopener"><b>{RATING}</b><span class="stars" role="img" aria-label="5 में से 5 स्टार">★★★★★</span><small>{T("Google पर रेटिंग", "Rating on Google")}</small></a>
+  </div>
+  <div class="rlist">{cards}</div>
+  <p class="rnote">{T("“…” = रिव्यू का बाकी हिस्सा छोड़ा गया है। पूरे रिव्यू Google पर पढ़ें।", "“…” = part of the review is left out. Read the full reviews on Google.")}</p>
+  <div class="row">
+   <a class="btn btn-line btn-sm" href="{MAPS}" target="_blank" rel="noopener">{T("सारे रिव्यू पढ़ें", "Read all reviews")}</a>
+   <a class="btn btn-main btn-sm" href="{REVIEW}" target="_blank" rel="noopener">{icon("star")}{T("रिव्यू लिखें", "Write a review")}</a>
+  </div>
+ </div>
+</section>'''
+
+
 # ================= HOME =================
 def home():
-    fav = ''.join(sweet_card(SW[k], '(min-width:900px) 340px, 72vw') for k in ['rasgulla', 'gulabjamun', 'chamcham', 'rasmalai', 'peda', 'laddoo'])
-    b = SW['balushahi']
+    fav = ''.join(sweet_card(SW[k], '(min-width:900px) 220px, 72vw') for k in ['gulabjamun', 'chamcham', 'rasmalai', 'peda', 'laddoo'])
     airport_msg = 'नमस्ते MB Sweets 🙏 मैं दरभंगा एयरपोर्ट जा रहा/रही हूँ। मुझे मिठाई पैक करवानी है:\n• \nमैं लगभग ___ बजे दुकान पर पहुँचूँगा/पहुँचूँगी।'
     body = f'''
 <section class="hero" style="--lotus:url('/assets/img/lotus.svg')">
  <div class="wrap grid">
   <div>
-   <div class="welcome">🙏 {T("अहाँक स्वागत अछि", "Welcome — अहाँक स्वागत अछि")}</div><br>
-   <span class="status" id="status"><i></i><span>{T("रोज़ सुबह 7 से रात 9 बजे तक", "Open daily 7 am – 9 pm")}</span></span>
-   <h1><small>{T("ननौरा, दरभंगा से", "From Nanaura, Darbhanga")}</small><span class="ink">{T("मिथिला की मिठास", "The sweetness of Mithila")}</span></h1>
-   <p class="lead">{T("<b>2000 से</b> — अपने हाथ से बना शुद्ध छेना और खोआ। बालूशाही, रसगुल्ला, गुलाब जामुन, केक और दूध-दही — अब घर बैठे ऑर्डर करें।", "<b>Since 2000</b> — sweets made by hand from our own pure chhena and khoa. Balushahi, rasgulla, gulab jamun, cakes and dairy — now order from home.")}</p>
-   <div class="row">
-    <a class="btn btn-main" href="{ORDER}" data-order>{icon("bag")}{T("घर बैठे ऑर्डर करें", "Order from home")}</a>
+   <div class="hwel"><div class="welcome">🙏 {T("अहाँक स्वागत अछि", "Welcome — अहाँक स्वागत अछि")}</div>
+   <span class="status" id="status"><i></i><span>{T("रोज़ सुबह 7 से रात 9 बजे तक", "Open daily 7 am – 9 pm")}</span></span></div>
+   <h1><small>{T("ननौरा, दरभंगा · 2000 से", "Nanaura, Darbhanga · since 2000")}</small><span class="ink">{T("मिथिला की मिठास", "The sweetness of Mithila")}</span></h1>
+   <div class="hpair">
+    {hero_card("balushahi", "⭐ हमारी ख़ास", "⭐ Our special", "ऊपर से नरम, अंदर से खस्ता", "Soft outside, crisp inside")}
+    {hero_card("rasgulla", "❤️ ग्राहकों की पसंद", "❤️ Most loved", "सिर्फ़ छेना + हाथ से पिसी इलायची", "Only chhena + hand-ground cardamom")}
+   </div>
+   <p class="dline">🛵 {T('<span class="nw">6 km तक फ्री डिलीवरी</span> <span class="nw">(₹499+ ऑर्डर)</span> · <span class="nw">लगभग 30–60 मिनट में</span>', '<span class="nw">Free delivery within 6 km</span> <span class="nw">(orders ₹499+)</span> · <span class="nw">in about 30–60 minutes</span>')}</p>
+   <div class="row hcta">
+    <a class="btn btn-main btn-big" href="{ORDER}" data-order>{icon("bag")}{T("अभी ऑर्डर करें", "Order now")}</a>
     <a class="btn btn-wa" href="{wa(WA_HELLO)}" target="_blank" rel="noopener">{icon("wa")}WhatsApp</a>
    </div>
    <div class="trust">
-    <span><span class="star">★★★★★</span> {RATING} Google</span>
-    <span>🚚 {T("6 km तक फ्री डिलीवरी (₹499+ ऑर्डर)", "Free delivery within 6 km (orders ₹499+)")}</span>
+    <a href="#reviews"><span class="star">★★★★★</span> {RATING} Google</a>
     <span>🟢 {T("100% अंडा-रहित केक", "100% eggless cakes")}</span>
    </div>
   </div>
   <figure class="frame">
    {art.fish_pair(300, "fish")}
-   {pic("shop-front-43", "माँ भगवती मिष्ठान भंडार — ननौरा में हमारी दुकान", "(min-width:900px) 520px, 92vw", eager=True)}
+   {pic("shop-front-43", "माँ भगवती मिष्ठान भंडार — ननौरा में हमारी दुकान", "(min-width:900px) 520px, 92vw")}
    <figcaption>{T("📍 हमारी असली दुकान · NH किनारे", "📍 Our real shop · on the NH")}</figcaption>
   </figure>
  </div>
 </section>
 
-<section class="soft" id="balushahi">
+<section class="soft" id="khas">
  <div class="wrap">
-  <div class="spot" data-ids="i3,i4">
-   <div class="pic">{pic("balushahi", "बालूशाही (नमूना फोटो)", "(min-width:820px) 520px, 92vw")}<span class="note-sample">{T("नमूना फोटो", "Sample photo")}</span><span class="ribbon">{T("इलाके की पहचान", "Famous in the area")}</span></div>
-   <div class="txt">
-    <div class="eyebrow">{T("सबसे ज़्यादा बिकने वाली", "Our best seller")}</div>
-    <h2>{T("ननौरा की बालूशाही", "Nanaura's Balushahi")}<span class="off-badge">{T("आज खत्म", "Sold out today")}</span></h2>
-    <p class="mt">{T("दूर-दूर से लोग हमारी बालूशाही लेने आते हैं। बाहर से कुरकुरी परतें, अंदर से नरम और रसीली — दुकान में अपने हाथ से बनती है।", "People come from far to buy our balushahi — flaky and crisp outside, soft and syrupy inside, made by hand in our shop.")}</p>
-    <div class="prices">{tag("i3")}{tag("i4")}</div>
-    <div class="row">
-     <a class="btn btn-main" href="{olink(item="balushahi")}" data-order>{icon("bag")}{T("बालूशाही ऑर्डर करें", "Order balushahi")}</a>
-     <a class="btn btn-line" href="/wedding/">{T("शादी के लिए थोक", "Bulk for weddings")}</a>
+  {shead("हमारी पहचान", "What we are known for", "क्या ख़ास है?", "What makes them special?")}
+  <div class="why2">
+   <article class="why" data-ids="i3,i4">
+    <div class="pic">{pic("real-balushahi-cut", "बीच से तोड़ी हुई बालूशाही — अंदर से खस्ता", "(min-width:900px) 240px, 40vw")}<span class="realtag">📸 {T("असली फोटो", "Real photo")}</span></div>
+    <div class="txt">
+     <h3>{T("बालूशाही — तोड़कर देखिए", "Balushahi — break one open")}<span class="off-badge">{T("आज खत्म", "Sold out today")}</span></h3>
+     <p>{T("ऊपर से नरम, अंदर से खस्ता — फोटो में देखिए। दुकान में अपने हाथ से बनती है।", "Soft outside, crisp inside — see for yourself. Made by hand in our shop.")}</p>
+     <a class="more" href="{olink(item="balushahi")}" data-order>{T("बालूशाही ऑर्डर करें", "Order balushahi")}</a>
     </div>
-   </div>
+   </article>
+   <article class="why" data-ids="i1,i2">
+    <div class="pic">{pic("real-rasgulla-tray", "दुकान में ताज़े रसगुल्ले की ट्रे", "(min-width:900px) 240px, 40vw")}<span class="realtag">📸 {T("असली फोटो", "Real photo")}</span></div>
+    <div class="txt">
+     <h3>{T("रसगुल्ला — सिर्फ़ छेना", "Rasgulla — only chhena")}<span class="off-badge">{T("आज खत्म", "Sold out today")}</span></h3>
+     <p>{T("हमारे रसगुल्ले में सिर्फ़ छेना है — न मैदा, न सूजी। बस हल्की इलायची, जो हम ख़ुद पीसकर डालते हैं।", "Our rasgulla is only chhena — no maida, no suji. Just a light touch of cardamom that we grind ourselves.")}</p>
+     <a class="more" href="{olink(item="rasgulla")}" data-order>{T("रसगुल्ला ऑर्डर करें", "Order rasgulla")}</a>
+    </div>
+   </article>
   </div>
  </div>
 </section>
 
+{reviews_section()}
+
 <section>
  <div class="wrap">
-  {shead("हाथ की बनी मिठाई", "Handmade sweets", "सबसे पसंदीदा मिठाइयाँ", "Most loved sweets", "दाम वही जो दुकान में। कम से कम 250 ग्राम, या पीस में।", "Same prices as the shop. Minimum 250 g, or by the piece.")}
-  <div class="scroller">{fav}</div>
+  {shead("हाथ की बनी मिठाई", "Handmade sweets", "और भी मिठाइयाँ", "More sweets", "दाम वही जो दुकान में। कम से कम 250 ग्राम, या पीस में।", "Same prices as the shop. Minimum 250 g, or by the piece.")}
+  <div class="scroller s5">{fav}</div>
   <a class="more" href="/sweets/">{T("सारी मिठाइयाँ और दाम देखें", "See all sweets & prices")}</a>
  </div>
 </section>
@@ -471,19 +528,6 @@ def home():
    <li><span class="yr">2017</span><h3>{T("फिर से शुरुआत", "A new start")}</h3><p>{T("हिम्मत नहीं हारी — दुकान फिर से खुली। वही हाथ का बना स्वाद, वही भरोसा।", "We didn't give up — the shop reopened. The same handmade taste, the same trust.")}</p></li>
    <li class="now"><span class="yr">{T("आज", "Now")}</span><h3>{T("आपके घर तक", "To your door")}</h3><p>{T("मिठाई, केक, दूध-दही — और अब ऑनलाइन ऑर्डर व घर तक डिलीवरी।", "Sweets, cakes, milk and curd — now with online orders and home delivery.")}</p></li>
   </ol>
- </div>
-</section>
-
-<section>
- <div class="wrap">
-  <div class="rate">
-   <div><div class="big">{RATING}</div><div class="stars" aria-label="5 में से 5 स्टार">★★★★★</div></div>
-   <div><h2 style="font-size:clamp(24px,5vw,32px)">{T("ग्राहकों का भरोसा", "Loved by our customers")}</h2><p class="g">{T("Google पर हमारी रेटिंग", "Our rating on Google")}</p></div>
-   <div class="row" style="justify-content:center">
-    <a class="btn btn-line btn-sm" href="{MAPS}" target="_blank" rel="noopener">{T("रिव्यू पढ़ें", "Read reviews")}</a>
-    <a class="btn btn-main btn-sm" href="{REVIEW}" target="_blank" rel="noopener">{icon("star")}{T("रिव्यू लिखें", "Write a review")}</a>
-   </div>
-  </div>
  </div>
 </section>
 
@@ -714,7 +758,7 @@ def products_page():
 </section>
 <section style="padding-top:22px">
  <div class="wrap">
-  <article class="cat"><div class="pics">{simg("menu-milk.webp", "सुधा दूध")}{simg("menu-paneer.webp", "पनीर")}</div><div>
+  <article class="cat"><div class="pics four">{simg("menu-milk.webp", "सुधा दूध")}{simg("menu-dahi-amul.webp", "अमूल दही — दुकान की असली फोटो")}{simg("menu-dahi-amrit.webp", "अमृत दही — दुकान की असली फोटो")}{simg("menu-paneer.webp", "पनीर")}</div><div>
    <div class="eyebrow">{T("रोज़ ताज़ा", "Fresh every day")}</div><h2>{T("दूध, दही और पनीर", "Milk, curd & paneer")}</h2>
    <ul class="plist">{dairy}</ul>
    <div class="row"><a class="btn btn-main" href="{olink(tab="dairy")}" data-order>{icon("bag")}{T("दूध-दही ऑर्डर करें", "Order dairy")}</a><a class="btn btn-line" href="/bulk-dairy/">{T("थोक में चाहिए?", "Need it in bulk?")}</a></div>

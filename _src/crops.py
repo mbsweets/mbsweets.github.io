@@ -52,4 +52,10 @@ CROPS = {
  'addon-balloons': ('banners/balloons.png', (0.0,0.25,0.72,0.86)),
  'banner-sweets-wide': ('banners/sweets-hero-wide.png', (0.0,0.0,1.0,1.0)),
  'banner-celebration': ('banners/cakes-celebration.png', (0.0,0.0,1.0,1.0)),
+ # owner's own photos (6 Oct 2026) — home page hero cards, square
+ 'real-balushahi':     ('menu-photos/menu-balushahi.jpg', (0.0,0.0,1.0,1.0)),
+ 'real-rasgulla-bowl': ('menu-photos/menu-rasgulla.jpg', (0.0,0.0,1.0,1.0)),
+ 'real-balushahi-cut': ('real/balushahi-cut.jpg', (0.0,0.165,0.80,0.707)),   # cut open; camera name bar removed
+ 'real-boondi':        ('real/boondi.jpg', (0.085,0.009,0.815,0.860)),     # 2576x2209, camera bar removed
+ 'real-milkcake':      ('real/milkcake.jpg', (0.131,0.009,0.869,0.869)),
 }

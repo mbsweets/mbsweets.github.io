@@ -3,7 +3,7 @@ from crops import CROPS
 from PIL import Image, ImageOps
 OUT='/home/claude/mbsweets.github.io/assets/img/'
 os.makedirs(OUT,exist_ok=True)
-SQUARE=lambda n: n in('balushahi','rasgulla','gulabjamun','chamcham','rasmalai','peda','laddoo') or n.startswith('cake-')
+SQUARE=lambda n: n in('balushahi','rasgulla','gulabjamun','chamcham','rasmalai','peda','laddoo','real-balushahi','real-rasgulla-bowl','real-balushahi-cut','real-boondi','real-milkcake') or n.startswith('cake-')
 def widths(n,w,h):
     if n=='shop-front-wide': return [960,1600]
     if n=='shop-front-43': return [640,1000]
