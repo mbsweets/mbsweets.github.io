@@ -390,6 +390,14 @@ section{padding:44px 0}
 .realstrip img{width:100%;aspect-ratio:3/4;object-fit:cover}
 .realstrip figcaption{grid-column:1/-1;font-size:14.5px;font-weight:600;color:#1F5C35}
 .howto{padding-top:10px}
+.lpsec{padding-top:0}
+.lpcard{display:grid;grid-template-columns:1fr;gap:10px 14px;align-items:center;background:linear-gradient(135deg,#FFF6E0,#FFFCF6);border:1.5px dashed var(--gold);border-radius:var(--r);padding:14px 16px;box-shadow:var(--shadow)}
+.lpstar{display:none;font-size:40px;line-height:1}
+.lptxt h2{margin:0;font:800 clamp(20px,5vw,24px)/1.2 var(--hd);color:var(--wine)}
+.lptxt p{margin:4px 0 0;font-size:15.5px;line-height:1.45;color:#4B2A20}
+.lptxt .lpsm{font-size:14px;color:var(--muted)}
+.lpcard .btn{grid-column:1/-1;justify-self:start}
+@media(min-width:820px){.lpcard{grid-template-columns:auto 1fr auto;padding:16px 22px}.lpcard .btn{grid-column:auto}.lpstar{display:block}.lpst{display:none}}
 .steps3{list-style:none;margin:0 0 20px;padding:0;display:grid;gap:12px}
 @media(min-width:820px){.steps3{grid-template-columns:repeat(3,1fr);gap:18px}}
 .steps3 li{position:relative;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 16px 14px 70px;box-shadow:var(--shadow);min-height:96px}

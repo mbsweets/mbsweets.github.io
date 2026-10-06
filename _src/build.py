@@ -444,6 +444,20 @@ def home():
  </div>
 </section>
 
+<section class="lpsec" id="points">
+ <div class="wrap">
+  <div class="lpcard">
+   <div class="lpstar" aria-hidden="true">⭐</div>
+   <div class="lptxt">
+    <h2><span class="lpst" aria-hidden="true">⭐ </span>{T("माँ भगवती मिठास पॉइंट्स", "Maa Bhagwati Mithas Points")}</h2>
+    <p>{T("हर ₹50 की मिठाई या केक पर 1 पॉइंट।", "1 point on every ₹50 of sweets or cake.")}<br>{T('<span class="nw">10 पॉइंट = ₹15</span> · <span class="nw">25 = ₹40</span> · <span class="nw">50 = ₹100 की छूट</span>', '<span class="nw">10 points = ₹15</span> · <span class="nw">25 = ₹40</span> · <span class="nw">50 = ₹100 off</span>')}</p>
+    <p class="lpsm">{T("जुड़ने के लिए दुकान पर अपना मोबाइल नंबर बताएँ — पहली ₹100+ की ख़रीद पर 5 बोनस पॉइंट।", "To join, share your mobile number at the shop — 5 bonus points on your first purchase of ₹100+.")}</p>
+   </div>
+   <a class="btn btn-main btn-sm" href="{ORDER}#points" data-order>{T("अपने पॉइंट देखें", "Check your points")}</a>
+  </div>
+ </div>
+</section>
+
 <section class="soft">
  <div class="wrap">
   {shead("असली दुकान, असली मिठाई", "Real shop, real sweets", "दुकान के शोकेस से", "Straight from our showcase", "ये फोटो हमारी दुकान की हैं — जैसी मिठाई दिखती है, वैसी ही मिलती है।", "These photos are from our shop — what you see is what you get.")}
