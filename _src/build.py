@@ -495,7 +495,7 @@ def home():
 
 <section>
  <div class="wrap">
-  {shead("केक", "Cakes", "हर जश्न के लिए केक", "Cakes for every celebration", "वनीला ½ किलो " + pid_b("i26") + " से। रेड वेलवेट, बटरस्कॉच, पाइनएप्पल, रसमलाई, फोटो और थीम केक भी।", "Vanilla from " + pid_b("i26") + " for ½ kg. Red velvet, butterscotch, pineapple, rasmalai, photo and theme cakes too.")}
+  {shead("केक", "Cakes", "हर जश्न के लिए केक", "Cakes for every celebration", "वनीला ½ किलो " + pid_b("i26") + " से। रेड वेलवेट, ब्लैक फॉरेस्ट, बटरस्कॉच, फोटो और थीम केक भी।", "Vanilla from " + pid_b("i26") + " for ½ kg. Red velvet, black forest, butterscotch, photo and theme cakes too.")}
   <span class="egg">{T("100% अंडा-रहित (Eggless)", "100% eggless")}</span>
   <div class="cakerow mt">
    <figure><span class="note-sample">{T("नमूना फोटो", "Sample photo")}</span>{pic("cake-chocolate", "चॉकलेट केक (नमूना फोटो)", "(min-width:900px) 270px, 50vw")}<figcaption>{T("चॉकलेट", "Chocolate")}</figcaption></figure>
@@ -642,9 +642,13 @@ def sweets_page():
 
 # ================= CAKES =================
 FLAVORS = [
-    # only the flavours the shop has confirmed (same as the order menu); others are asked on WhatsApp
-    ('redvelvet', 'रेड वेलवेट', 'Red Velvet', 'redvelvet'), ('butterscotch', 'बटरस्कॉच', 'Butterscotch', 'butterscotch'),
-    ('pineapple', 'पाइनएप्पल', 'Pineapple', 'pineapple'), ('rasmalai', 'रसमलाई केक', 'Rasmalai Cake', 'rasmalai'),
+    # मालिक (6 अक्टूबर): सभी तरह के केक मिलते हैं — जो फ्लेवर ग्राहक को चाहिए
+    ('blackforest', 'ब्लैक फॉरेस्ट', 'Black Forest', None), ('redvelvet', 'रेड वेलवेट', 'Red Velvet', 'redvelvet'),
+    ('butterscotch', 'बटरस्कॉच', 'Butterscotch', 'butterscotch'), ('pineapple', 'पाइनएप्पल', 'Pineapple', 'pineapple'),
+    ('fruit', 'फ्रेश फ्रूट', 'Fresh Fruit', None), ('strawberry', 'स्ट्रॉबेरी', 'Strawberry', None),
+    ('mango', 'मैंगो', 'Mango', None), ('blueberry', 'ब्लूबेरी', 'Blueberry', None),
+    ('coffee', 'कॉफ़ी', 'Coffee', None), ('truffle', 'चॉकलेट ट्रफल', 'Chocolate Truffle', None),
+    ('dryfruit', 'ड्राई फ्रूट', 'Dry Fruit', None), ('rasmalai', 'रसमलाई केक', 'Rasmalai Cake', 'rasmalai'),
 ]
 OCCASIONS = [
     ('birthday', 'जन्मदिन केक', 'Birthday cake', 'नाम और उम्र के साथ', 'With name and age', None),
@@ -706,7 +710,7 @@ def cakes_page():
 </section>
 <section class="soft">
  <div class="wrap">
-  {shead("और भी फ्लेवर", "More flavours", "आपका पसंदीदा फ्लेवर", "Pick your flavour", "ये फ्लेवर मिलते हैं — कोई और फ्लेवर चाहिए तो WhatsApp पर पूछ लीजिए। दाम साइज़ और डिज़ाइन देखकर।", "These flavours are available — for any other flavour, just ask on WhatsApp. Price by size and design.")}
+  {shead("और भी फ्लेवर", "More flavours", "आपका पसंदीदा फ्लेवर", "Pick your flavour", "सारे फ्लेवर मिलते हैं — दाम साइज़ और डिज़ाइन देखकर WhatsApp पर।", "All flavours available — price on WhatsApp by size and design.")}
   <div class="grid-cards g4">{flav}</div>
  </div>
 </section>
@@ -724,7 +728,7 @@ def cakes_page():
  </div>
 </section>'''
     return page('/cakes/', 'अंडा-रहित केक — जन्मदिन, सालगिरह, फोटो केक | MB Sweets ननौरा, दरभंगा',
-                f'100% अंडा-रहित केक ननौरा, दरभंगा में: वनीला ½ किलो ₹{price("i26")}, चॉकलेट ½ किलो ₹{price("i29")}। रेड वेलवेट, बटरस्कॉच, पाइनएप्पल, रसमलाई, फोटो केक, थीम केक। कैंडल, टॉपर, गुब्बारे भी।',
+                f'100% अंडा-रहित केक ननौरा, दरभंगा में: वनीला ½ किलो ₹{price("i26")}, चॉकलेट ½ किलो ₹{price("i29")}। रेड वेलवेट, ब्लैक फॉरेस्ट, बटरस्कॉच, फोटो केक, थीम केक। कैंडल, टॉपर, गुब्बारे भी।',
                 body, ld=[crumbs_ld('Cakes', '/cakes/')])
 
 
