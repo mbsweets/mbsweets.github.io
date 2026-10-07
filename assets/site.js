@@ -62,6 +62,9 @@ function applyPrices(){
   var C=window.MB_CATALOG;if(!C||!C.items)return;
   var P={};C.items.forEach(function(r){P[r[0]]=r[4];});
   $all('[data-pid]').forEach(function(el){var v=P[el.getAttribute('data-pid')];if(v!=null)el.textContent='₹'+v;});
+  /* online price (milk & curd) — the order menu's price; the counter keeps the items price */
+  var O=C.online||{};
+  $all('[data-opid]').forEach(function(el){var o=O[el.getAttribute('data-opid')];if(Array.isArray(o)&&o[0]>0)el.textContent='₹'+o[0];});
 }
 function applyNotice(){
   var C=window.MB_CATALOG,n=$('#notice');if(!C||!n)return;

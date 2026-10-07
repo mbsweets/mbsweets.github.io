@@ -7,6 +7,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = '/home/claude/mbsweets.github.io'
 CAT = json.loads(subprocess.check_output(['node', '-e', "global.window={};require('/home/claude/mb-sweets/catalog.js');process.stdout.write(JSON.stringify(window.MB_CATALOG))"]))
 ITEMS = {r[0]: {'id': r[0], 'name': r[1], 'cat': r[2], 'unit': r[3], 'price': r[4]} for r in CAT['items']}
+# online price + home-delivery charge (milk & curd) — the shop counter keeps the items price
+ONLINE = {k: v for k, v in (CAT.get('online') or {}).items() if isinstance(v, list) and v and v[0] > 0}
 IMG = json.load(open(os.path.join(HERE, 'img-meta.json')))
 SHOP = CAT['shop']
 
@@ -52,6 +54,10 @@ def olink(item=None, tab=None, cake=None):
 
 def price(iid):
     return ITEMS[iid]['price']
+
+
+def oprice(iid):
+    return ONLINE[iid][0] if iid in ONLINE else ITEMS[iid]['price']
 
 
 def pid_b(iid):
@@ -149,7 +155,7 @@ def footer():
    <li><a href="{MAPS}" target="_blank" rel="noopener">{T("📍 Google Maps पर रास्ता", "📍 Directions on Google Maps")}</a></li>
   </ul></div>
  </div>
- <div class="wrap fine">{T("हम 6 km तक घर पर डिलीवरी करते हैं — ऑर्डर कम से कम ₹499 का, डिलीवरी का कोई चार्ज नहीं। डिलीवरी की उपलब्धता देखकर ही हम आपकी डिलीवरी कन्फर्म करेंगे। पेमेंट: ऑर्डर कन्फर्म होने के बाद, कृपया डिलीवरी से पहले पूरा पेमेंट UPI से कर दीजिए — कैश ऑन डिलीवरी की सुविधा नहीं है। दाम वही जो दुकान में।", "We deliver to your home within 6 km — minimum order ₹499, no delivery charge. We confirm delivery only after checking availability. Payment: once your order is confirmed, please pay in full by UPI before delivery — sorry, no cash on delivery. Same prices as in the shop.")}<br>© <span id="yr">2026</span> MB Sweets · {T("माँ भगवती मिष्ठान भंडार, ननौरा, दरभंगा", "Maa Bhagwati Misthan Bhandar, Nanaura, Darbhanga")}</div>
+ <div class="wrap fine">{T("हम 6 km तक घर पर डिलीवरी करते हैं — ऑर्डर कम से कम ₹499 का, डिलीवरी का कोई चार्ज नहीं (सिर्फ़ दूध-दही पर छोटा चार्ज)। डिलीवरी की उपलब्धता देखकर ही हम आपकी डिलीवरी कन्फर्म करेंगे। पेमेंट: ऑर्डर कन्फर्म होने के बाद, कृपया डिलीवरी से पहले पूरा पेमेंट UPI से कर दीजिए — कैश ऑन डिलीवरी की सुविधा नहीं है। दाम वही जो दुकान में।", "We deliver to your home within 6 km — minimum order ₹499, no delivery charge (only milk & curd have a small charge). We confirm delivery only after checking availability. Payment: once your order is confirmed, please pay in full by UPI before delivery — sorry, no cash on delivery. Same prices as in the shop.")}<br>© <span id="yr">2026</span> MB Sweets · {T("माँ भगवती मिष्ठान भंडार, ननौरा, दरभंगा", "Maa Bhagwati Misthan Bhandar, Nanaura, Darbhanga")}</div>
 </footer>
 <nav class="dock" aria-label="जल्दी संपर्क">
  <a class="o" href="{ORDER}" data-order>{icon("bag")}{T("ऑर्डर करें", "Order")}</a>
@@ -380,7 +386,7 @@ def home():
     {hero_card("balushahi", "⭐ हमारी ख़ास", "⭐ Our special", "ऊपर से नरम, अंदर से खस्ता", "Soft outside, crisp inside")}
     {hero_card("rasgulla", "❤️ ग्राहकों की पसंद", "❤️ Most loved", "शुद्ध छेना + हाथ से पिसी इलायची", "Pure chhena + hand-ground cardamom")}
    </div>
-   <p class="dline">🛵 {T('<span class="nw">6 km तक घर पर डिलीवरी</span> · <span class="nw">कम से कम ₹499, कोई चार्ज नहीं</span> · <span class="nw">"जल्दी" वाला ऑर्डर आम तौर पर 30–60 मिनट में</span> · <b class="strict nw">पहले UPI पेमेंट — कैश ऑन डिलीवरी नहीं</b>', '<span class="nw">Home delivery within 6 km</span> · <span class="nw">minimum ₹499, no charge</span> · <span class="nw">"ASAP" orders usually in 30–60 minutes</span> · <b class="strict nw">UPI payment first — no cash on delivery</b>')}</p>
+   <p class="dline">🛵 {T('<span class="nw">6 km तक घर पर डिलीवरी</span> · <span class="nw">कम से कम ₹499, कोई चार्ज नहीं (दूध-दही पर छोटा चार्ज)</span> · <span class="nw">"जल्दी" वाला ऑर्डर आम तौर पर 30–60 मिनट में</span> · <b class="strict nw">पहले UPI पेमेंट — कैश ऑन डिलीवरी नहीं</b>', '<span class="nw">Home delivery within 6 km</span> · <span class="nw">minimum ₹499, no charge (small charge on milk & curd)</span> · <span class="nw">"ASAP" orders usually in 30–60 minutes</span> · <b class="strict nw">UPI payment first — no cash on delivery</b>')}</p>
    <div class="row hcta">
     <a class="btn btn-main btn-big" href="{ORDER}" data-order>{icon("bag")}{T("अभी ऑर्डर करें", "Order now")}</a>
     <a class="btn btn-wa" href="{wa(WA_HELLO)}" target="_blank" rel="noopener">{icon("wa")}WhatsApp</a>
@@ -480,7 +486,7 @@ def home():
    <div class="feat">{art.kadhai(62)}<h3>{T("अपने हाथ से बनी", "Made by hand")}</h3><p>{T("छेना और खोआ दुकान में ही बनता है — बाहर से नहीं आता।", "Our chhena and khoa are made right here, not bought in.")}</p></div>
    <div class="feat">{art.diya(62)}<h3>{T("2000 से", "Since 2000")}</h3><p>{T("पापा श्री दिनेश कुमार साहू ने शुरू की — आज भी वही स्वाद और भरोसा।", "Started by our father Shri Dinesh Kumar Sahu — the same taste and trust today.")}</p></div>
    <div class="feat">{art.vegmark(62)}<h3>{T("100% अंडा-रहित केक", "100% eggless cakes")}</h3><p>{T("जन्मदिन, सालगिरह, फोटो और थीम केक।", "Birthday, anniversary, photo and theme cakes.")}</p></div>
-   <div class="feat">{art.scooter(62)}<h3>{T("घर तक डिलीवरी", "Home delivery")}</h3><p>{T("6 km तक, ₹499 या ज़्यादा के ऑर्डर पर — कोई डिलीवरी चार्ज नहीं। <b class='strict'>कृपया पहले UPI से पेमेंट करें — कैश ऑन डिलीवरी की सुविधा नहीं है।</b>", "Within 6 km on orders of ₹499 or more — no delivery charge. <b class='strict'>Please pay by UPI first — sorry, no cash on delivery.</b>")}</p></div>
+   <div class="feat">{art.scooter(62)}<h3>{T("घर तक डिलीवरी", "Home delivery")}</h3><p>{T("6 km तक, ₹499 या ज़्यादा के ऑर्डर पर — कोई डिलीवरी चार्ज नहीं (सिर्फ़ दूध-दही पर छोटा चार्ज)। <b class='strict'>कृपया पहले UPI से पेमेंट करें — कैश ऑन डिलीवरी की सुविधा नहीं है।</b>", "Within 6 km on orders of ₹499 or more — no delivery charge (only milk & curd have a small charge). <b class='strict'>Please pay by UPI first — sorry, no cash on delivery.</b>")}</p></div>
   </div>
  </div>
 </section>
@@ -586,7 +592,7 @@ def visit_section(title=True):
      <div><dt>{T("पता", "Address")}</dt><dd>{T("माँ भगवती मिष्ठान भंडार, ननौरा मेन रोड (NH 527B), दरभंगा एयरपोर्ट के पास, दरभंगा, बिहार 846005 — एयरपोर्ट से ~5 km", "Maa Bhagwati Misthan Bhandar, Nanaura Main Rd (NH 527B), near Darbhanga Airport, Darbhanga, Bihar 846005 — ~5 km from the airport")}</dd></div>
      <div><dt>{T("समय", "Hours")}</dt><dd>{T("रोज़ सुबह 7 से रात 9 बजे तक · ऑनलाइन ऑर्डर सुबह 7 से शाम 7 बजे तक (उसके बाद अगले दिन के लिए)", "Daily 7 am – 9 pm · online orders 7 am – 7 pm (later ones for the next day)")}</dd></div>
      <div><dt>{T("फ़ोन", "Phone")}</dt><dd class="tels"><a href="tel:+91{PHONE1}">📞 {PHONE1}</a><a href="tel:+91{PHONE2}">📞 {PHONE2}</a></dd></div>
-     <div><dt>{T("डिलीवरी", "Delivery")}</dt><dd>{T("6 km तक · ऑर्डर कम से कम ₹499, डिलीवरी चार्ज नहीं · <b class='strict'>🚫 कैश ऑन डिलीवरी की सुविधा नहीं है — कृपया डिलीवरी से पहले पूरा पेमेंट UPI से करें</b> · दुकान से ख़ुद ले जाने पर कोई न्यूनतम रकम नहीं", "Within 6 km · minimum order ₹499, no delivery charge · <b class='strict'>🚫 Sorry, no cash on delivery — please pay in full by UPI before delivery</b> · no minimum for pickup")}</dd></div>
+     <div><dt>{T("डिलीवरी", "Delivery")}</dt><dd>{T("6 km तक · ऑर्डर कम से कम ₹499, डिलीवरी चार्ज नहीं (दूध-दही पर ₹5/₹10 प्रति पैक) · <b class='strict'>🚫 कैश ऑन डिलीवरी की सुविधा नहीं है — कृपया डिलीवरी से पहले पूरा पेमेंट UPI से करें</b> · दुकान से ख़ुद ले जाने पर कोई न्यूनतम रकम नहीं", "Within 6 km · minimum order ₹499, no delivery charge (milk & curd ₹5/₹10 per pack) · <b class='strict'>🚫 Sorry, no cash on delivery — please pay in full by UPI before delivery</b> · no minimum for pickup")}</dd></div>
     </dl>
     <div class="row mt">
      <a class="btn btn-main btn-sm" href="{MAPS}" target="_blank" rel="noopener">{icon("pin")}{T("रास्ता देखें", "Get directions")}</a>
@@ -754,16 +760,14 @@ def cakes_page():
 # ================= PRODUCTS =================
 def products_page():
     def row(iid, hi, en):
-        it = ITEMS[iid]
-        return f'<li data-ids="{iid}"><span>{T(hi, en)}<span class="off-badge">{T("खत्म", "Out")}</span></span><b data-pid="{iid}">₹{it["price"]}</b></li>'
+        attr = 'data-opid' if iid in ONLINE else 'data-pid'
+        return f'<li data-ids="{iid}"><span>{T(hi, en)}<span class="off-badge">{T("खत्म", "Out")}</span></span><b {attr}="{iid}">₹{oprice(iid)}</b></li>'
     dairy = ''.join([
         row('i14', 'सुधा दूध फुल क्रीम — 1 लीटर', 'Sudha full-cream milk — 1 L'),
         row('i15', 'सुधा दूध टोंड (हाफ क्रीम) — 1 लीटर', 'Sudha toned milk — 1 L'),
         row('i25', 'अमूल दही — 200 ग्राम', 'Amul curd — 200 g'), row('i30', 'अमृत दही — 200 ग्राम', 'Amrit curd — 200 g'),
         row('i24', 'अमूल दही — 400 ग्राम', 'Amul curd — 400 g'), row('i31', 'अमृत दही — 400 ग्राम', 'Amrit curd — 400 g'),
         row('i23', 'अमूल दही — 1 किलो', 'Amul curd — 1 kg'), row('i32', 'अमृत दही — 1 किलो', 'Amrit curd — 1 kg'),
-        row('i18', 'अमृत दही — 2 किलो पैक', 'Amrit curd — 2 kg pack'),
-        row('i19', 'अमूल दही — 5 किलो पैक', 'Amul curd — 5 kg pack'), row('i20', 'दही — 15 किलो पैक', 'Curd — 15 kg pack'),
         row('i16', 'पनीर पैकेट — 200 ग्राम', 'Paneer packet — 200 g'), row('i17', 'खुला पनीर — 1 किलो', 'Loose paneer — 1 kg'),
     ])
     pack_btn = f'<a class="btn btn-main" href="{olink(tab="pack")}" data-order>{icon("bag")}{T("मेन्यू में लिखकर ऑर्डर करें", "Order via the menu")}</a>'
@@ -788,6 +792,7 @@ def products_page():
   <article class="cat"><div class="pics four">{simg("menu-milk.webp", "सुधा दूध", lazy=False)}{simg("menu-dahi-amul.webp", "अमूल दही — दुकान की असली फोटो", lazy=False)}{simg("menu-dahi-amrit.webp", "अमृत दही — दुकान की असली फोटो", lazy=False)}{simg("menu-paneer.webp", "पनीर", lazy=False)}</div><div>
    <div class="eyebrow">{T("रोज़ ताज़ा", "Fresh every day")}</div><h2>{T("दूध, दही और पनीर", "Milk, curd & paneer")}</h2>
    <ul class="plist">{dairy}</ul>
+   <p class="dfee">🚚 {T("घर पर डिलीवरी: 400 ग्राम तक के दही पैक और हर 1 लीटर दूध पर ₹5, 1 किलो दही पर ₹10 · दुकान से ख़ुद लेने पर कोई चार्ज नहीं · सिर्फ़ दूध-दही का ऑर्डर ₹499 से कम का भी हम पहुँचा देंगे।", "Home delivery: ₹5 per curd pack up to 400 g and per litre of milk, ₹10 per 1 kg curd · no charge if you pick up · we deliver milk & curd-only orders even below ₹499.")}</p>
    <div class="row"><a class="btn btn-main" href="{olink(tab="dairy")}" data-order>{icon("bag")}{T("दूध-दही ऑर्डर करें", "Order dairy")}</a><a class="btn btn-line" href="/bulk-dairy/">{T("थोक में चाहिए?", "Need it in bulk?")}</a></div>
   </div></article>
   {cat([pic("real-chips", "नमकीन और चिप्स का रैक", "(min-width:880px) 500px, 92vw")],
@@ -802,7 +807,7 @@ def products_page():
  </div>
 </section>'''
     return page('/products/', 'सुधा दूध, अमूल-अमृत दही, पनीर, नमकीन | MB Sweets ननौरा, दरभंगा',
-                f'MB Sweets ननौरा में सुधा दूध ₹{price("i14")}/लीटर, अमूल और अमृत दही, पनीर, नमकीन-भुजिया, बिस्किट, चॉकलेट और कोल्ड ड्रिंक। मिठाई के साथ घर मँगवाइए।',
+                f'MB Sweets ननौरा में सुधा दूध ₹{oprice("i14")}/लीटर, अमूल और अमृत दही, पनीर, नमकीन-भुजिया, बिस्किट, चॉकलेट और कोल्ड ड्रिंक। मिठाई के साथ घर मँगवाइए।',
                 body, ld=[crumbs_ld('Dairy & more', '/products/')])
 
 
@@ -884,8 +889,8 @@ FAQ = [
      'हम दुकान से 6 km तक डिलीवरी करते हैं (जैसे खिरमा, एयरपोर्ट, केवटी रनवे, पिंडारुच की तरफ)। डिलीवरी की उपलब्धता देखकर ही हम आपकी डिलीवरी कन्फर्म करते हैं।',
      'We deliver within 6 km of the shop (towards Khirma, the airport, Kewti runway, Pindaruch and so on). We confirm delivery only after checking availability.'),
     ('कम से कम कितने का ऑर्डर देना होगा?', 'Is there a minimum order?',
-     'घर पर डिलीवरी के लिए ऑर्डर कम से कम ₹499 का होना चाहिए — इस पर कोई डिलीवरी चार्ज नहीं लगता। अगर आप दुकान से ख़ुद ले जाते हैं, तो कोई न्यूनतम रकम नहीं है।',
-     'Home delivery needs an order of at least ₹499 — with no delivery charge. There is no minimum for pickup.'),
+     'घर पर डिलीवरी के लिए ऑर्डर कम से कम ₹499 का होना चाहिए — इस पर कोई डिलीवरी चार्ज नहीं लगता। अगर आप दुकान से ख़ुद ले जाते हैं, तो कोई न्यूनतम रकम नहीं है। दूध-दही की घर पर डिलीवरी पर 400 ग्राम तक के दही पैक और हर 1 लीटर दूध पर ₹5, 1 किलो दही पर ₹10 लगता है — सिर्फ़ दूध-दही का ऑर्डर ₹499 से कम का भी हम पहुँचा देंगे।',
+     'Home delivery needs an order of at least ₹499 — with no delivery charge. There is no minimum for pickup. Home delivery of milk & curd costs ₹5 per curd pack up to 400 g and per litre of milk, ₹10 per 1 kg curd — we deliver milk & curd-only orders even below ₹499.'),
     ('पेमेंट कैसे करें?', 'How do I pay?',
      'पहले हम WhatsApp पर आपका ऑर्डर कन्फर्म करते हैं, उसके बाद कृपया UPI से पूरा पेमेंट करके स्क्रीनशॉट भेज दीजिए — कैश ऑन डिलीवरी की सुविधा नहीं है। पेमेंट के बाद ही डिलीवरी निकलती है। दुकान से ख़ुद ले जाने पर आप सामान लेते समय दुकान पर पेमेंट कर सकते हैं।',
      'We first confirm your order on WhatsApp; then please pay the full amount by UPI and send us the screenshot — sorry, there is no cash on delivery. Delivery leaves only after payment. For pickup, you can pay at the shop.'),
@@ -959,9 +964,7 @@ def bulk_dairy_page():
     prices = ''.join([
         row('i14', 'सुधा दूध फुल क्रीम — 1 लीटर', 'Sudha full-cream milk — 1 L'),
         row('i15', 'सुधा दूध टोंड — 1 लीटर', 'Sudha toned milk — 1 L'),
-        f'<li><span>{T("दही — 15 किलो पैक (कंपनी के हिसाब से)", "Curd — 15 kg pack (by brand)")}</span><b>₹1300–1600</b></li>',
-        row('i19', 'दही — 5 किलो पैक', 'Curd — 5 kg pack'),
-        row('i18', 'दही — 2 किलो पैक', 'Curd — 2 kg pack'),
+        f'<li class="bigdahi"><span>{T("दही के बड़े पैक — 2 किलो से उपलब्ध", "Big curd packs — from 2 kg")}<small>{T("2 किलो, 5 किलो और 15 किलो (₹1300–1600) — सभी पैक का दाम वैरायटी (कंपनी) के हिसाब से", "2 kg, 5 kg and 15 kg (₹1300–1600) — every pack priced by variety (brand)")}</small></span><b>{T("<span data-pid=i18>₹" + str(ITEMS["i18"]["price"]) + "</span> से शुरू", "from <span data-pid=i18>₹" + str(ITEMS["i18"]["price"]) + "</span>")}</b></li>',
         row('i17', 'खुला पनीर — 1 किलो', 'Loose paneer — 1 kg'),
     ])
     wa_bulk = wa('नमस्ते MB Sweets 🙏 मुझे थोक में दूध/दही/पनीर चाहिए। बड़ी मात्रा का रेट बताइए।')

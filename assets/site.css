@@ -418,3 +418,8 @@ section{padding:44px 0}
 .form [aria-invalid=true]{border-color:var(--sindoor);box-shadow:0 0 0 3px rgba(209,38,28,.15)}
 .ferr{color:#A91D15;font-weight:700;font-size:15px;margin-top:6px}
 .bestline{font-size:13.5px;font-weight:700;color:#A91D15;margin-bottom:2px}
+
+.dfee{margin:10px 0 0;padding:10px 12px;border-radius:12px;background:#FFF4DC;color:#5B3A00;font-size:.9rem;line-height:1.5}
+.plist li.bigdahi span small{display:block;font-size:13px;margin-top:2px;color:var(--muted)}
+.plist li.bigdahi b{font-size:16px;text-align:right}
+.plist li.bigdahi b span{color:inherit;font:inherit}
