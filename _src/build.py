@@ -831,8 +831,8 @@ def wedding_page():
    <h2>{T("बड़ा ऑर्डर — बिना झंझट", "Bulk orders, hassle-free")}</h2>
    <ul class="points mt">
     <li>📅 <span>{T("<b>कम से कम 2 दिन पहले</b> बताइए — ताज़ी बनाकर देंगे।", "Tell us <b>at least 2 days ahead</b> — we make it fresh.")}</span></li>
-    <li>⚖️ <span>{T("<b>बड़ी मात्रा भी</b> — कितना चाहिए बताइए, दुकान WhatsApp पर पक्का करेगी।", "<b>Large quantities too</b> — tell us how much and we'll confirm on WhatsApp.")}</span></li>
-    <li>🤝 <span>{T("दाम और डिलीवरी <b>WhatsApp पर पक्की</b> करेंगे। 6 km तक डिलीवरी, या दुकान से ले जाइए।", "We <b>confirm price and delivery on WhatsApp</b>. Delivery within 6 km, or pick up from the shop.")}</span></li>
+    <li>⚖️ <span>{T("<b>बड़ी मात्रा भी</b> — आपको जितना चाहिए, बस बता दीजिए। हम WhatsApp पर आपसे बात करके पक्का कर देंगे।", "<b>Large quantities too</b> — just tell us how much you need, and we'll confirm it with you on WhatsApp.")}</span></li>
+    <li>🤝 <span>{T("दाम और डिलीवरी का समय हम <b>WhatsApp पर आपसे बात करके</b> तय कर लेंगे। 6 km तक आपके यहाँ पहुँचा देंगे, या आप चाहें तो दुकान से भी ले सकते हैं।", "We'll <b>agree on the price and delivery time with you on WhatsApp</b>. We deliver to you within 6 km, or you're welcome to pick up from the shop.")}</span></li>
     <li>💰 <span>{T("दाम वही जो दुकान में — नीचे आज के दाम देख लीजिए।", "Same prices as in the shop — see today's prices below.")}</span></li>
    </ul>
    <div class="prices">{bulk_prices}</div>
@@ -993,7 +993,7 @@ def bulk_dairy_page():
   <div class="feats dfeats">
    <div class="feat"><div class="dico">✓</div><h3>{T("तय तारीख पर सप्लाई", "On the agreed date")}</h3><p>{T("मात्रा और समय WhatsApp पर पक्का करके।", "Quantity and time confirmed on WhatsApp.")}</p></div>
    <div class="feat"><div class="dico">🥛</div><h3>{T("चार कंपनियाँ", "Four brands")}</h3><p>{T("सुधा, राज फ्रेश, अमृत, अमूल — जो चाहिए।", "Sudha, Raj Fresh, Amrit, Amul — your choice.")}</p></div>
-   <div class="feat"><div class="dico">🚚</div><h3>{T("6 km तक पहुँचाएँगे", "Delivered within 6 km")}</h3><p>{T("या दुकान से खुद ले जाइए।", "Or pick up from the shop.")}</p></div>
+   <div class="feat"><div class="dico">🚚</div><h3>{T("6 km तक आपके यहाँ पहुँचा देंगे", "We deliver within 6 km")}</h3><p>{T("या आप चाहें तो दुकान से भी ले सकते हैं।", "Or, if you prefer, you're welcome to pick up from the shop.")}</p></div>
    <div class="feat"><div class="dico">₹</div><h3>{T("बड़ी मात्रा पर कम रेट", "Lower rate in bulk")}</h3><p>{T("मात्रा बताइए, रेट WhatsApp पर तय।", "Tell us the quantity — we fix the rate on WhatsApp.")}</p></div>
   </div>
  </div>
