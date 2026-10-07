@@ -149,7 +149,7 @@ def footer():
    <li><a href="{MAPS}" target="_blank" rel="noopener">{T("📍 Google Maps पर रास्ता", "📍 Directions on Google Maps")}</a></li>
   </ul></div>
  </div>
- <div class="wrap fine">{T("घर तक डिलीवरी 6 km तक — ऑर्डर कम से कम ₹499 का, डिलीवरी का कोई चार्ज नहीं। डिलीवरी की उपलब्धता देखकर ही डिलीवरी कन्फर्म की जाएगी। पेमेंट: ऑर्डर कन्फर्म होने के बाद UPI से। दाम वही जो दुकान में।", "Home delivery within 6 km — minimum order ₹499, no delivery charge. Delivery is confirmed only after checking availability. Payment: by UPI after your order is confirmed. Same prices as in the shop.")}<br>© <span id="yr">2026</span> MB Sweets · {T("माँ भगवती मिष्ठान भंडार, ननौरा, दरभंगा", "Maa Bhagwati Misthan Bhandar, Nanaura, Darbhanga")}</div>
+ <div class="wrap fine">{T("घर तक डिलीवरी 6 km तक — ऑर्डर कम से कम ₹499 का, डिलीवरी का कोई चार्ज नहीं। डिलीवरी की उपलब्धता देखकर ही डिलीवरी कन्फर्म की जाएगी। पेमेंट: ऑर्डर कन्फर्म होने के बाद, डिलीवरी से पहले पूरा UPI से — कैश ऑन डिलीवरी नहीं। दाम वही जो दुकान में।", "Home delivery within 6 km — minimum order ₹499, no delivery charge. Delivery is confirmed only after checking availability. Payment: in full by UPI after your order is confirmed, before delivery — no cash on delivery. Same prices as in the shop.")}<br>© <span id="yr">2026</span> MB Sweets · {T("माँ भगवती मिष्ठान भंडार, ननौरा, दरभंगा", "Maa Bhagwati Misthan Bhandar, Nanaura, Darbhanga")}</div>
 </footer>
 <nav class="dock" aria-label="जल्दी संपर्क">
  <a class="o" href="{ORDER}" data-order>{icon("bag")}{T("ऑर्डर करें", "Order")}</a>
@@ -380,7 +380,7 @@ def home():
     {hero_card("balushahi", "⭐ हमारी ख़ास", "⭐ Our special", "ऊपर से नरम, अंदर से खस्ता", "Soft outside, crisp inside")}
     {hero_card("rasgulla", "❤️ ग्राहकों की पसंद", "❤️ Most loved", "शुद्ध छेना + हाथ से पिसी इलायची", "Pure chhena + hand-ground cardamom")}
    </div>
-   <p class="dline">🛵 {T('<span class="nw">6 km तक घर पर डिलीवरी</span> · <span class="nw">कम से कम ₹499, कोई चार्ज नहीं</span> · <span class="nw">"जल्दी" वाला ऑर्डर आम तौर पर 30–60 मिनट में</span>', '<span class="nw">Home delivery within 6 km</span> · <span class="nw">minimum ₹499, no charge</span> · <span class="nw">"ASAP" orders usually in 30–60 minutes</span>')}</p>
+   <p class="dline">🛵 {T('<span class="nw">6 km तक घर पर डिलीवरी</span> · <span class="nw">कम से कम ₹499, कोई चार्ज नहीं</span> · <span class="nw">"जल्दी" वाला ऑर्डर आम तौर पर 30–60 मिनट में</span> · <b class="strict nw">पहले UPI पेमेंट — कैश ऑन डिलीवरी नहीं</b>', '<span class="nw">Home delivery within 6 km</span> · <span class="nw">minimum ₹499, no charge</span> · <span class="nw">"ASAP" orders usually in 30–60 minutes</span> · <b class="strict nw">UPI payment first — no cash on delivery</b>')}</p>
    <div class="row hcta">
     <a class="btn btn-main btn-big" href="{ORDER}" data-order>{icon("bag")}{T("अभी ऑर्डर करें", "Order now")}</a>
     <a class="btn btn-wa" href="{wa(WA_HELLO)}" target="_blank" rel="noopener">{icon("wa")}WhatsApp</a>
@@ -438,7 +438,7 @@ def home():
   <ol class="steps3">
    <li><span class="n">1</span><h3>{T("मेन्यू से चुनें", "Pick from the menu")}</h3><p>{T("मिठाई, दूध-दही, केक चुनें, समय बताएँ और “ऑर्डर भेजें” दबाएँ।", "Choose sweets, dairy or cakes, pick a time and tap “Send order”.")}</p></li>
    <li><span class="n">2</span><h3>{T("दुकान कन्फर्म करेगी", "We confirm")}</h3><p>{T("उपलब्धता देखकर दुकान WhatsApp पर ऑर्डर पक्का करेगी।", "We check availability and confirm on WhatsApp.")}</p></li>
-   <li><span class="n">3</span><h3>{T("पेमेंट और डिलीवरी", "Pay & receive")}</h3><p>{T("UPI से पेमेंट करें — फिर ऑर्डर घर पहुँचेगा। दुकान से ले जाने पर वहीं पेमेंट।", "Pay by UPI and your order is delivered. For pickup, pay at the shop.")}</p></li>
+   <li><span class="n">3</span><h3>{T("पेमेंट और डिलीवरी", "Pay & receive")}</h3><p>{T("UPI से पूरा पेमेंट करें — फिर ऑर्डर घर पहुँचेगा। <b class='strict'>कैश ऑन डिलीवरी नहीं।</b> दुकान से ले जाने पर वहीं पेमेंट।", "Pay in full by UPI and your order is delivered. <b class='strict'>No cash on delivery.</b> For pickup, pay at the shop.")}</p></li>
   </ol>
   <div class="center"><a class="btn btn-main" href="{ORDER}" data-order>{icon("bag")}{T("मेन्यू खोलें", "Open the menu")}</a></div>
  </div>
@@ -480,7 +480,7 @@ def home():
    <div class="feat">{art.kadhai(62)}<h3>{T("अपने हाथ से बनी", "Made by hand")}</h3><p>{T("छेना और खोआ दुकान में ही बनता है — बाहर से नहीं आता।", "Our chhena and khoa are made right here, not bought in.")}</p></div>
    <div class="feat">{art.diya(62)}<h3>{T("2000 से", "Since 2000")}</h3><p>{T("पापा श्री दिनेश कुमार साहू ने शुरू की — आज भी वही स्वाद और भरोसा।", "Started by our father Shri Dinesh Kumar Sahu — the same taste and trust today.")}</p></div>
    <div class="feat">{art.vegmark(62)}<h3>{T("100% अंडा-रहित केक", "100% eggless cakes")}</h3><p>{T("जन्मदिन, सालगिरह, फोटो और थीम केक।", "Birthday, anniversary, photo and theme cakes.")}</p></div>
-   <div class="feat">{art.scooter(62)}<h3>{T("घर तक डिलीवरी", "Home delivery")}</h3><p>{T("6 km तक, ₹499 या ज़्यादा के ऑर्डर पर — कोई डिलीवरी चार्ज नहीं।", "Within 6 km on orders of ₹499 or more — no delivery charge.")}</p></div>
+   <div class="feat">{art.scooter(62)}<h3>{T("घर तक डिलीवरी", "Home delivery")}</h3><p>{T("6 km तक, ₹499 या ज़्यादा के ऑर्डर पर — कोई डिलीवरी चार्ज नहीं। <b class='strict'>पहले UPI पेमेंट, कैश ऑन डिलीवरी नहीं।</b>", "Within 6 km on orders of ₹499 or more — no delivery charge. <b class='strict'>UPI payment first, no cash on delivery.</b>")}</p></div>
   </div>
  </div>
 </section>
@@ -586,7 +586,7 @@ def visit_section(title=True):
      <div><dt>{T("पता", "Address")}</dt><dd>{T("माँ भगवती मिष्ठान भंडार, ननौरा मेन रोड (NH 527B), दरभंगा एयरपोर्ट के पास, दरभंगा, बिहार 846005 — एयरपोर्ट से ~5 km", "Maa Bhagwati Misthan Bhandar, Nanaura Main Rd (NH 527B), near Darbhanga Airport, Darbhanga, Bihar 846005 — ~5 km from the airport")}</dd></div>
      <div><dt>{T("समय", "Hours")}</dt><dd>{T("रोज़ सुबह 7 से रात 9 बजे तक · ऑनलाइन ऑर्डर सुबह 7 से शाम 7 बजे तक (उसके बाद अगले दिन के लिए)", "Daily 7 am – 9 pm · online orders 7 am – 7 pm (later ones for the next day)")}</dd></div>
      <div><dt>{T("फ़ोन", "Phone")}</dt><dd class="tels"><a href="tel:+91{PHONE1}">📞 {PHONE1}</a><a href="tel:+91{PHONE2}">📞 {PHONE2}</a></dd></div>
-     <div><dt>{T("डिलीवरी", "Delivery")}</dt><dd>{T("6 km तक · ऑर्डर कम से कम ₹499, डिलीवरी चार्ज नहीं · दुकान से खुद ले जाने पर कोई न्यूनतम रकम नहीं", "Within 6 km · minimum order ₹499, no delivery charge · no minimum for pickup")}</dd></div>
+     <div><dt>{T("डिलीवरी", "Delivery")}</dt><dd>{T("6 km तक · ऑर्डर कम से कम ₹499, डिलीवरी चार्ज नहीं · <b class='strict'>🚫 कैश ऑन डिलीवरी नहीं — डिलीवरी से पहले पूरा पेमेंट UPI से</b> · दुकान से खुद ले जाने पर कोई न्यूनतम रकम नहीं", "Within 6 km · minimum order ₹499, no delivery charge · <b class='strict'>🚫 No cash on delivery — full UPI payment before delivery</b> · no minimum for pickup")}</dd></div>
     </dl>
     <div class="row mt">
      <a class="btn btn-main btn-sm" href="{MAPS}" target="_blank" rel="noopener">{icon("pin")}{T("रास्ता देखें", "Get directions")}</a>
@@ -621,7 +621,7 @@ def sweets_page():
   <div class="eyebrow">{T("दुकान में अपने हाथ से बनी", "Made by hand in our shop")}</div>
   <h1>{T("मिठाइयाँ और दाम", "Sweets & prices")}</h1>
   <p class="lead">{T("शुद्ध छेना और खोआ से बनी मिठाई — वही दाम जो दुकान में। किसी भी मिठाई पर “ऑर्डर करें” दबाइए, मेन्यू सीधे वहीं खुलेगा।", "Sweets made from pure chhena and khoa — the same prices as in the shop. Tap “Order” on any sweet and the menu opens right there.")}</p>
-  <div class="infochips"><span>⚖️ {T("कम से कम 250 ग्राम या पीस में", "Min. 250 g or by the piece")}</span><span>🚚 {T("6 km तक डिलीवरी — कम से कम ₹499, कोई चार्ज नहीं", "Delivery within 6 km — minimum ₹499, no charge")}</span><span>🏪 {T("दुकान से ले जाने पर कोई न्यूनतम नहीं", "No minimum for pickup")}</span></div>
+  <div class="infochips"><span>⚖️ {T("कम से कम 250 ग्राम या पीस में", "Min. 250 g or by the piece")}</span><span>🚚 {T("6 km तक डिलीवरी — कम से कम ₹499, कोई चार्ज नहीं", "Delivery within 6 km — minimum ₹499, no charge")}</span><span class="strict">🚫 {T("कैश ऑन डिलीवरी नहीं — पहले UPI पेमेंट", "No cash on delivery — UPI payment first")}</span><span>🏪 {T("दुकान से ले जाने पर कोई न्यूनतम नहीं", "No minimum for pickup")}</span></div>
   <div class="realstrip">
    <figure>{pic("real-trays", "दुकान की ट्रे में बालूशाही और चमचम", "(min-width:900px) 360px, 33vw", lazy=False)}</figure>
    <figure>{pic("real-mix-tray", "दुकान की ट्रे में छेना की मिठाइयाँ", "(min-width:900px) 360px, 33vw", lazy=False)}</figure>
@@ -887,8 +887,11 @@ FAQ = [
      'घर पर डिलीवरी के लिए ऑर्डर कम से कम ₹499 का होना चाहिए — इस पर कोई डिलीवरी चार्ज नहीं लगता। दुकान से खुद ले जाने पर कोई न्यूनतम रकम नहीं।',
      'Home delivery needs an order of at least ₹499 — with no delivery charge. There is no minimum for pickup.'),
     ('पेमेंट कैसे करें?', 'How do I pay?',
-     'पहले दुकान WhatsApp पर ऑर्डर कन्फर्म करती है, उसके बाद UPI से पूरा पेमेंट करके स्क्रीनशॉट भेजें। पेमेंट के बाद डिलीवरी निकलती है। दुकान से खुद ले जाने पर सामान लेते समय दुकान पर पेमेंट करें।',
-     'The shop first confirms your order on WhatsApp; then pay the full amount by UPI and send the screenshot. Delivery leaves after payment. For pickup, pay at the shop.'),
+     'पहले दुकान WhatsApp पर ऑर्डर कन्फर्म करती है, उसके बाद UPI से पूरा पेमेंट करके स्क्रीनशॉट भेजें — कैश ऑन डिलीवरी नहीं है। पेमेंट के बाद डिलीवरी निकलती है। दुकान से खुद ले जाने पर सामान लेते समय दुकान पर पेमेंट करें।',
+     'The shop first confirms your order on WhatsApp; then pay the full amount by UPI and send the screenshot — there is no cash on delivery. Delivery leaves after payment. For pickup, pay at the shop.'),
+    ('क्या कैश ऑन डिलीवरी (COD) है?', 'Is cash on delivery (COD) available?',
+     'नहीं। घर पर डिलीवरी सिर्फ़ पहले पेमेंट पर होती है — दुकान ऑर्डर कन्फर्म करेगी, फिर UPI से पूरा पेमेंट करें; पेमेंट के बाद ही डिलीवरी निकलती है। दुकान से खुद ले जाने पर पेमेंट दुकान पर होता है।',
+     'No. Home delivery is prepaid only — the shop confirms your order, then you pay in full by UPI; delivery leaves only after payment. For pickup, you pay at the shop.'),
     ('ऑर्डर कब तक दे सकते हैं?', 'Until when can I order?',
      'ऑनलाइन ऑर्डर सुबह 7 से शाम 7 बजे तक। शाम 7 के बाद अगले दिन या आगे की तारीख के लिए ऑर्डर दे सकते हैं। "जल्दी" वाले ऑर्डर आम तौर पर 30–60 मिनट में।',
      'Online orders from 7 am to 7 pm. After 7 pm you can order for the next day or a later date. "As soon as possible" orders usually take 30–60 minutes.'),
