@@ -66,7 +66,7 @@ function applyPrices(){
 function applyNotice(){
   var C=window.MB_CATALOG,n=$('#notice');if(!C||!n)return;
   var msg='';
-  if(C.pause)msg=lang==='en'?'Online orders are closed today — you can still buy at the shop.':'आज ऑनलाइन ऑर्डर बंद है — दुकान पर आकर ले सकते हैं।';
+  if(C.pause)msg=lang==='en'?'Sorry, online orders are closed today — you can still buy at the shop.':'माफ़ कीजिए, आज ऑनलाइन ऑर्डर बंद है — आप दुकान पर आकर ले सकते हैं।';
   else if(C.noticeHi)msg=lang==='en'&&C.noticeEn?C.noticeEn:C.noticeHi;
   n.textContent=msg;n.classList.toggle('on',!!msg);
 }
@@ -115,11 +115,11 @@ function setupForm(){
     var sw=$all('input[name=sw]:checked').map(function(x){return x.value;});
     var qty=$('#b-qty').value.trim();
     var E=lang==='en';
-    if(!di.value){showErr(err,E?'Please choose the date.':'तारीख चुनिए।',di);return;}
-    if(di.value<dateKey(min)){showErr(err,E?'Bulk orders need at least 2 days — please pick a later date, or call us.':'बड़े ऑर्डर के लिए कम से कम 2 दिन चाहिए — आगे की तारीख चुनें, या कॉल करें।',di);return;}
-    if(!sw.length&&!qty){showErr(err,E?'Tick the sweets you need, or write the total quantity.':'कौन-सी मिठाई चाहिए उस पर टिक करें, या कुल मात्रा लिखें।',$('#b-qty'));return;}
-    if(!name){showErr(err,E?'Please write your name.':'अपना नाम लिखिए।',$('#b-name'));return;}
-    if(!/^[6-9]\d{9}$/.test(phone)){showErr(err,E?'Please write a 10-digit mobile number.':'10 अंकों का मोबाइल नंबर लिखिए।',$('#b-phone'));return;}
+    if(!di.value){showErr(err,E?'Please choose the date.':'कृपया तारीख चुनिए।',di);return;}
+    if(di.value<dateKey(min)){showErr(err,E?'Bulk orders need at least 2 days — please pick a later date, or call us.':'बड़े ऑर्डर के लिए हमें कम से कम 2 दिन चाहिए — कृपया आगे की तारीख चुनिए, या हमें कॉल कीजिए।',di);return;}
+    if(!sw.length&&!qty){showErr(err,E?'Tick the sweets you need, or write the total quantity.':'जो मिठाई चाहिए, कृपया उस पर टिक कीजिए या कुल मात्रा लिख दीजिए।',$('#b-qty'));return;}
+    if(!name){showErr(err,E?'Please write your name.':'कृपया अपना नाम लिखिए।',$('#b-name'));return;}
+    if(!/^[6-9]\d{9}$/.test(phone)){showErr(err,E?'Please write a 10-digit mobile number.':'कृपया 10 अंकों का मोबाइल नंबर लिखिए।',$('#b-phone'));return;}
     var p=di.value.split('-');
     var L=['नमस्ते MB Sweets 🙏','*बड़ा ऑर्डर (वेबसाइट से)*',
       'मौका: '+$('#b-occ').value,
@@ -157,11 +157,11 @@ function setupDairy(){
     function q(id){var v=parseFloat(($(id).value||'').replace(',','.'));return isFinite(v)&&v>0?v:0;}
     var fc=q('#d-fc'),tm=q('#d-tm'),dahi=q('#d-dahi'),pn=q('#d-paneer');
     var name=$('#d-name').value.trim(),phone=$('#d-phone').value.replace(/\D/g,'').slice(-10);
-    if(!di.value){showErr(err,E?'Please choose the date.':'तारीख चुनिए।',di);return;}
-    if(di.value<dateKey(min)){showErr(err,E?'That date is too soon — for tomorrow, order by 2 pm today. Please pick a later date, or call us.':'यह तारीख बहुत जल्दी है — कल के लिए आज दोपहर 2 बजे तक ऑर्डर देना होता है। आगे की तारीख चुनें, या कॉल करें।',di);return;}
-    if(!(fc||tm||dahi||pn)){showErr(err,E?'Write how much milk, curd or paneer you need.':'कितना दूध, दही या पनीर चाहिए — लिखिए।',$('#d-fc'));return;}
-    if(!name){showErr(err,E?'Please write your name.':'अपना नाम लिखिए।',$('#d-name'));return;}
-    if(!/^[6-9]\d{9}$/.test(phone)){showErr(err,E?'Please write a 10-digit mobile number.':'10 अंकों का मोबाइल नंबर लिखिए।',$('#d-phone'));return;}
+    if(!di.value){showErr(err,E?'Please choose the date.':'कृपया तारीख चुनिए।',di);return;}
+    if(di.value<dateKey(min)){showErr(err,E?'That date is too soon — for tomorrow, order by 2 pm today. Please pick a later date, or call us.':'माफ़ कीजिए, यह तारीख बहुत जल्दी है — कल के लिए आज दोपहर 2 बजे तक ऑर्डर देना होता है। कृपया आगे की तारीख चुनिए, या हमें कॉल कीजिए।',di);return;}
+    if(!(fc||tm||dahi||pn)){showErr(err,E?'Write how much milk, curd or paneer you need.':'कृपया लिखिए कि कितना दूध, दही या पनीर चाहिए।',$('#d-fc'));return;}
+    if(!name){showErr(err,E?'Please write your name.':'कृपया अपना नाम लिखिए।',$('#d-name'));return;}
+    if(!/^[6-9]\d{9}$/.test(phone)){showErr(err,E?'Please write a 10-digit mobile number.':'कृपया 10 अंकों का मोबाइल नंबर लिखिए।',$('#d-phone'));return;}
     var p=di.value.split('-');
     var L=['नमस्ते MB Sweets 🙏','*थोक दूध-दही-पनीर (वेबसाइट से)*',
       'अवसर: '+$('#d-occ').value,

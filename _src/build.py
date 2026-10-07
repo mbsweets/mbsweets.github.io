@@ -149,7 +149,7 @@ def footer():
    <li><a href="{MAPS}" target="_blank" rel="noopener">{T("📍 Google Maps पर रास्ता", "📍 Directions on Google Maps")}</a></li>
   </ul></div>
  </div>
- <div class="wrap fine">{T("घर तक डिलीवरी 6 km तक — ऑर्डर कम से कम ₹499 का, डिलीवरी का कोई चार्ज नहीं। डिलीवरी की उपलब्धता देखकर ही डिलीवरी कन्फर्म की जाएगी। पेमेंट: ऑर्डर कन्फर्म होने के बाद, डिलीवरी से पहले पूरा UPI से — कैश ऑन डिलीवरी नहीं। दाम वही जो दुकान में।", "Home delivery within 6 km — minimum order ₹499, no delivery charge. Delivery is confirmed only after checking availability. Payment: in full by UPI after your order is confirmed, before delivery — no cash on delivery. Same prices as in the shop.")}<br>© <span id="yr">2026</span> MB Sweets · {T("माँ भगवती मिष्ठान भंडार, ननौरा, दरभंगा", "Maa Bhagwati Misthan Bhandar, Nanaura, Darbhanga")}</div>
+ <div class="wrap fine">{T("हम 6 km तक घर पर डिलीवरी करते हैं — ऑर्डर कम से कम ₹499 का, डिलीवरी का कोई चार्ज नहीं। डिलीवरी की उपलब्धता देखकर ही हम आपकी डिलीवरी कन्फर्म करेंगे। पेमेंट: ऑर्डर कन्फर्म होने के बाद, कृपया डिलीवरी से पहले पूरा पेमेंट UPI से कर दीजिए — कैश ऑन डिलीवरी की सुविधा नहीं है। दाम वही जो दुकान में।", "We deliver to your home within 6 km — minimum order ₹499, no delivery charge. We confirm delivery only after checking availability. Payment: once your order is confirmed, please pay in full by UPI before delivery — sorry, no cash on delivery. Same prices as in the shop.")}<br>© <span id="yr">2026</span> MB Sweets · {T("माँ भगवती मिष्ठान भंडार, ननौरा, दरभंगा", "Maa Bhagwati Misthan Bhandar, Nanaura, Darbhanga")}</div>
 </footer>
 <nav class="dock" aria-label="जल्दी संपर्क">
  <a class="o" href="{ORDER}" data-order>{icon("bag")}{T("ऑर्डर करें", "Order")}</a>
@@ -436,9 +436,9 @@ def home():
  <div class="wrap">
   {shead("आसान तरीका", "Simple steps", "घर बैठे ऑर्डर कैसे करें", "How to order from home", center=True)}
   <ol class="steps3">
-   <li><span class="n">1</span><h3>{T("मेन्यू से चुनें", "Pick from the menu")}</h3><p>{T("मिठाई, दूध-दही, केक चुनें, समय बताएँ और “ऑर्डर भेजें” दबाएँ।", "Choose sweets, dairy or cakes, pick a time and tap “Send order”.")}</p></li>
-   <li><span class="n">2</span><h3>{T("दुकान कन्फर्म करेगी", "We confirm")}</h3><p>{T("उपलब्धता देखकर दुकान WhatsApp पर ऑर्डर पक्का करेगी।", "We check availability and confirm on WhatsApp.")}</p></li>
-   <li><span class="n">3</span><h3>{T("पेमेंट और डिलीवरी", "Pay & receive")}</h3><p>{T("UPI से पूरा पेमेंट करें — फिर ऑर्डर घर पहुँचेगा। <b class='strict'>कैश ऑन डिलीवरी नहीं।</b> दुकान से ले जाने पर वहीं पेमेंट।", "Pay in full by UPI and your order is delivered. <b class='strict'>No cash on delivery.</b> For pickup, pay at the shop.")}</p></li>
+   <li><span class="n">1</span><h3>{T("मेन्यू से चुनें", "Pick from the menu")}</h3><p>{T("मिठाई, दूध-दही या केक चुनिए, समय बताइए और “ऑर्डर भेजें” दबाइए।", "Choose sweets, dairy or cakes, pick a time and tap “Send order”.")}</p></li>
+   <li><span class="n">2</span><h3>{T("हम कन्फर्म करेंगे", "We confirm")}</h3><p>{T("हम उपलब्धता देखकर WhatsApp पर आपका ऑर्डर पक्का कर देंगे।", "We check availability and confirm your order on WhatsApp.")}</p></li>
+   <li><span class="n">3</span><h3>{T("पेमेंट और डिलीवरी", "Pay & receive")}</h3><p>{T("कृपया UPI से पूरा पेमेंट कर दीजिए — फिर हम ऑर्डर आपके घर पहुँचा देंगे। <b class='strict'>कैश ऑन डिलीवरी की सुविधा नहीं है।</b> दुकान से ले जाने पर पेमेंट वहीं कर सकते हैं।", "Please pay in full by UPI and we will deliver your order. <b class='strict'>Sorry, no cash on delivery.</b> For pickup, you can pay at the shop.")}</p></li>
   </ol>
   <div class="center"><a class="btn btn-main" href="{ORDER}" data-order>{icon("bag")}{T("मेन्यू खोलें", "Open the menu")}</a></div>
  </div>
@@ -480,7 +480,7 @@ def home():
    <div class="feat">{art.kadhai(62)}<h3>{T("अपने हाथ से बनी", "Made by hand")}</h3><p>{T("छेना और खोआ दुकान में ही बनता है — बाहर से नहीं आता।", "Our chhena and khoa are made right here, not bought in.")}</p></div>
    <div class="feat">{art.diya(62)}<h3>{T("2000 से", "Since 2000")}</h3><p>{T("पापा श्री दिनेश कुमार साहू ने शुरू की — आज भी वही स्वाद और भरोसा।", "Started by our father Shri Dinesh Kumar Sahu — the same taste and trust today.")}</p></div>
    <div class="feat">{art.vegmark(62)}<h3>{T("100% अंडा-रहित केक", "100% eggless cakes")}</h3><p>{T("जन्मदिन, सालगिरह, फोटो और थीम केक।", "Birthday, anniversary, photo and theme cakes.")}</p></div>
-   <div class="feat">{art.scooter(62)}<h3>{T("घर तक डिलीवरी", "Home delivery")}</h3><p>{T("6 km तक, ₹499 या ज़्यादा के ऑर्डर पर — कोई डिलीवरी चार्ज नहीं। <b class='strict'>पहले UPI पेमेंट, कैश ऑन डिलीवरी नहीं।</b>", "Within 6 km on orders of ₹499 or more — no delivery charge. <b class='strict'>UPI payment first, no cash on delivery.</b>")}</p></div>
+   <div class="feat">{art.scooter(62)}<h3>{T("घर तक डिलीवरी", "Home delivery")}</h3><p>{T("6 km तक, ₹499 या ज़्यादा के ऑर्डर पर — कोई डिलीवरी चार्ज नहीं। <b class='strict'>कृपया पहले UPI से पेमेंट करें — कैश ऑन डिलीवरी की सुविधा नहीं है।</b>", "Within 6 km on orders of ₹499 or more — no delivery charge. <b class='strict'>Please pay by UPI first — sorry, no cash on delivery.</b>")}</p></div>
   </div>
  </div>
 </section>
@@ -491,7 +491,7 @@ def home():
    <div class="eyebrow">{T("शादी · तिलक · मुंडन · पूजा", "Weddings · Tilak · Mundan · Puja")}</div>
    <h2>{T("हर शुभ अवसर की मिठास", "Sweetness for every auspicious day")}</h2>
    <div class="chips"><span>{T("शादी-ब्याह", "Weddings")}</span><span>{T("तिलक", "Tilak")}</span><span>{T("मुंडन", "Mundan")}</span><span>{T("जनेऊ", "Janeu")}</span><span>{T("गृह प्रवेश", "Housewarming")}</span><span>{T("पूजा-पाठ", "Puja")}</span><span>{T("जन्मदिन", "Birthdays")}</span></div>
-   <p>{T("शादी-भोज का बड़ा ऑर्डर भी — बस <b>कम से कम 2 दिन पहले</b> बता दें, ताज़ी बनाकर देंगे; मात्रा और समय WhatsApp पर पक्का। (रोज़ का छोटा ऑर्डर उसी दिन भी मिलता है।)", "Big orders for weddings and feasts too — just tell us <b>at least 2 days ahead</b> and we'll make it fresh; quantity and time confirmed on WhatsApp. (Everyday small orders come the same day.)")}</p>
+   <p>{T("शादी-भोज का बड़ा ऑर्डर भी — बस <b>कम से कम 2 दिन पहले</b> बता दीजिए, हम ताज़ी बनाकर देंगे; मात्रा और समय हम WhatsApp पर आपसे बात करके पक्का कर लेंगे। (रोज़ का छोटा ऑर्डर उसी दिन भी मिल जाता है।)", "Big orders for weddings and feasts too — just tell us <b>at least 2 days ahead</b> and we'll make it fresh; we'll agree the quantity and time with you on WhatsApp. (Everyday small orders come the same day.)")}</p>
    <div class="row mt"><a class="btn btn-main" href="/wedding/">{T("बड़ा ऑर्डर बुक करें", "Book a bulk order")}</a><a class="btn btn-wa" href="{wa("नमस्ते MB Sweets 🙏 मुझे शादी/पूजा के लिए मिठाई का बड़ा ऑर्डर देना है।")}" target="_blank" rel="noopener">{icon("wa")}WhatsApp</a></div>
   </div>
   <div class="fishbox">{art.fish_pair(380)}<p class="center" style="margin-top:10px;font-size:15px">{T("मिथिला में मछली का जोड़ा शुभ माना जाता है", "In Mithila, a pair of fish is a symbol of good fortune")}</p></div>
@@ -533,7 +533,7 @@ def home():
    <div>
     <div class="eyebrow">{T("दरभंगा एयरपोर्ट से सिर्फ ~5 km", "Only ~5 km from Darbhanga airport")}</div>
     <h2>{T("सफ़र पर मिथिला की मिठाई साथ ले जाइए", "Take the taste of Mithila on your journey")}</h2>
-    <p>{T("NH किनारे दुकान है। पहले WhatsApp कर दें — मिठाई पैक करके तैयार रखेंगे, आकर ले जाइए।", "We're right on the NH. WhatsApp us first — we'll keep your sweets packed and ready to pick up.")}</p>
+    <p>{T("NH किनारे दुकान है। बस पहले WhatsApp कर दीजिए — हम मिठाई पैक करके तैयार रखेंगे, आप आते ही ले सकते हैं।", "We're right on the NH. WhatsApp us first — we'll keep your sweets packed and ready to pick up.")}</p>
    </div>
    <a class="btn btn-wa" href="{wa(airport_msg)}" target="_blank" rel="noopener">{icon("wa")}{T("पैक करवाएँ", "Get it packed")}</a>
   </div>
@@ -586,7 +586,7 @@ def visit_section(title=True):
      <div><dt>{T("पता", "Address")}</dt><dd>{T("माँ भगवती मिष्ठान भंडार, ननौरा मेन रोड (NH 527B), दरभंगा एयरपोर्ट के पास, दरभंगा, बिहार 846005 — एयरपोर्ट से ~5 km", "Maa Bhagwati Misthan Bhandar, Nanaura Main Rd (NH 527B), near Darbhanga Airport, Darbhanga, Bihar 846005 — ~5 km from the airport")}</dd></div>
      <div><dt>{T("समय", "Hours")}</dt><dd>{T("रोज़ सुबह 7 से रात 9 बजे तक · ऑनलाइन ऑर्डर सुबह 7 से शाम 7 बजे तक (उसके बाद अगले दिन के लिए)", "Daily 7 am – 9 pm · online orders 7 am – 7 pm (later ones for the next day)")}</dd></div>
      <div><dt>{T("फ़ोन", "Phone")}</dt><dd class="tels"><a href="tel:+91{PHONE1}">📞 {PHONE1}</a><a href="tel:+91{PHONE2}">📞 {PHONE2}</a></dd></div>
-     <div><dt>{T("डिलीवरी", "Delivery")}</dt><dd>{T("6 km तक · ऑर्डर कम से कम ₹499, डिलीवरी चार्ज नहीं · <b class='strict'>🚫 कैश ऑन डिलीवरी नहीं — डिलीवरी से पहले पूरा पेमेंट UPI से</b> · दुकान से खुद ले जाने पर कोई न्यूनतम रकम नहीं", "Within 6 km · minimum order ₹499, no delivery charge · <b class='strict'>🚫 No cash on delivery — full UPI payment before delivery</b> · no minimum for pickup")}</dd></div>
+     <div><dt>{T("डिलीवरी", "Delivery")}</dt><dd>{T("6 km तक · ऑर्डर कम से कम ₹499, डिलीवरी चार्ज नहीं · <b class='strict'>🚫 कैश ऑन डिलीवरी की सुविधा नहीं है — कृपया डिलीवरी से पहले पूरा पेमेंट UPI से करें</b> · दुकान से ख़ुद ले जाने पर कोई न्यूनतम रकम नहीं", "Within 6 km · minimum order ₹499, no delivery charge · <b class='strict'>🚫 Sorry, no cash on delivery — please pay in full by UPI before delivery</b> · no minimum for pickup")}</dd></div>
     </dl>
     <div class="row mt">
      <a class="btn btn-main btn-sm" href="{MAPS}" target="_blank" rel="noopener">{icon("pin")}{T("रास्ता देखें", "Get directions")}</a>
@@ -621,7 +621,7 @@ def sweets_page():
   <div class="eyebrow">{T("दुकान में अपने हाथ से बनी", "Made by hand in our shop")}</div>
   <h1>{T("मिठाइयाँ और दाम", "Sweets & prices")}</h1>
   <p class="lead">{T("शुद्ध छेना और खोआ से बनी मिठाई — वही दाम जो दुकान में। किसी भी मिठाई पर “ऑर्डर करें” दबाइए, मेन्यू सीधे वहीं खुलेगा।", "Sweets made from pure chhena and khoa — the same prices as in the shop. Tap “Order” on any sweet and the menu opens right there.")}</p>
-  <div class="infochips"><span>⚖️ {T("कम से कम 250 ग्राम या पीस में", "Min. 250 g or by the piece")}</span><span>🚚 {T("6 km तक डिलीवरी — कम से कम ₹499, कोई चार्ज नहीं", "Delivery within 6 km — minimum ₹499, no charge")}</span><span class="strict">🚫 {T("कैश ऑन डिलीवरी नहीं — पहले UPI पेमेंट", "No cash on delivery — UPI payment first")}</span><span>🏪 {T("दुकान से ले जाने पर कोई न्यूनतम नहीं", "No minimum for pickup")}</span></div>
+  <div class="infochips"><span>⚖️ {T("कम से कम 250 ग्राम या पीस में", "Min. 250 g or by the piece")}</span><span>🚚 {T("6 km तक डिलीवरी — कम से कम ₹499, कोई चार्ज नहीं", "Delivery within 6 km — minimum ₹499, no charge")}</span><span class="strict">🚫 {T("कैश ऑन डिलीवरी नहीं — कृपया पहले UPI पेमेंट करें", "No cash on delivery — please pay by UPI first")}</span><span>🏪 {T("दुकान से ले जाने पर कोई न्यूनतम नहीं", "No minimum for pickup")}</span></div>
   <div class="realstrip">
    <figure>{pic("real-trays", "दुकान की ट्रे में बालूशाही और चमचम", "(min-width:900px) 360px, 33vw", lazy=False)}</figure>
    <figure>{pic("real-mix-tray", "दुकान की ट्रे में छेना की मिठाइयाँ", "(min-width:900px) 360px, 33vw", lazy=False)}</figure>
@@ -649,7 +649,7 @@ def sweets_page():
  <div class="wrap">
   <div class="fly">
    <div class="plane" aria-hidden="true">🎉</div>
-   <div><div class="eyebrow">{T("शादी · पूजा · भोज", "Weddings · Puja · Feasts")}</div><h2>{T("शादी-भोज का ऑर्डर? 2 दिन पहले बताइए", "Wedding or feast order? Tell us 2 days ahead")}</h2><p>{T("बालूशाही, रसगुल्ला, गुलाब जामुन, बूंदी, लड्डू — बड़ी मात्रा में भी।", "Balushahi, rasgulla, gulab jamun, boondi, laddoo — in large quantities too.")}</p></div>
+   <div><div class="eyebrow">{T("शादी · पूजा · भोज", "Weddings · Puja · Feasts")}</div><h2>{T("शादी-भोज का ऑर्डर? बस 2 दिन पहले बता दीजिए", "Wedding or feast order? Just tell us 2 days ahead")}</h2><p>{T("बालूशाही, रसगुल्ला, गुलाब जामुन, बूंदी, लड्डू — बड़ी मात्रा में भी।", "Balushahi, rasgulla, gulab jamun, boondi, laddoo — in large quantities too.")}</p></div>
    <a class="btn btn-main" href="/wedding/">{T("बड़ा ऑर्डर बुक करें", "Book a bulk order")}</a>
   </div>
  </div>
@@ -717,8 +717,8 @@ def cakes_page():
   <div class="crumb"><a href="/">{T("होम", "Home")}</a> › {T("केक", "Cakes")}</div>
   <div class="eyebrow">{T("जन्मदिन · सालगिरह · हर जश्न", "Birthdays · anniversaries · every celebration")}</div>
   <h1>{T("केक — हर जश्न के लिए", "Cakes for every celebration")}</h1>
-  <p class="lead">{T("वनीला और चॉकलेट केक तय दाम पर। बाकी फ्लेवर और डिज़ाइनर केक का दाम साइज़ व डिज़ाइन देखकर WhatsApp पर बताया जाता है।", "Vanilla and chocolate cakes at fixed prices. Other flavours and designer cakes are priced on WhatsApp by size and design.")}</p>
-  <div class="infochips"><span class="egg">{T("100% अंडा-रहित", "100% eggless")}</span><span>📅 {T("केक पहले से ऑर्डर करें — समय दुकान बताएगी", "Order ahead — the shop will confirm timing")}</span><span>📸 {T("फोटो नमूने के लिए हैं", "Photos are samples")}</span></div>
+  <p class="lead">{T("वनीला और चॉकलेट केक तय दाम पर। बाकी फ्लेवर और डिज़ाइनर केक का दाम हम साइज़ व डिज़ाइन देखकर WhatsApp पर बता देंगे।", "Vanilla and chocolate cakes at fixed prices. For other flavours and designer cakes, we will tell you the price on WhatsApp by size and design.")}</p>
+  <div class="infochips"><span class="egg">{T("100% अंडा-रहित", "100% eggless")}</span><span>📅 {T("केक पहले से ऑर्डर कीजिए — समय हम बता देंगे", "Please order ahead — we will confirm the timing")}</span><span>📸 {T("फोटो नमूने के लिए हैं", "Photos are samples")}</span></div>
  </div>
 </section>
 <section style="padding-top:22px">
@@ -830,7 +830,7 @@ def wedding_page():
    <div class="eyebrow">{T("कैसे होता है", "How it works")}</div>
    <h2>{T("बड़ा ऑर्डर — बिना झंझट", "Bulk orders, hassle-free")}</h2>
    <ul class="points mt">
-    <li>📅 <span>{T("<b>कम से कम 2 दिन पहले</b> बताइए — ताज़ी बनाकर देंगे।", "Tell us <b>at least 2 days ahead</b> — we make it fresh.")}</span></li>
+    <li>📅 <span>{T("<b>कम से कम 2 दिन पहले</b> बता दीजिए — हम ताज़ी बनाकर देंगे।", "Tell us <b>at least 2 days ahead</b> — we make it fresh.")}</span></li>
     <li>⚖️ <span>{T("<b>बड़ी मात्रा भी</b> — आपको जितना चाहिए, बस बता दीजिए। हम WhatsApp पर आपसे बात करके पक्का कर देंगे।", "<b>Large quantities too</b> — just tell us how much you need, and we'll confirm it with you on WhatsApp.")}</span></li>
     <li>🤝 <span>{T("दाम और डिलीवरी का समय हम <b>WhatsApp पर आपसे बात करके</b> तय कर लेंगे। 6 km तक आपके यहाँ पहुँचा देंगे, या आप चाहें तो दुकान से भी ले सकते हैं।", "We'll <b>agree on the price and delivery time with you on WhatsApp</b>. We deliver to you within 6 km, or you're welcome to pick up from the shop.")}</span></li>
     <li>💰 <span>{T("दाम वही जो दुकान में — नीचे आज के दाम देख लीजिए।", "Same prices as in the shop — see today's prices below.")}</span></li>
@@ -866,7 +866,7 @@ def wedding_page():
    <div>
     <div class="eyebrow">{T("तोहफ़े के लिए", "For gifting")}</div>
     <h2>{T("गिफ्ट पैकिंग", "Gift packing")}</h2>
-    <p class="mt">{T("त्योहार, शादी का बायना, मेहमानों को तोहफ़ा या एयरपोर्ट से सफ़र — मिठाई सुंदर डिब्बे में पैक करवाइए। डिब्बे और दाम WhatsApp पर पूछें।", "Festivals, wedding bayna, gifts for guests or a flight home — get sweets packed in a nice box. Ask on WhatsApp for boxes and prices.")}</p>
+    <p class="mt">{T("त्योहार, शादी का बायना, मेहमानों को तोहफ़ा या एयरपोर्ट से सफ़र — मिठाई सुंदर डिब्बे में पैक करवाइए। डिब्बे और दाम WhatsApp पर पूछ लीजिए।", "Festivals, wedding bayna, gifts for guests or a flight home — get sweets packed in a nice box. Ask on WhatsApp for boxes and prices.")}</p>
     <a class="btn btn-wa" href="{wa("नमस्ते MB Sweets 🙏 मुझे मिठाई गिफ्ट पैकिंग में चाहिए। कौन-कौन से डिब्बे हैं और दाम क्या है?")}" target="_blank" rel="noopener">{icon("wa")}{T("गिफ्ट पैकिंग पूछें", "Ask about gift packing")}</a>
    </div>
   </div>
@@ -881,26 +881,26 @@ def wedding_page():
 # ================= CONTACT =================
 FAQ = [
     ('डिलीवरी कहाँ तक होती है?', 'Where do you deliver?',
-     'दुकान से 6 km तक (जैसे खिरमा, एयरपोर्ट, केवटी रनवे, पिंडारुच की तरफ)। डिलीवरी की उपलब्धता देखकर ही डिलीवरी कन्फर्म की जाती है।',
-     'Within 6 km of the shop (towards Khirma, the airport, Kewti runway, Pindaruch and so on). Delivery is confirmed only after checking availability.'),
+     'हम दुकान से 6 km तक डिलीवरी करते हैं (जैसे खिरमा, एयरपोर्ट, केवटी रनवे, पिंडारुच की तरफ)। डिलीवरी की उपलब्धता देखकर ही हम आपकी डिलीवरी कन्फर्म करते हैं।',
+     'We deliver within 6 km of the shop (towards Khirma, the airport, Kewti runway, Pindaruch and so on). We confirm delivery only after checking availability.'),
     ('कम से कम कितने का ऑर्डर देना होगा?', 'Is there a minimum order?',
-     'घर पर डिलीवरी के लिए ऑर्डर कम से कम ₹499 का होना चाहिए — इस पर कोई डिलीवरी चार्ज नहीं लगता। दुकान से खुद ले जाने पर कोई न्यूनतम रकम नहीं।',
+     'घर पर डिलीवरी के लिए ऑर्डर कम से कम ₹499 का होना चाहिए — इस पर कोई डिलीवरी चार्ज नहीं लगता। अगर आप दुकान से ख़ुद ले जाते हैं, तो कोई न्यूनतम रकम नहीं है।',
      'Home delivery needs an order of at least ₹499 — with no delivery charge. There is no minimum for pickup.'),
     ('पेमेंट कैसे करें?', 'How do I pay?',
-     'पहले दुकान WhatsApp पर ऑर्डर कन्फर्म करती है, उसके बाद UPI से पूरा पेमेंट करके स्क्रीनशॉट भेजें — कैश ऑन डिलीवरी नहीं है। पेमेंट के बाद डिलीवरी निकलती है। दुकान से खुद ले जाने पर सामान लेते समय दुकान पर पेमेंट करें।',
-     'The shop first confirms your order on WhatsApp; then pay the full amount by UPI and send the screenshot — there is no cash on delivery. Delivery leaves after payment. For pickup, pay at the shop.'),
+     'पहले हम WhatsApp पर आपका ऑर्डर कन्फर्म करते हैं, उसके बाद कृपया UPI से पूरा पेमेंट करके स्क्रीनशॉट भेज दीजिए — कैश ऑन डिलीवरी की सुविधा नहीं है। पेमेंट के बाद ही डिलीवरी निकलती है। दुकान से ख़ुद ले जाने पर आप सामान लेते समय दुकान पर पेमेंट कर सकते हैं।',
+     'We first confirm your order on WhatsApp; then please pay the full amount by UPI and send us the screenshot — sorry, there is no cash on delivery. Delivery leaves only after payment. For pickup, you can pay at the shop.'),
     ('क्या कैश ऑन डिलीवरी (COD) है?', 'Is cash on delivery (COD) available?',
-     'नहीं। घर पर डिलीवरी सिर्फ़ पहले पेमेंट पर होती है — दुकान ऑर्डर कन्फर्म करेगी, फिर UPI से पूरा पेमेंट करें; पेमेंट के बाद ही डिलीवरी निकलती है। दुकान से खुद ले जाने पर पेमेंट दुकान पर होता है।',
-     'No. Home delivery is prepaid only — the shop confirms your order, then you pay in full by UPI; delivery leaves only after payment. For pickup, you pay at the shop.'),
+     'माफ़ कीजिए, कैश ऑन डिलीवरी की सुविधा नहीं है। घर पर डिलीवरी सिर्फ़ पहले पेमेंट पर होती है — हम आपका ऑर्डर कन्फर्म करेंगे, फिर कृपया UPI से पूरा पेमेंट कर दीजिए; पेमेंट के बाद ही डिलीवरी निकलती है। दुकान से ख़ुद ले जाने पर पेमेंट दुकान पर होता है।',
+     'Sorry, there is no cash on delivery. Home delivery is prepaid only — we confirm your order, then please pay in full by UPI; delivery leaves only after payment. For pickup, you pay at the shop.'),
     ('ऑर्डर कब तक दे सकते हैं?', 'Until when can I order?',
-     'ऑनलाइन ऑर्डर सुबह 7 से शाम 7 बजे तक। शाम 7 के बाद अगले दिन या आगे की तारीख के लिए ऑर्डर दे सकते हैं। "जल्दी" वाले ऑर्डर आम तौर पर 30–60 मिनट में।',
+     'आप सुबह 7 से शाम 7 बजे तक ऑनलाइन ऑर्डर दे सकते हैं। शाम 7 के बाद आप अगले दिन या आगे की तारीख के लिए ऑर्डर दे सकते हैं। "जल्दी" वाले ऑर्डर आम तौर पर 30–60 मिनट में पहुँच जाते हैं।',
      'Online orders from 7 am to 7 pm. After 7 pm you can order for the next day or a later date. "As soon as possible" orders usually take 30–60 minutes.'),
     ('बड़ा ऑर्डर कितने पहले देना होगा?', 'How early should I place a big order?',
-     'शादी-भोज जैसे बड़े मिठाई ऑर्डर: कम से कम 2 दिन पहले। थोक दूध-दही-पनीर: कल के लिए आज दोपहर 2 बजे तक। रोज़ का छोटा ऑर्डर उसी दिन भी मिल जाता है।',
+     'शादी-भोज जैसे बड़े मिठाई ऑर्डर कृपया कम से कम 2 दिन पहले बता दीजिए। थोक दूध-दही-पनीर: कल के लिए आज दोपहर 2 बजे तक बता दीजिए। रोज़ का छोटा ऑर्डर उसी दिन भी मिल जाता है।',
      'Big sweets orders for weddings and feasts: at least 2 days ahead. Bulk milk, curd and paneer: by 2 pm for the next day. Everyday small orders can be delivered the same day.'),
     ('ऑर्डर कैंसिल हो सकता है?', 'Can I cancel?',
-     'पेमेंट के बाद ग्राहक खुद कैंसिल करे तो पैसा वापस नहीं होता। अगर दुकान ने कन्फर्म करके भी समय पर डिलीवरी नहीं की, तो आप कैंसिल कर सकते हैं और पूरा पैसा वापस मिलेगा।',
-     'If you cancel after paying, the money is not refunded. If we confirmed but could not deliver on time, you can cancel and get a full refund.'),
+     'माफ़ कीजिए, पेमेंट के बाद अगर आप ख़ुद ऑर्डर कैंसिल करते हैं तो पैसा वापस नहीं हो पाता। अगर हमने ऑर्डर कन्फर्म करके भी समय पर डिलीवरी नहीं की, तो आप कैंसिल कर सकते हैं और आपको पूरा पैसा वापस मिलेगा।',
+     'Sorry, if you cancel after paying, the money cannot be refunded. If we confirmed but could not deliver on time, you can cancel and get a full refund.'),
     ('केक में अंडा होता है?', 'Do the cakes contain egg?',
      'नहीं, सारे केक 100% अंडा-रहित (Eggless) हैं। वेबसाइट पर केक की फोटो नमूने के लिए हैं।',
      'No, all cakes are 100% eggless. Cake photos on the website are samples.'),
@@ -987,14 +987,14 @@ def bulk_dairy_page():
 <section style="padding-top:12px">
  <div class="wrap">
   <div class="dnote">
-   <b>⏰ {T("कल सुबह के लिए — आज दोपहर 2 बजे तक बताइए।", "For tomorrow morning — tell us by 2 pm today.")}</b>
-   <span>{T("2 बजे के बाद दिया गया ऑर्डर परसों के लिए होगा। बड़ी मात्रा हो तो जितना पहले बताएँ, उतना अच्छा।", "Orders after 2 pm are for the day after tomorrow. For large quantities, the earlier the better.")}</span>
+   <b>⏰ {T("कल सुबह के लिए — कृपया आज दोपहर 2 बजे तक बता दीजिए।", "For tomorrow morning — please tell us by 2 pm today.")}</b>
+   <span>{T("2 बजे के बाद दिया गया ऑर्डर परसों के लिए होगा। बड़ी मात्रा हो तो जितना पहले बता सकें, उतना अच्छा।", "Orders after 2 pm are for the day after tomorrow. For large quantities, the earlier the better.")}</span>
   </div>
   <div class="feats dfeats">
-   <div class="feat"><div class="dico">✓</div><h3>{T("तय तारीख पर सप्लाई", "On the agreed date")}</h3><p>{T("मात्रा और समय WhatsApp पर पक्का करके।", "Quantity and time confirmed on WhatsApp.")}</p></div>
+   <div class="feat"><div class="dico">✓</div><h3>{T("तय तारीख पर सप्लाई", "On the agreed date")}</h3><p>{T("मात्रा और समय WhatsApp पर आपसे पक्का करके।", "Quantity and time agreed with you on WhatsApp.")}</p></div>
    <div class="feat"><div class="dico">🥛</div><h3>{T("चार कंपनियाँ", "Four brands")}</h3><p>{T("सुधा, राज फ्रेश, अमृत, अमूल — जो चाहिए।", "Sudha, Raj Fresh, Amrit, Amul — your choice.")}</p></div>
    <div class="feat"><div class="dico">🚚</div><h3>{T("6 km तक आपके यहाँ पहुँचा देंगे", "We deliver within 6 km")}</h3><p>{T("या आप चाहें तो दुकान से भी ले सकते हैं।", "Or, if you prefer, you're welcome to pick up from the shop.")}</p></div>
-   <div class="feat"><div class="dico">₹</div><h3>{T("बड़ी मात्रा पर कम रेट", "Lower rate in bulk")}</h3><p>{T("मात्रा बताइए, रेट WhatsApp पर तय।", "Tell us the quantity — we fix the rate on WhatsApp.")}</p></div>
+   <div class="feat"><div class="dico">₹</div><h3>{T("बड़ी मात्रा पर कम रेट", "Lower rate in bulk")}</h3><p>{T("मात्रा बता दीजिए, रेट हम WhatsApp पर बता देंगे।", "Tell us the quantity — we will share the rate on WhatsApp.")}</p></div>
   </div>
  </div>
 </section>
@@ -1015,7 +1015,7 @@ def bulk_dairy_page():
    <div class="eyebrow">{T("आज के दाम", "Today's prices")}</div>
    <h2>{T("दुकान वाले दाम", "Shop prices")}</h2>
    <ul class="plist">{prices}</ul>
-   <div class="discount">💰 {T("<b>बड़ी मात्रा में ऑर्डर देने पर रेट कम कर दिया जाएगा।</b> मात्रा बताइए — सही रेट WhatsApp पर बताएँगे।", "<b>Bulk orders get a lower rate.</b> Tell us the quantity and we'll quote the right rate on WhatsApp.")}</div>
+   <div class="discount">💰 {T("<b>बड़ी मात्रा में ऑर्डर देने पर हम रेट कम कर देंगे।</b> मात्रा बता दीजिए — सही रेट हम WhatsApp पर बता देंगे।", "<b>Bulk orders get a lower rate.</b> Tell us the quantity and we'll quote the right rate on WhatsApp.")}</div>
   </div>
  </div>
 </section>
