@@ -760,8 +760,12 @@ def cakes_page():
 # ================= PRODUCTS =================
 def products_page():
     def row(iid, hi, en):
-        attr = 'data-opid' if iid in ONLINE else 'data-pid'
-        return f'<li data-ids="{iid}"><span>{T(hi, en)}<span class="off-badge">{T("खत्म", "Out")}</span></span><b {attr}="{iid}">₹{oprice(iid)}</b></li>'
+        if iid in ONLINE and ONLINE[iid][1] > 0:
+            f, u = ONLINE[iid][1], ITEMS[iid]['unit']
+            ue = UNIT_EN.get(u, u)
+            fee = T(f'+ ₹<i data-ofee="{iid}">{f}</i> डिलीवरी चार्ज / {u}', f'+ ₹<i data-ofee="{iid}">{f}</i> delivery / {ue}')
+            return f'<li data-ids="{iid}"><span>{T(hi, en)}<span class="off-badge">{T("खत्म", "Out")}</span></span><div class="pr"><b data-opid="{iid}">₹{oprice(iid)}</b><small>{fee}</small></div></li>'
+        return f'<li data-ids="{iid}"><span>{T(hi, en)}<span class="off-badge">{T("खत्म", "Out")}</span></span><b data-pid="{iid}">₹{oprice(iid)}</b></li>'
     dairy = ''.join([
         row('i14', 'सुधा दूध फुल क्रीम — 1 लीटर', 'Sudha full-cream milk — 1 L'),
         row('i15', 'सुधा दूध टोंड (हाफ क्रीम) — 1 लीटर', 'Sudha toned milk — 1 L'),

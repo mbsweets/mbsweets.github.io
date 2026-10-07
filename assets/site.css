@@ -423,3 +423,7 @@ section{padding:44px 0}
 .plist li.bigdahi span small{display:block;font-size:13px;margin-top:2px;color:var(--muted)}
 .plist li.bigdahi b{font-size:16px;text-align:right}
 .plist li.bigdahi b span{color:inherit;font:inherit}
+.plist li .pr{display:flex;flex-direction:column;align-items:flex-end;text-align:right}
+.plist li .pr small{font-size:12.5px;color:#8A5A00;font-weight:600;white-space:nowrap}
+.plist li .pr small i{font-style:normal}
+.plist li .pr small span{color:inherit}
