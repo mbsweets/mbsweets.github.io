@@ -486,7 +486,7 @@ def home():
    <div class="feat">{art.kadhai(62)}<h3>{T("अपने हाथ से बनी", "Made by hand")}</h3><p>{T("छेना और खोआ दुकान में ही बनता है — बाहर से नहीं आता।", "Our chhena and khoa are made right here, not bought in.")}</p></div>
    <div class="feat">{art.diya(62)}<h3>{T("2000 से", "Since 2000")}</h3><p>{T("पापा श्री दिनेश कुमार साहू ने शुरू की — आज भी वही स्वाद और भरोसा।", "Started by our father Shri Dinesh Kumar Sahu — the same taste and trust today.")}</p></div>
    <div class="feat">{art.vegmark(62)}<h3>{T("100% अंडा-रहित केक", "100% eggless cakes")}</h3><p>{T("जन्मदिन, सालगिरह, फोटो और थीम केक।", "Birthday, anniversary, photo and theme cakes.")}</p></div>
-   <div class="feat">{art.scooter(62)}<h3>{T("घर तक डिलीवरी", "Home delivery")}</h3><p>{T("6 km तक, ₹499 या ज़्यादा के ऑर्डर पर — कोई डिलीवरी चार्ज नहीं (सिर्फ़ दूध-दही पर छोटा चार्ज)। <b class='strict'>कृपया पहले UPI से पेमेंट करें — कैश ऑन डिलीवरी की सुविधा नहीं है।</b>", "Within 6 km on orders of ₹499 or more — no delivery charge (only milk & curd have a small charge). <b class='strict'>Please pay by UPI first — sorry, no cash on delivery.</b>")}</p></div>
+   <div class="feat">{art.scooter(62)}<h3>{T("घर तक डिलीवरी", "Home delivery")}</h3><p>{T("6 km तक, सुबह 9 से शाम 5 बजे तक, ₹499 या ज़्यादा के ऑर्डर पर — कोई डिलीवरी चार्ज नहीं (सिर्फ़ दूध-दही पर छोटा चार्ज)। <b class='strict'>कृपया पहले UPI से पेमेंट करें — कैश ऑन डिलीवरी की सुविधा नहीं है।</b>", "Within 6 km, 9 am – 5 pm, on orders of ₹499 or more — no delivery charge (only milk & curd have a small charge). <b class='strict'>Please pay by UPI first — sorry, no cash on delivery.</b>")}</p></div>
   </div>
  </div>
 </section>
@@ -590,9 +590,9 @@ def visit_section(title=True):
    <div class="info">
     <dl>
      <div><dt>{T("पता", "Address")}</dt><dd>{T("माँ भगवती मिष्ठान भंडार, ननौरा मेन रोड (NH 527B), दरभंगा एयरपोर्ट के पास, दरभंगा, बिहार 846005 — एयरपोर्ट से ~5 km", "Maa Bhagwati Misthan Bhandar, Nanaura Main Rd (NH 527B), near Darbhanga Airport, Darbhanga, Bihar 846005 — ~5 km from the airport")}</dd></div>
-     <div><dt>{T("समय", "Hours")}</dt><dd>{T("रोज़ सुबह 7 से रात 9 बजे तक · ऑनलाइन ऑर्डर सुबह 7 से शाम 7 बजे तक (उसके बाद अगले दिन के लिए)", "Daily 7 am – 9 pm · online orders 7 am – 7 pm (later ones for the next day)")}</dd></div>
+     <div><dt>{T("समय", "Hours")}</dt><dd>{T("रोज़ सुबह 7 से रात 9 बजे तक · घर पर डिलीवरी सुबह 9 से शाम 5 बजे तक · दुकान से लेने के ऑनलाइन ऑर्डर सुबह 7 से शाम 7 बजे तक (उसके बाद अगले दिन के लिए)", "Daily 7 am – 9 pm · home delivery 9 am – 5 pm · online pickup orders 7 am – 7 pm (later ones for the next day)")}</dd></div>
      <div><dt>{T("फ़ोन", "Phone")}</dt><dd class="tels"><a href="tel:+91{PHONE1}">📞 {PHONE1}</a><a href="tel:+91{PHONE2}">📞 {PHONE2}</a></dd></div>
-     <div><dt>{T("डिलीवरी", "Delivery")}</dt><dd>{T("6 km तक · ऑर्डर कम से कम ₹499, डिलीवरी चार्ज नहीं (दूध-दही पर ₹5/₹10 प्रति पैक) · <b class='strict'>🚫 कैश ऑन डिलीवरी की सुविधा नहीं है — कृपया डिलीवरी से पहले पूरा पेमेंट UPI से करें</b> · दुकान से ख़ुद ले जाने पर कोई न्यूनतम रकम नहीं", "Within 6 km · minimum order ₹499, no delivery charge (milk & curd ₹5/₹10 per pack) · <b class='strict'>🚫 Sorry, no cash on delivery — please pay in full by UPI before delivery</b> · no minimum for pickup")}</dd></div>
+     <div><dt>{T("डिलीवरी", "Delivery")}</dt><dd>{T("6 km तक · सुबह 9 से शाम 5 बजे तक · ऑर्डर कम से कम ₹499, डिलीवरी चार्ज नहीं (दूध-दही पर ₹5/₹10 प्रति पैक) · <b class='strict'>🚫 कैश ऑन डिलीवरी की सुविधा नहीं है — कृपया डिलीवरी से पहले पूरा पेमेंट UPI से करें</b> · दुकान से ख़ुद ले जाने पर कोई न्यूनतम रकम नहीं", "Within 6 km · 9 am – 5 pm · minimum order ₹499, no delivery charge (milk & curd ₹5/₹10 per pack) · <b class='strict'>🚫 Sorry, no cash on delivery — please pay in full by UPI before delivery</b> · no minimum for pickup")}</dd></div>
     </dl>
     <div class="row mt">
      <a class="btn btn-main btn-sm" href="{MAPS}" target="_blank" rel="noopener">{icon("pin")}{T("रास्ता देखें", "Get directions")}</a>
@@ -902,8 +902,8 @@ FAQ = [
      'माफ़ कीजिए, कैश ऑन डिलीवरी की सुविधा नहीं है। घर पर डिलीवरी सिर्फ़ पहले पेमेंट पर होती है — हम आपका ऑर्डर कन्फर्म करेंगे, फिर कृपया UPI से पूरा पेमेंट कर दीजिए; पेमेंट के बाद ही डिलीवरी निकलती है। दुकान से ख़ुद ले जाने पर पेमेंट दुकान पर होता है।',
      'Sorry, there is no cash on delivery. Home delivery is prepaid only — we confirm your order, then please pay in full by UPI; delivery leaves only after payment. For pickup, you pay at the shop.'),
     ('ऑर्डर कब तक दे सकते हैं?', 'Until when can I order?',
-     'आप सुबह 7 से शाम 7 बजे तक ऑनलाइन ऑर्डर दे सकते हैं। शाम 7 के बाद आप अगले दिन या आगे की तारीख के लिए ऑर्डर दे सकते हैं। "जल्दी" वाले ऑर्डर आम तौर पर 30–60 मिनट में पहुँच जाते हैं।',
-     'Online orders from 7 am to 7 pm. After 7 pm you can order for the next day or a later date. "As soon as possible" orders usually take 30–60 minutes.'),
+     'घर पर डिलीवरी सुबह 9 से शाम 5 बजे तक होती है — "जल्दी" वाली डिलीवरी के ऑर्डर आप सुबह 9 से शाम 4 बजे तक दे सकते हैं, ये आम तौर पर 30–60 मिनट में पहुँच जाते हैं। दुकान से ख़ुद लेने के ऑनलाइन ऑर्डर सुबह 7 से शाम 7 बजे तक। उसके बाद आप अगले दिन या आगे की तारीख के लिए ऑर्डर दे सकते हैं।',
+     'Home delivery is from 9 am to 5 pm — "as soon as possible" delivery orders can be placed from 9 am to 4 pm and usually take 30–60 minutes. Online pickup orders from 7 am to 7 pm. After that you can order for the next day or a later date.'),
     ('बड़ा ऑर्डर कितने पहले देना होगा?', 'How early should I place a big order?',
      'शादी-भोज जैसे बड़े मिठाई ऑर्डर कृपया कम से कम 2 दिन पहले बता दीजिए। थोक दूध-दही-पनीर: कल के लिए आज दोपहर 2 बजे तक बता दीजिए। रोज़ का छोटा ऑर्डर उसी दिन भी मिल जाता है।',
      'Big sweets orders for weddings and feasts: at least 2 days ahead. Bulk milk, curd and paneer: by 2 pm for the next day. Everyday small orders can be delivered the same day.'),
