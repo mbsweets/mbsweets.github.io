@@ -427,3 +427,5 @@ section{padding:44px 0}
 .plist li .pr small{font-size:12.5px;color:#8A5A00;font-weight:600;white-space:nowrap}
 .plist li .pr small i{font-style:normal}
 .plist li .pr small span{color:inherit}
+.rulebox{margin:6px 0 14px;padding:10px 14px;border-radius:14px;background:#FFF4DC;border:1.5px solid #E2B14A;color:#4A0C10;font-size:15px;line-height:1.55}
+.rulebox b{color:#6E1616}

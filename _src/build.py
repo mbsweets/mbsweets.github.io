@@ -155,7 +155,7 @@ def footer():
    <li><a href="{MAPS}" target="_blank" rel="noopener">{T("📍 Google Maps पर रास्ता", "📍 Directions on Google Maps")}</a></li>
   </ul></div>
  </div>
- <div class="wrap fine">{T("हम 6 km तक घर पर डिलीवरी करते हैं — ऑर्डर कम से कम ₹499 का, डिलीवरी का कोई चार्ज नहीं (सिर्फ़ दूध-दही पर छोटा चार्ज)। डिलीवरी की उपलब्धता देखकर ही हम आपकी डिलीवरी कन्फर्म करेंगे। पेमेंट: ऑर्डर कन्फर्म होने के बाद, कृपया डिलीवरी से पहले पूरा पेमेंट UPI से कर दीजिए — कैश ऑन डिलीवरी की सुविधा नहीं है। दाम वही जो दुकान में।", "We deliver to your home within 6 km — minimum order ₹499, no delivery charge (only milk & curd have a small charge). We confirm delivery only after checking availability. Payment: once your order is confirmed, please pay in full by UPI before delivery — sorry, no cash on delivery. Same prices as in the shop.")}<br>© <span id="yr">2026</span> MB Sweets · {T("माँ भगवती मिष्ठान भंडार, ननौरा, दरभंगा", "Maa Bhagwati Misthan Bhandar, Nanaura, Darbhanga")}</div>
+ <div class="wrap fine">{T("ऑनलाइन ऑर्डर में मिठाई या केक ज़रूरी है — दूध-दही, कोल्ड ड्रिंक और पैकेट सामान उसी के साथ। हम 6 km तक घर पर डिलीवरी करते हैं — ऑर्डर कम से कम ₹499 का, डिलीवरी का कोई चार्ज नहीं (सिर्फ़ दूध-दही पर छोटा चार्ज)। डिलीवरी की उपलब्धता देखकर ही हम आपकी डिलीवरी कन्फर्म करेंगे। पेमेंट: ऑर्डर कन्फर्म होने के बाद, कृपया डिलीवरी से पहले पूरा पेमेंट UPI से कर दीजिए — कैश ऑन डिलीवरी की सुविधा नहीं है। दाम वही जो दुकान में।", "Online orders must include sweets or cake — milk, curd, cold drinks and packaged items come along with them. We deliver to your home within 6 km — minimum order ₹499, no delivery charge (only milk & curd have a small charge). We confirm delivery only after checking availability. Payment: once your order is confirmed, please pay in full by UPI before delivery — sorry, no cash on delivery. Same prices as in the shop.")}<br>© <span id="yr">2026</span> MB Sweets · {T("माँ भगवती मिष्ठान भंडार, ननौरा, दरभंगा", "Maa Bhagwati Misthan Bhandar, Nanaura, Darbhanga")}</div>
 </footer>
 <nav class="dock" aria-label="जल्दी संपर्क">
  <a class="o" href="{ORDER}" data-order>{icon("bag")}{T("ऑर्डर करें", "Order")}</a>
@@ -387,6 +387,7 @@ def home():
     {hero_card("rasgulla", "❤️ ग्राहकों की पसंद", "❤️ Most loved", "शुद्ध छेना + हाथ से पिसी इलायची", "Pure chhena + hand-ground cardamom")}
    </div>
    <p class="dline">🛵 {T('<span class="nw">6 km तक घर पर डिलीवरी</span> · <span class="nw">कम से कम ₹499, कोई चार्ज नहीं (दूध-दही पर छोटा चार्ज)</span> · <span class="nw">"जल्दी" वाला ऑर्डर आम तौर पर 30–60 मिनट में</span> · <b class="strict nw">पहले UPI पेमेंट — कैश ऑन डिलीवरी नहीं</b>', '<span class="nw">Home delivery within 6 km</span> · <span class="nw">minimum ₹499, no charge (small charge on milk & curd)</span> · <span class="nw">"ASAP" orders usually in 30–60 minutes</span> · <b class="strict nw">UPI payment first — no cash on delivery</b>')}</p>
+   <p class="rulebox">{T("<b>🍬 ज़रूरी सूचना:</b> ऑनलाइन ऑर्डर में <b>मिठाई या केक ज़रूर लें</b>। उसी के साथ आप दूध-दही-पनीर, कोल्ड ड्रिंक और पैकेट सामान मँगवा सकते हैं — सिर्फ़ इन चीज़ों का अलग से ऑर्डर हम स्वीकार नहीं कर पाएँगे; ये सामान आप दुकान पर आकर ले सकते हैं। ₹499 या उससे ज़्यादा के ऑर्डर पर हम घर तक पहुँचा देंगे।", "<b>🍬 Please note:</b> online orders must include <b>sweets or cake</b>. Along with them you can order milk, curd, paneer, cold drinks and packaged items — we cannot accept orders of only these items; you can buy them at the shop. We deliver home on orders of ₹499 or more.")}</p>
    <div class="row hcta">
     <a class="btn btn-main btn-big" href="{ORDER}" data-order>{icon("bag")}{T("अभी ऑर्डर करें", "Order now")}</a>
     <a class="btn btn-wa" href="{wa(WA_HELLO)}" target="_blank" rel="noopener">{icon("wa")}WhatsApp</a>
@@ -789,6 +790,7 @@ def products_page():
   <div class="eyebrow">{T("मिठाई के साथ रोज़ की ज़रूरत", "Everyday needs, along with sweets")}</div>
   <h1>{T("दूध-दही, नमकीन और पैकेट सामान", "Dairy, namkeen & packaged goods")}</h1>
   <p class="lead">{T("सुधा दूध, अमूल और अमृत दही, पनीर, नमकीन-भुजिया, बिस्किट-चॉकलेट और ठंडी कोल्ड ड्रिंक — मिठाई के ऑर्डर के साथ घर मँगवाइए। पैकेट सामान MRP पर।", "Sudha milk, Amul and Amrit curd, paneer, namkeen, biscuits, chocolates and chilled drinks — add them to your sweets order. Packaged goods at MRP.")}</p>
+  <p class="rulebox">{T("<b>🍬 ज़रूरी सूचना:</b> ऑनलाइन ऑर्डर में <b>मिठाई या केक ज़रूर लें</b>। उसी के साथ आप दूध-दही-पनीर, कोल्ड ड्रिंक और पैकेट सामान मँगवा सकते हैं — सिर्फ़ इन चीज़ों का अलग से ऑर्डर हम स्वीकार नहीं कर पाएँगे; ये सामान आप दुकान पर आकर ले सकते हैं। ₹499 या उससे ज़्यादा के ऑर्डर पर हम घर तक पहुँचा देंगे।", "<b>🍬 Please note:</b> online orders must include <b>sweets or cake</b>. Along with them you can order milk, curd, paneer, cold drinks and packaged items — we cannot accept orders of only these items; you can buy them at the shop. We deliver home on orders of ₹499 or more.")}</p>
  </div>
 </section>
 <section style="padding-top:22px">
@@ -796,7 +798,7 @@ def products_page():
   <article class="cat"><div class="pics four">{simg("menu-milk.webp", "सुधा दूध", lazy=False)}{simg("menu-dahi-amul.webp", "अमूल दही — दुकान की असली फोटो", lazy=False)}{simg("menu-dahi-amrit.webp", "अमृत दही — दुकान की असली फोटो", lazy=False)}{simg("menu-paneer.webp", "पनीर", lazy=False)}</div><div>
    <div class="eyebrow">{T("रोज़ ताज़ा", "Fresh every day")}</div><h2>{T("दूध, दही और पनीर", "Milk, curd & paneer")}</h2>
    <ul class="plist">{dairy}</ul>
-   <p class="dfee">🚚 {T("घर पर डिलीवरी: 400 ग्राम तक के दही पैक और हर 1 लीटर दूध पर ₹5, 1 किलो दही पर ₹10 · दुकान से ख़ुद लेने पर कोई चार्ज नहीं · सिर्फ़ दूध-दही का ऑर्डर ₹499 से कम का भी हम पहुँचा देंगे।", "Home delivery: ₹5 per curd pack up to 400 g and per litre of milk, ₹10 per 1 kg curd · no charge if you pick up · we deliver milk & curd-only orders even below ₹499.")}</p>
+   <p class="dfee">🚚 {T("घर पर डिलीवरी: 400 ग्राम तक के दही पैक और हर 1 लीटर दूध पर ₹5, 1 किलो दही पर ₹10 · दुकान से ख़ुद लेने पर कोई चार्ज नहीं।", "Home delivery: ₹5 per curd pack up to 400 g and per litre of milk, ₹10 per 1 kg curd · no charge if you pick up.")}</p>
    <div class="row"><a class="btn btn-main" href="{olink(tab="dairy")}" data-order>{icon("bag")}{T("दूध-दही ऑर्डर करें", "Order dairy")}</a><a class="btn btn-line" href="/bulk-dairy/">{T("थोक में चाहिए?", "Need it in bulk?")}</a></div>
   </div></article>
   {cat([pic("real-chips", "नमकीन और चिप्स का रैक", "(min-width:880px) 500px, 92vw")],
@@ -889,12 +891,15 @@ def wedding_page():
 
 # ================= CONTACT =================
 FAQ = [
+    ('क्या सिर्फ़ दूध-दही, कोल्ड ड्रिंक या पैकेट सामान का ऑर्डर कर सकते हैं?', 'Can I order only milk, curd, cold drinks or packaged items?',
+     'ऑनलाइन ऑर्डर में मिठाई या केक ज़रूरी है। मिठाई या केक के साथ आप दूध-दही-पनीर, कोल्ड ड्रिंक और पैकेट सामान भी मँगवा सकते हैं — सिर्फ़ इन चीज़ों का अलग से ऑर्डर हम स्वीकार नहीं कर पाएँगे। ये सामान आप दुकान पर आकर ले सकते हैं।',
+     'Online orders must include sweets or cake. Along with them you can also order milk, curd, paneer, cold drinks and packaged items — we cannot accept orders of only these items. You can buy them at the shop.'),
     ('डिलीवरी कहाँ तक होती है?', 'Where do you deliver?',
      'हम दुकान से 6 km तक डिलीवरी करते हैं (जैसे खिरमा, एयरपोर्ट, केवटी रनवे, पिंडारुच की तरफ)। डिलीवरी की उपलब्धता देखकर ही हम आपकी डिलीवरी कन्फर्म करते हैं।',
      'We deliver within 6 km of the shop (towards Khirma, the airport, Kewti runway, Pindaruch and so on). We confirm delivery only after checking availability.'),
     ('कम से कम कितने का ऑर्डर देना होगा?', 'Is there a minimum order?',
-     'घर पर डिलीवरी के लिए ऑर्डर कम से कम ₹499 का होना चाहिए — इस पर कोई डिलीवरी चार्ज नहीं लगता। अगर आप दुकान से ख़ुद ले जाते हैं, तो कोई न्यूनतम रकम नहीं है। दूध-दही की घर पर डिलीवरी पर 400 ग्राम तक के दही पैक और हर 1 लीटर दूध पर ₹5, 1 किलो दही पर ₹10 लगता है — सिर्फ़ दूध-दही का ऑर्डर ₹499 से कम का भी हम पहुँचा देंगे।',
-     'Home delivery needs an order of at least ₹499 — with no delivery charge. There is no minimum for pickup. Home delivery of milk & curd costs ₹5 per curd pack up to 400 g and per litre of milk, ₹10 per 1 kg curd — we deliver milk & curd-only orders even below ₹499.'),
+     'घर पर डिलीवरी के लिए ऑर्डर कम से कम ₹499 का होना चाहिए — इस पर कोई डिलीवरी चार्ज नहीं लगता। अगर आप दुकान से ख़ुद ले जाते हैं, तो कोई न्यूनतम रकम नहीं है। दूध-दही की घर पर डिलीवरी पर 400 ग्राम तक के दही पैक और हर 1 लीटर दूध पर ₹5, 1 किलो दही पर ₹10 लगता है। ऑनलाइन ऑर्डर में मिठाई या केक ज़रूरी है।',
+     'Home delivery needs an order of at least ₹499 — with no delivery charge. There is no minimum for pickup. Home delivery of milk & curd costs ₹5 per curd pack up to 400 g and per litre of milk, ₹10 per 1 kg curd. Online orders must include sweets or cake.'),
     ('पेमेंट कैसे करें?', 'How do I pay?',
      'पहले हम WhatsApp पर आपका ऑर्डर कन्फर्म करते हैं, उसके बाद कृपया UPI से पूरा पेमेंट करके स्क्रीनशॉट भेज दीजिए — कैश ऑन डिलीवरी की सुविधा नहीं है। पेमेंट के बाद ही डिलीवरी निकलती है। दुकान से ख़ुद ले जाने पर आप सामान लेते समय दुकान पर पेमेंट कर सकते हैं।',
      'We first confirm your order on WhatsApp; then please pay the full amount by UPI and send us the screenshot — sorry, there is no cash on delivery. Delivery leaves only after payment. For pickup, you can pay at the shop.'),
