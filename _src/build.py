@@ -252,7 +252,7 @@ SWEETS = [
          d_hi='खोआ से बना, नरम और रसीला — हर मौके की शान।', d_en='Made with khoa — soft, juicy and perfect for every occasion.'),
     dict(key='chamcham', hi='चमचम', en='Cham Cham', img='chamcham', ids=['i7', 'i8'],
          d_hi='छेना की मिठाई, नारियल बुरादे के साथ — दुकान में कई किस्में।', d_en='Chhena sweet with grated coconut — several varieties in the shop.'),
-    dict(key='rasmalai', hi='रसमलाई', en='Rasmalai', img='rasmalai', ids=['i22'],
+    dict(key='rasmalai', hi='रसमलाई', en='Rasmalai', img='real-rasmalai-cups', real=True, ids=['i22'],
          d_hi='मलाईदार दूध में छेना — 1 प्लेट में 1 बड़ा पीस।', d_en='Chhena in creamy milk — 1 big piece per plate.'),
     dict(key='peda', hi='पेड़ा', en='Peda', img='peda', ids=['i9'],
          d_hi='खोआ का पारंपरिक पेड़ा — पूजा और खुशी के मौकों के लिए।', d_en='Traditional khoa peda — for pujas and happy occasions.'),
