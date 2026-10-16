@@ -72,6 +72,9 @@ function applyNotice(){
   var msg='';
   if(C.pause)msg=lang==='en'?'Sorry, online orders are closed today — you can still buy at the shop.':'माफ़ कीजिए, आज ऑनलाइन ऑर्डर बंद है — आप दुकान पर आकर ले सकते हैं।';
   else if(C.noticeHi)msg=lang==='en'&&C.noticeEn?C.noticeEn:C.noticeHi;
+  /* घर पर डिलीवरी कुछ दिन बंद (catalog deliveryOff) — उन्हीं दिनों सूचना, फिर अपने-आप हट जाती है */
+  var o=C.deliveryOff,d=istNow(),k=d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
+  if(!C.pause&&o&&o.from&&o.to&&k>=o.from&&k<=o.to){var dm=(lang==='en'&&o.en)||o.hi||'';if(dm)msg=msg?dm+' · '+msg:dm;}
   n.textContent=msg;n.classList.toggle('on',!!msg);
 }
 function applyCatalog(){
