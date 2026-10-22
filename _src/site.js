@@ -75,6 +75,13 @@ function applyNotice(){
   /* घर पर डिलीवरी कुछ दिन बंद (catalog deliveryOff) — उन्हीं दिनों सूचना, फिर अपने-आप हट जाती है */
   var o=C.deliveryOff,d=istNow(),k=d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
   if(!C.pause&&o&&o.from&&o.to&&k>=o.from&&k<=o.to){var dm=(lang==='en'&&o.en)||o.hi||'';if(dm)msg=msg?dm+' · '+msg:dm;}
+  /* दुकान पूरे दिन बंद (catalog closed.days) — 2 दिन पहले से आख़िरी बंद दिन तक */
+  var cl=C.closed;
+  if(!C.pause&&cl&&Array.isArray(cl.days)&&cl.days.length){
+    var ds=cl.days.slice().sort(),f=new Date(ds[0]+'T00:00:00');f.setDate(f.getDate()-2);
+    var fk=f.getFullYear()+'-'+('0'+(f.getMonth()+1)).slice(-2)+'-'+('0'+f.getDate()).slice(-2);
+    if(k>=fk&&k<=ds[ds.length-1]){var cm=(lang==='en'&&cl.en)||cl.hi||'';if(cm)msg=msg?cm+' · '+msg:cm;}
+  }
   n.textContent=msg;n.classList.toggle('on',!!msg);
 }
 function applyCatalog(){
