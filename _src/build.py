@@ -4,8 +4,10 @@ import json, subprocess, html, os, re, hashlib, datetime, urllib.parse
 import art
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = '/home/claude/mbsweets.github.io'
-CAT = json.loads(subprocess.check_output(['node', '-e', "global.window={};require('/home/claude/mb-sweets/catalog.js');process.stdout.write(JSON.stringify(window.MB_CATALOG))"]))
+# MB_OUT / MB_CATALOG: set by the nightly GitHub Action (.github/workflows/rebuild.yml); defaults = local work folders
+OUT = os.environ.get('MB_OUT') or '/home/claude/mbsweets.github.io'
+CATJS = os.path.abspath(os.environ.get('MB_CATALOG') or '/home/claude/mb-sweets/catalog.js')
+CAT = json.loads(subprocess.check_output(['node', '-e', "global.window={};require(process.argv[1]);process.stdout.write(JSON.stringify(window.MB_CATALOG))", CATJS]))
 ITEMS = {r[0]: {'id': r[0], 'name': r[1], 'cat': r[2], 'unit': r[3], 'price': r[4]} for r in CAT['items']}
 # online price + home-delivery charge (milk & curd) — the shop counter keeps the items price
 ONLINE = {k: v for k, v in (CAT.get('online') or {}).items() if isinstance(v, list) and v and v[0] > 0}

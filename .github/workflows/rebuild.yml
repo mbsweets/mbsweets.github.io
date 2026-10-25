@@ -1,0 +1,34 @@
+# रोज़ रात 11:41 बजे (भारत समय): दुकान सेटिंग से बदले दाम वेबसाइट के हर हिस्से में (Google वाला विवरण भी)।
+# हाथ से चलाना हो: GitHub → Actions → "Website auto update" → Run workflow.
+name: Website auto update
+on:
+  schedule:
+    - cron: '11 18 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+concurrency:
+  group: website-rebuild
+  cancel-in-progress: false
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build from catalog.js
+        id: build
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          bash _src/auto_rebuild.sh
+      - name: Push
+        if: steps.build.outputs.pushed == 'yes'
+        run: |
+          git push origin "HEAD:${GITHUB_REF_NAME}" || { git pull --rebase origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}"; }
+      - name: Ask GitHub Pages to publish
+        if: steps.build.outputs.pushed == 'yes' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X POST "repos/${GITHUB_REPOSITORY}/pages/builds" || echo "Pages build request skipped (the push already starts it)"
