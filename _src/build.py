@@ -393,7 +393,7 @@ def home():
     <b class="ch">✅ {T("साफ़ हिसाब — कोई छुपा चार्ज नहीं", "Clear pricing — no hidden charges")}</b>
     <ul>
      <li>{T("मिठाई का दाम वही जो दुकान में", "Same sweet prices as in the shop")}</li>
-     <li>{T("🛵 6 km तक घर पर डिलीवरी — ₹499 या ज़्यादा के ऑर्डर पर, <b>डिलीवरी चार्ज ₹0</b>", "🛵 Home delivery within 6 km — on orders of ₹499 or more, <b>₹0 delivery charge</b>")}</li>
+     <li>{T('🛵 6 km तक घर पर डिलीवरी — ₹499 या ज़्यादा के ऑर्डर पर, <b>डिलीवरी चार्ज ₹0</b> · "जल्दी" वाला ऑर्डर आम तौर पर 30–60 मिनट में', '🛵 Home delivery within 6 km — on orders of ₹499 or more, <b>₹0 delivery charge</b> · "ASAP" orders usually in 30–60 minutes')}</li>
      <li>{T("🥛 सिर्फ़ दूध-दही पर ₹5/₹10 प्रति पैक", "🥛 Only milk & curd: ₹5/₹10 per pack")}</li>
      <li>{T("🧾 पूरी रकम ऑर्डर भेजने से पहले ही दिख जाती है", "🧾 You see the full amount before you send the order")}</li>
      <li>{T("💳 घर पर डिलीवरी के लिए पहले UPI पेमेंट — कैश ऑन डिलीवरी नहीं · दुकान से लेने पर कोई न्यूनतम रकम नहीं", "💳 For home delivery, UPI payment first — no cash on delivery · no minimum for pickup")}</li>
