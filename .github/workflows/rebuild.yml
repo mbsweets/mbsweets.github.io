@@ -5,6 +5,11 @@ on:
   schedule:
     - cron: '11 18 * * *'
   workflow_dispatch:
+    inputs:
+      publish:
+        description: 'दाम न बदले हों तब भी GitHub Pages से दोबारा publish करो'
+        type: boolean
+        default: false
 permissions:
   contents: write
   pages: write
@@ -28,7 +33,7 @@ jobs:
         run: |
           git push origin "HEAD:${GITHUB_REF_NAME}" || { git pull --rebase origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}"; }
       - name: Ask GitHub Pages to publish
-        if: steps.build.outputs.pushed == 'yes' && github.ref == 'refs/heads/main'
+        if: (steps.build.outputs.pushed == 'yes' || inputs.publish) && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh api -X POST "repos/${GITHUB_REPOSITORY}/pages/builds" || echo "Pages build request skipped (the push already starts it)"
