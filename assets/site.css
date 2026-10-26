@@ -345,6 +345,7 @@ section{padding:44px 0}
 .fine{font-size:14px;color:#D9BD95;border-top:1px solid rgba(242,169,27,.25);margin-top:22px;padding-top:14px}
 @media(min-width:960px){.foot{padding-bottom:40px}}
 @media(min-width:900px){.foot .cols{grid-template-columns:1.3fr 1fr 1fr 1fr}}
+@media(max-width:899px){.foot .fpages ul{grid-template-columns:1fr 1fr;column-gap:14px}}
 
 /* ---------- sticky action bar (phones) ---------- */
 .dock{position:fixed;left:0;right:0;bottom:0;z-index:50;display:grid;grid-template-columns:1.35fr 1fr 1fr 1fr;gap:6px;padding:8px 8px calc(8px + env(safe-area-inset-bottom));background:rgba(255,252,246,.97);border-top:1px solid var(--line);box-shadow:0 -8px 22px -12px rgba(74,13,23,.35)}
@@ -356,6 +357,16 @@ section{padding:44px 0}
 
 .notice{background:var(--sindoor);color:#fff;text-align:center;font-weight:700;padding:8px 16px;display:none}
 .notice.on{display:block}
+.fest{display:block;background:linear-gradient(135deg,#6A1222,#A8322E 55%,#C2571F);color:#FFF4DC;text-decoration:none;border-bottom:2px solid #E7B84A}
+.fest[hidden]{display:none}
+.fest .fin{display:flex;align-items:center;gap:12px;padding-top:10px;padding-bottom:10px}
+.fest .fx{font-size:30px;line-height:1}
+.fest b{display:block;font-family:var(--hd);font-size:17px;line-height:1.25;color:#F7DC8C}
+.fest small{display:block;font-size:14px;line-height:1.35;color:#FFF4DC}
+.fest .pr{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px}
+.fest .pr span{background:rgba(255,244,220,.16);border:1px solid rgba(247,220,140,.55);border-radius:999px;padding:1px 10px;font-size:13.5px;font-weight:700;white-space:nowrap}
+.fest .go{margin-left:auto;font-weight:800;color:#F7DC8C;white-space:nowrap}
+.fest:hover .go{text-decoration:underline}
 .center{text-align:center}
 .mt{margin-top:18px}
 
@@ -429,3 +440,8 @@ section{padding:44px 0}
 .plist li .pr small span{color:inherit}
 .rulebox{margin:6px 0 14px;padding:10px 14px;border-radius:14px;background:#FFF4DC;border:1.5px solid #E2B14A;color:#4A0C10;font-size:15px;line-height:1.55}
 .rulebox b{color:#6E1616}
+.clear{margin:10px 0 14px;padding:10px 14px 8px;border-radius:14px;background:#F1FAF3;border:1.5px solid #8CC9A0;color:#23402C;font-size:14.5px;line-height:1.5}
+.clear .ch{display:block;font-size:16px;color:#1F6B3A;margin-bottom:4px}
+.clear ul{margin:0;padding:0 0 0 2px;list-style:none}
+.clear li{padding:2px 0}
+.clear li b{color:#1F6B3A}

@@ -116,6 +116,7 @@ def header(active):
     links = ''.join(f'<a href="{u}"{" aria-current=page" if u == active else ""}>{T(hi, en)}</a>' for u, hi, en in NAV)
     return f'''<a class="skip" href="#main">{T("सीधे सामग्री पर जाएँ", "Skip to content")}</a>
 <div class="notice" id="notice" role="status"></div>
+<a class="fest" id="fest" href="{ORDER}" data-order hidden></a>
 <header class="hdr">
  <div class="wrap bar">
   <a class="brand" href="/" aria-label="MB Sweets — होम">
@@ -144,7 +145,7 @@ def footer():
     <a href="{wa(WA_HELLO)}" target="_blank" rel="noopener" aria-label="WhatsApp">{icon("wa")}</a>
    </div>
   </div>
-  <div><h3>{T("पेज", "Pages")}</h3><ul>{links}</ul></div>
+  <div class="fpages"><h3>{T("पेज", "Pages")}</h3><ul>{links}</ul></div>
   <div><h3>{T("पता और समय", "Address & hours")}</h3>
    <p>{T("ननौरा मेन रोड (NH 527B), दरभंगा एयरपोर्ट के पास<br>दरभंगा, बिहार 846005 · एयरपोर्ट से ~5 km", "Nanaura Main Rd (NH 527B), near Darbhanga Airport<br>Darbhanga, Bihar 846005 · ~5 km from the airport")}</p>
    <p>{T("रोज़ सुबह 7 से रात 9 बजे तक", "Daily 7 am – 9 pm")}</p>
@@ -388,8 +389,17 @@ def home():
     {hero_card("balushahi", "⭐ हमारी ख़ास", "⭐ Our special", "ऊपर से नरम, अंदर से खस्ता", "Soft outside, crisp inside")}
     {hero_card("rasgulla", "❤️ ग्राहकों की पसंद", "❤️ Most loved", "शुद्ध छेना + हाथ से पिसी इलायची", "Pure chhena + hand-ground cardamom")}
    </div>
-   <p class="dline">🛵 {T('<span class="nw">6 km तक घर पर डिलीवरी</span> · <span class="nw">कम से कम ₹499, कोई चार्ज नहीं (दूध-दही पर छोटा चार्ज)</span> · <span class="nw">"जल्दी" वाला ऑर्डर आम तौर पर 30–60 मिनट में</span> · <b class="strict nw">पहले UPI पेमेंट — कैश ऑन डिलीवरी नहीं</b>', '<span class="nw">Home delivery within 6 km</span> · <span class="nw">minimum ₹499, no charge (small charge on milk & curd)</span> · <span class="nw">"ASAP" orders usually in 30–60 minutes</span> · <b class="strict nw">UPI payment first — no cash on delivery</b>')}</p>
-   <p class="rulebox">{T("<b>🍬 ज़रूरी सूचना:</b> ऑनलाइन ऑर्डर में <b>मिठाई या केक ज़रूर लें</b>। उसी के साथ आप दूध-दही-पनीर, कोल्ड ड्रिंक और पैकेट सामान मँगवा सकते हैं — सिर्फ़ इन चीज़ों का अलग से ऑर्डर हम स्वीकार नहीं कर पाएँगे; ये सामान आप दुकान पर आकर ले सकते हैं। ₹499 या उससे ज़्यादा के ऑर्डर पर हम घर तक पहुँचा देंगे।", "<b>🍬 Please note:</b> online orders must include <b>sweets or cake</b>. Along with them you can order milk, curd, paneer, cold drinks and packaged items — we cannot accept orders of only these items; you can buy them at the shop. We deliver home on orders of ₹499 or more.")}</p>
+   <div class="clear" id="clear">
+    <b class="ch">✅ {T("साफ़ हिसाब — कोई छुपा चार्ज नहीं", "Clear pricing — no hidden charges")}</b>
+    <ul>
+     <li>{T("मिठाई का दाम वही जो दुकान में", "Same sweet prices as in the shop")}</li>
+     <li>{T("🛵 6 km तक घर पर डिलीवरी — ₹499 या ज़्यादा के ऑर्डर पर, <b>डिलीवरी चार्ज ₹0</b>", "🛵 Home delivery within 6 km — on orders of ₹499 or more, <b>₹0 delivery charge</b>")}</li>
+     <li>{T("🥛 सिर्फ़ दूध-दही पर ₹5/₹10 प्रति पैक", "🥛 Only milk & curd: ₹5/₹10 per pack")}</li>
+     <li>{T("🧾 पूरी रकम ऑर्डर भेजने से पहले ही दिख जाती है", "🧾 You see the full amount before you send the order")}</li>
+     <li>{T("💳 घर पर डिलीवरी के लिए पहले UPI पेमेंट — कैश ऑन डिलीवरी नहीं · दुकान से लेने पर कोई न्यूनतम रकम नहीं", "💳 For home delivery, UPI payment first — no cash on delivery · no minimum for pickup")}</li>
+     <li>{T("🍬 ऑनलाइन ऑर्डर में मिठाई या केक ज़रूरी — दूध-दही, पैकेट सामान उसी के साथ", "🍬 Online orders need sweets or cake — milk, curd and packaged items come along with them")}</li>
+    </ul>
+   </div>
    <div class="row hcta">
     <a class="btn btn-main btn-big" href="{ORDER}" data-order>{icon("bag")}{T("अभी ऑर्डर करें", "Order now")}</a>
     <a class="btn btn-wa" href="{wa(WA_HELLO)}" target="_blank" rel="noopener">{icon("wa")}WhatsApp</a>
@@ -447,7 +457,7 @@ def home():
   <ol class="steps3">
    <li><span class="n">1</span><h3>{T("मेन्यू से चुनें", "Pick from the menu")}</h3><p>{T("मिठाई, दूध-दही या केक चुनिए, समय बताइए और “ऑर्डर भेजें” दबाइए।", "Choose sweets, dairy or cakes, pick a time and tap “Send order”.")}</p></li>
    <li><span class="n">2</span><h3>{T("हम कन्फर्म करेंगे", "We confirm")}</h3><p>{T("हम उपलब्धता देखकर WhatsApp पर आपका ऑर्डर पक्का कर देंगे।", "We check availability and confirm your order on WhatsApp.")}</p></li>
-   <li><span class="n">3</span><h3>{T("पेमेंट और डिलीवरी", "Pay & receive")}</h3><p>{T("कृपया UPI से पूरा पेमेंट कर दीजिए — फिर हम ऑर्डर आपके घर पहुँचा देंगे। <b class='strict'>कैश ऑन डिलीवरी की सुविधा नहीं है।</b> दुकान से ले जाने पर पेमेंट वहीं कर सकते हैं।", "Please pay in full by UPI and we will deliver your order. <b class='strict'>Sorry, no cash on delivery.</b> For pickup, you can pay at the shop.")}</p></li>
+   <li><span class="n">3</span><h3>{T("पेमेंट और डिलीवरी", "Pay & receive")}</h3><p>{T("कृपया UPI से पूरा पेमेंट कर दीजिए — फिर हम ऑर्डर आपके घर पहुँचा देंगे। दुकान से ले जाने पर पेमेंट वहीं कर सकते हैं।", "Please pay in full by UPI and we will deliver your order. For pickup, you can pay at the shop.")}</p></li>
   </ol>
   <div class="center"><a class="btn btn-main" href="{ORDER}" data-order>{icon("bag")}{T("मेन्यू खोलें", "Open the menu")}</a></div>
  </div>
@@ -473,24 +483,9 @@ def home():
   <div class="mosaic">
    <figure class="w">{pic("real-chamcham", "दुकान में चमचम की ट्रे", "(min-width:900px) 560px, 100vw")}<figcaption>{T("चमचम की ट्रे", "A tray of cham cham")}</figcaption></figure>
    <figure>{pic("real-showcase", "मिठाई का शोकेस", "(min-width:900px) 280px, 50vw")}<figcaption>{T("मिठाई का शोकेस", "Our showcase")}</figcaption></figure>
-   <figure>{pic("real-rasgulla", "रसगुल्ला", "(min-width:900px) 280px, 50vw")}<figcaption>{T("रसगुल्ला", "Rasgulla")}</figcaption></figure>
    <figure>{pic("real-trays", "बालूशाही और चमचम की ट्रे", "(min-width:900px) 280px, 50vw")}<figcaption>{T("बालूशाही और चमचम", "Balushahi & cham cham")}</figcaption></figure>
-   <figure>{pic("real-mix-tray", "छेना की मिठाइयाँ", "(min-width:900px) 280px, 50vw")}<figcaption>{T("छेना की मिठाइयाँ", "Chhena sweets")}</figcaption></figure>
-   <figure class="w">{pic("real-white", "सफ़ेद चमचम", "(min-width:900px) 560px, 100vw")}<figcaption>{T("सफ़ेद चमचम", "White cham cham")}</figcaption></figure>
   </div>
   <div class="realnote">📸 {T("इस हिस्से की सारी फोटो हमारी दुकान की असली फोटो हैं।", "Every photo in this section is from our own shop.")}</div>
- </div>
-</section>
-
-<section>
- <div class="wrap">
-  {shead("क्यों MB Sweets", "Why MB Sweets", "भरोसा जो 2000 से चला आ रहा है", "Trusted since 2000", center=True)}
-  <div class="feats">
-   <div class="feat">{art.kadhai(62)}<h3>{T("अपने हाथ से बनी", "Made by hand")}</h3><p>{T("छेना और खोआ दुकान में ही बनता है — बाहर से नहीं आता।", "Our chhena and khoa are made right here, not bought in.")}</p></div>
-   <div class="feat">{art.diya(62)}<h3>{T("2000 से", "Since 2000")}</h3><p>{T("पापा श्री दिनेश कुमार साहू ने शुरू की — आज भी वही स्वाद और भरोसा।", "Started by our father Shri Dinesh Kumar Sahu — the same taste and trust today.")}</p></div>
-   <div class="feat">{art.vegmark(62)}<h3>{T("100% अंडा-रहित केक", "100% eggless cakes")}</h3><p>{T("जन्मदिन, सालगिरह, फोटो और थीम केक।", "Birthday, anniversary, photo and theme cakes.")}</p></div>
-   <div class="feat">{art.scooter(62)}<h3>{T("घर तक डिलीवरी", "Home delivery")}</h3><p>{T("6 km तक, सुबह 9 बजे से शाम 5 बजे तक, ₹499 या ज़्यादा के ऑर्डर पर — कोई डिलीवरी चार्ज नहीं (सिर्फ़ दूध-दही पर छोटा चार्ज)। <b class='strict'>कृपया पहले UPI से पेमेंट करें — कैश ऑन डिलीवरी की सुविधा नहीं है।</b>", "Within 6 km, 9 am to 5 pm, on orders of ₹499 or more — no delivery charge (only milk & curd have a small charge). <b class='strict'>Please pay by UPI first — sorry, no cash on delivery.</b>")}</p></div>
-  </div>
  </div>
 </section>
 
@@ -525,12 +520,6 @@ def home():
  <div class="wrap">
   {shead("केक", "Cakes", "हर जश्न के लिए केक", "Cakes for every celebration", "वनीला ½ किलो " + pid_b("i26") + " से। रेड वेलवेट, ब्लैक फॉरेस्ट, बटरस्कॉच, फोटो और थीम केक भी।", "Vanilla from " + pid_b("i26") + " for ½ kg. Red velvet, black forest, butterscotch, photo and theme cakes too.")}
   <span class="egg">{T("100% अंडा-रहित (Eggless)", "100% eggless")}</span>
-  <div class="cakerow mt">
-   <figure><span class="note-sample">{T("नमूना फोटो", "Sample photo")}</span>{pic("cake-chocolate", "चॉकलेट केक (नमूना फोटो)", "(min-width:900px) 270px, 50vw")}<figcaption>{T("चॉकलेट", "Chocolate")}</figcaption></figure>
-   <figure><span class="note-sample">{T("नमूना फोटो", "Sample photo")}</span>{pic("cake-redvelvet", "रेड वेलवेट केक (नमूना फोटो)", "(min-width:900px) 270px, 50vw")}<figcaption>{T("रेड वेलवेट", "Red velvet")}</figcaption></figure>
-   <figure><span class="note-sample">{T("नमूना फोटो", "Sample photo")}</span>{pic("cake-photo", "फोटो केक (नमूना फोटो)", "(min-width:900px) 270px, 50vw")}<figcaption>{T("फोटो केक", "Photo cake")}</figcaption></figure>
-   <figure><span class="note-sample">{T("नमूना फोटो", "Sample photo")}</span>{pic("cake-princess", "थीम केक (नमूना फोटो)", "(min-width:900px) 270px, 50vw")}<figcaption>{T("थीम केक", "Theme cake")}</figcaption></figure>
-  </div>
   <a class="more" href="/cakes/">{T("सारे केक और दाम", "All cakes & prices")}</a>
  </div>
 </section>
@@ -566,14 +555,15 @@ def home():
  </div>
 </section>
 
-{visit_section()}
+{visit_section(delivery=False)}
 '''
     return page('/', 'MB Sweets, ननौरा दरभंगा — मिथिला की मिठास | Sweet Shop near Darbhanga Airport',
                 'माँ भगवती मिष्ठान भंडार (MB Sweets), ननौरा, दरभंगा — 2000 से। शुद्ध छेना की मिठाई, हाथ से बनी बालूशाही, रसगुल्ला, गुलाब जामुन, अंडा-रहित केक, दूध-दही। घर बैठे ऑनलाइन ऑर्डर, 6 km तक डिलीवरी।',
                 body, ld=[business_ld()])
 
 
-def visit_section(title=True):
+def visit_section(title=True, delivery=True):
+    drow = ('<div><dt>' + T("डिलीवरी", "Delivery") + '</dt><dd>' + T("6 km तक · सुबह 9 बजे से शाम 5 बजे तक (अंतिम ऑर्डर शाम 4 बजे तक) · ऑर्डर कम से कम ₹499, डिलीवरी चार्ज नहीं (दूध-दही पर ₹5/₹10 प्रति पैक) · <b class='strict'>🚫 कैश ऑन डिलीवरी की सुविधा नहीं है — कृपया डिलीवरी से पहले पूरा पेमेंट UPI से करें</b> · दुकान से ख़ुद ले जाने पर कोई न्यूनतम रकम नहीं", "Within 6 km · 9 am to 5 pm (last order 4 pm) · minimum order ₹499, no delivery charge (milk & curd ₹5/₹10 per pack) · <b class='strict'>🚫 Sorry, no cash on delivery — please pay in full by UPI before delivery</b> · no minimum for pickup") + '</dd></div>') if delivery else ''
     head = shead("आइए दुकान पर", "Visit us", "पता, समय और रास्ता", "Address, hours & directions") if title else ''
     return f'''<section class="soft" id="visit">
  <div class="wrap">
@@ -595,7 +585,7 @@ def visit_section(title=True):
      <div><dt>{T("पता", "Address")}</dt><dd>{T("माँ भगवती मिष्ठान भंडार, ननौरा मेन रोड (NH 527B), दरभंगा एयरपोर्ट के पास, दरभंगा, बिहार 846005 — एयरपोर्ट से ~5 km", "Maa Bhagwati Misthan Bhandar, Nanaura Main Rd (NH 527B), near Darbhanga Airport, Darbhanga, Bihar 846005 — ~5 km from the airport")}</dd></div>
      <div><dt>{T("समय", "Hours")}</dt><dd>{T("🕖 दुकान खुलने का समय: सुबह 7 बजे से रात 9 बजे तक<br>🚚 घर पर डिलीवरी का समय: सुबह 9 बजे से शाम 5 बजे तक<br>🛍️ दुकान से ख़ुद ले जाने का समय: सुबह 7 बजे से रात 9 बजे तक<br>⏰ घर पर डिलीवरी का अंतिम ऑर्डर शाम 4 बजे तक लिया जाएगा", "🕖 Shop hours: 7 am to 9 pm<br>🚚 Home delivery: 9 am to 5 pm<br>🛍️ Pickup from the shop: 7 am to 9 pm<br>⏰ Last order for home delivery: 4 pm")}</dd></div>
      <div><dt>{T("फ़ोन", "Phone")}</dt><dd class="tels"><a href="tel:+91{PHONE1}">📞 {PHONE1}</a><a href="tel:+91{PHONE2}">📞 {PHONE2}</a></dd></div>
-     <div><dt>{T("डिलीवरी", "Delivery")}</dt><dd>{T("6 km तक · सुबह 9 बजे से शाम 5 बजे तक (अंतिम ऑर्डर शाम 4 बजे तक) · ऑर्डर कम से कम ₹499, डिलीवरी चार्ज नहीं (दूध-दही पर ₹5/₹10 प्रति पैक) · <b class='strict'>🚫 कैश ऑन डिलीवरी की सुविधा नहीं है — कृपया डिलीवरी से पहले पूरा पेमेंट UPI से करें</b> · दुकान से ख़ुद ले जाने पर कोई न्यूनतम रकम नहीं", "Within 6 km · 9 am to 5 pm (last order 4 pm) · minimum order ₹499, no delivery charge (milk & curd ₹5/₹10 per pack) · <b class='strict'>🚫 Sorry, no cash on delivery — please pay in full by UPI before delivery</b> · no minimum for pickup")}</dd></div>
+     {drow}
     </dl>
     <div class="row mt">
      <a class="btn btn-main btn-sm" href="{MAPS}" target="_blank" rel="noopener">{icon("pin")}{T("रास्ता देखें", "Get directions")}</a>

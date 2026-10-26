@@ -28,7 +28,7 @@ function applyLang(){
   });
   var b=$('#lang');if(b)b.textContent=lang==='en'?'हिंदी':'English';
   status();
-  applyPrices();applyNotice();
+  applyPrices();applyNotice();applyFest();
 }
 document.addEventListener('click',function(ev){
   if(ev.target.closest('#lang')){lang=lang==='en'?'hi':'en';try{localStorage.setItem(LS,lang);}catch(e){}applyLang();return;}
@@ -84,8 +84,24 @@ function applyNotice(){
   }
   n.textContent=msg;n.classList.toggle('on',!!msg);
 }
+/* त्योहार की पट्टी (catalog fest): from–to (दोनों दिन शामिल) सबसे ऊपर, फिर अपने-आप गायब; दाम उसी मेन्यू कार्ड से */
+function escH(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function applyFest(){
+  var C=window.MB_CATALOG,a=$('#fest');if(!a)return;
+  var f=C&&C.fest,d=istNow(),k=d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
+  var card=f&&(C.menu||[]).filter(function(c){return c&&c.key===f.card;})[0];
+  if(!f||!card||C.pause||!f.from||!f.to||k<f.from||k>f.to){a.hidden=true;return;}
+  var P={},off={};(C.items||[]).forEach(function(r){P[r[0]]=r[4];});(C.off||[]).forEach(function(id){off[id]=1;});
+  var en=lang==='en';
+  var pr=(card.opts||[]).map(function(o){o=typeof o==='string'?{id:o}:o;return (P[o.id]!=null&&!off[o.id])?'<span>'+escH(en?(o.en||o.hi||''):(o.hi||''))+' ₹'+P[o.id]+'</span>':'';}).join('');
+  var title=((en&&f.en)||f.hi||'').replace(/^🪔\s*/,''),sub=en?(f.subEn||f.subHi||''):(f.subHi||'');
+  a.setAttribute('href','/mb-sweets/order/#item='+encodeURIComponent(f.card));
+  a.innerHTML='<span class="wrap fin"><span class="fx">🪔</span><span class="ft"><b>'+escH(title)+'</b>'+(sub?'<small>'+escH(sub)+'</small>':'')+(pr?'<span class="pr">'+pr+'</span>':'')+'</span><span class="go">'+(en?'Order ›':'ऑर्डर करें ›')+'</span></span>';
+  a.hidden=false;
+}
 function applyCatalog(){
   var C=window.MB_CATALOG;if(!C||!C.items)return;
+  applyFest();
   applyPrices();
   var off={};(C.off||[]).forEach(function(id){off[id]=1;});
   $all('[data-ids]').forEach(function(el){
