@@ -119,9 +119,9 @@ def header(active):
 <a class="fest" id="fest" href="{ORDER}" data-order hidden></a>
 <header class="hdr">
  <div class="wrap bar">
-  <a class="brand" href="/" aria-label="MB Sweets — होम">
-   <img src="/assets/img/logo.webp" width="217" height="200" alt="MB Sweets का लोगो">
-   <span><b>MB Sweets</b><small>{T("माँ भगवती मिष्ठान भंडार · ननौरा", "Maa Bhagwati Misthan Bhandar · Nanaura")}</small></span>
+  <a class="brand" href="/" aria-label="माँ भगवती मिष्ठान भंडार (MB Sweets) — होम">
+   <img src="/assets/img/logo.webp" width="217" height="200" alt="माँ भगवती मिष्ठान भंडार (MB Sweets) का लोगो">
+   <span><b>{T("माँ भगवती मिष्ठान भंडार", "Maa Bhagwati Misthan Bhandar")}</b><small>(MB Sweets) · {T("ननौरा, दरभंगा", "Nanaura, Darbhanga")}</small></span>
   </a>
   <nav class="nav" aria-label="मुख्य">{links}</nav>
   <button class="lang" id="lang" type="button" aria-label="Switch language / भाषा बदलें">English</button>
@@ -137,7 +137,7 @@ def footer():
     return f'''<footer class="foot">
  <div class="wrap cols">
   <div>
-   <div class="fbrand"><img src="/assets/img/logo.webp" width="217" height="200" alt="" loading="lazy"><div><b>MB Sweets</b>{T("माँ भगवती मिष्ठान भंडार", "Maa Bhagwati Misthan Bhandar")}</div></div>
+   <div class="fbrand"><img src="/assets/img/logo.webp" width="217" height="200" alt="" loading="lazy"><div><b>{T("माँ भगवती मिष्ठान भंडार", "Maa Bhagwati Misthan Bhandar")}</b>(MB Sweets)</div></div>
    <p class="mt">{T("मिठास जो जोड़ दे हर रिश्ता ❤️<br>मिथिला की मिठास — ननौरा से, 2000 से।", "Sweetness that binds every bond ❤️<br>The sweetness of Mithila — from Nanaura, since 2000.")}</p>
    <div class="social">
     <a href="{IG}" target="_blank" rel="noopener" aria-label="Instagram">{icon("ig")}</a>
