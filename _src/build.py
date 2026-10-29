@@ -261,6 +261,8 @@ SWEETS = [
          d_hi='खोआ का पारंपरिक पेड़ा — पूजा और खुशी के मौकों के लिए।', d_en='Traditional khoa peda — for pujas and happy occasions.'),
     dict(key='laddoo', hi='लड्डू', en='Laddoo', img='laddoo', ids=['i11'],
          d_hi='पूजा, प्रसाद और हर शुभ काम के लिए।', d_en='For pujas, prasad and every auspicious start.'),
+    dict(key='besanladdoo', hi='बेसन लड्डू', en='Besan Laddoo', img=None, ids=['i35'],
+         d_hi='हाथ से बने बेसन के लड्डू — पूजा, प्रसाद और हर ख़ुशी के लिए।', d_en='Handmade besan laddoo — for pujas, prasad and every celebration.'),
     dict(key='milkcake', hi='मिल्क केक', en='Milk Cake', img='real-milkcake', real=True, ids=['i10'],
          d_hi='दूध से बनी दानेदार, हल्की मीठी मिठाई।', d_en='Grainy, mildly sweet milk fudge.'),
     dict(key='jalebi', hi='जलेबी', en='Jalebi', img=None, ids=['i12'],
