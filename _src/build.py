@@ -259,9 +259,9 @@ SWEETS = [
          d_hi='मलाईदार दूध में छेना — 1 प्लेट में 1 बड़ा पीस।', d_en='Chhena in creamy milk — 1 big piece per plate.'),
     dict(key='peda', hi='पेड़ा', en='Peda', img='peda', ids=['i9'],
          d_hi='खोआ का पारंपरिक पेड़ा — पूजा और खुशी के मौकों के लिए।', d_en='Traditional khoa peda — for pujas and happy occasions.'),
-    dict(key='laddoo', hi='लड्डू', en='Laddoo', img='laddoo', ids=['i11'],
+    dict(key='laddoo', hi='मोतीचूर लड्डू', en='Motichoor Laddoo', img='laddoo', ids=['i11'],
          d_hi='पूजा, प्रसाद और हर शुभ काम के लिए।', d_en='For pujas, prasad and every auspicious start.'),
-    dict(key='besanladdoo', hi='बेसन लड्डू', en='Besan Laddoo', img=None, ids=['i35'],
+    dict(key='besanladdoo', hi='बेसन लड्डू', en='Besan Laddoo', img='real-besanladdoo', real=True, ids=['i35'],
          d_hi='हाथ से बने बेसन के लड्डू — पूजा, प्रसाद और हर ख़ुशी के लिए।', d_en='Handmade besan laddoo — for pujas, prasad and every celebration.'),
     dict(key='milkcake', hi='मिल्क केक', en='Milk Cake', img='real-milkcake', real=True, ids=['i10'],
          d_hi='दूध से बनी दानेदार, हल्की मीठी मिठाई।', d_en='Grainy, mildly sweet milk fudge.'),
@@ -818,7 +818,7 @@ def wedding_page():
     checks = ''.join(f'<label><input type="checkbox" name="sw" value="{v.split("|")[0]}">{T(*v.split("|"))}</label>' for v in sweets_opts)
     occ = ['शादी|Wedding', 'तिलक|Tilak', 'मुंडन|Mundan', 'जनेऊ|Janeu', 'गृह प्रवेश|Housewarming', 'पूजा / भोज|Puja / feast', 'जन्मदिन / पार्टी|Birthday / party', 'कुछ और|Other']
     occ_opts = ''.join(f'<option value="{o.split("|")[0]}" data-en="{o.split("|")[1]}">{o.split("|")[0]}</option>' for o in occ)
-    bulk_prices = ''.join(tag(i, hi + ' /किलो', en + ' /kg') for i, hi, en in [('i3', 'बालूशाही', 'Balushahi'), ('i1', 'रसगुल्ला', 'Rasgulla'), ('i5', 'गुलाब जामुन', 'Gulab jamun'), ('i7', 'चमचम', 'Cham cham'), ('i11', 'लड्डू', 'Laddoo'), ('i13', 'बूंदी', 'Boondi')])
+    bulk_prices = ''.join(tag(i, hi + ' /किलो', en + ' /kg') for i, hi, en in [('i3', 'बालूशाही', 'Balushahi'), ('i1', 'रसगुल्ला', 'Rasgulla'), ('i5', 'गुलाब जामुन', 'Gulab jamun'), ('i7', 'चमचम', 'Cham cham'), ('i11', 'मोतीचूर लड्डू', 'Motichoor laddoo'), ('i35', 'बेसन लड्डू', 'Besan laddoo'), ('i13', 'बूंदी', 'Boondi')])
     body = f'''
 <section class="phead">
  <div class="wrap">
