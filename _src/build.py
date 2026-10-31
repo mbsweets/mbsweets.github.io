@@ -141,7 +141,7 @@ def footer():
  <div class="wrap cols">
   <div>
    <div class="fbrand"><img src="/assets/img/logo.webp" width="217" height="200" alt="" loading="lazy"><div><b>{T("माँ भगवती मिष्ठान भंडार", "Maa Bhagwati Misthan Bhandar")}</b>(MB Sweets)</div></div>
-   <p class="mt">{T("मिठास जो जोड़ दे हर रिश्ता ❤️<br>मिथिला की मिठास — ननौरा से, 2000 से।", "Sweetness that binds every bond ❤️<br>The sweetness of Mithila — from Nanaura, since 2000.")}</p>
+   <p class="mt">{T("मिठास जो जोड़ दे हर रिश्ता ❤️<br>मिथिला की मिठास — ननौरा से, 2000 ईस्वी से।", "Sweetness that binds every bond ❤️<br>The sweetness of Mithila — from Nanaura, since 2000.")}</p>
    <div class="social">
     <a href="{IG}" target="_blank" rel="noopener" aria-label="Instagram">{icon("ig")}</a>
     <a href="{FB}" target="_blank" rel="noopener" aria-label="Facebook">{icon("fb")}</a>
@@ -385,7 +385,7 @@ def home():
   <div>
    <div class="hwel"><div class="welcome">🙏 {T("अहाँक स्वागत अछि", "Welcome — अहाँक स्वागत अछि")}</div>
    <span class="status" id="status"><i></i><span>{T("रोज़ सुबह 7 से रात 9 बजे तक", "Open daily 7 am – 9 pm")}</span></span></div>
-   <h1><small>{T("ननौरा, दरभंगा · 2000 से", "Nanaura, Darbhanga · since 2000")}</small><span class="ink">{T("मिथिला की मिठास", "The sweetness of Mithila")}</span></h1>
+   <h1><small>{T("ननौरा, दरभंगा · 2000 ईस्वी से", "Nanaura, Darbhanga · since 2000")}</small><span class="ink">{T("मिथिला की मिठास", "The sweetness of Mithila")}</span></h1>
    <div class="pure">
     <div class="pure-top"><span class="pure-tick" aria-hidden="true">✓</span><b>{T("शुद्ध छेना की मिठाई", "Pure chhena sweets")}</b></div>
     <p>{T("न मैदा, न सूजी — कुछ भी मिलाया नहीं। दुकान में अपने हाथ से बनती है।", "No maida, no suji — nothing mixed in. Made by hand in our shop.")}</p>
@@ -564,7 +564,7 @@ def home():
 {visit_section(delivery=False)}
 '''
     return page('/', 'MB Sweets, ननौरा दरभंगा — मिथिला की मिठास | Sweet Shop near Darbhanga Airport',
-                'माँ भगवती मिष्ठान भंडार (MB Sweets), ननौरा, दरभंगा — 2000 से। शुद्ध छेना की मिठाई, हाथ से बनी बालूशाही, रसगुल्ला, गुलाब जामुन, अंडा-रहित केक, दूध-दही। घर बैठे ऑनलाइन ऑर्डर, 6 km तक डिलीवरी।',
+                'माँ भगवती मिष्ठान भंडार (MB Sweets), ननौरा, दरभंगा — 2000 ईस्वी से। शुद्ध छेना की मिठाई, हाथ से बनी बालूशाही, रसगुल्ला, गुलाब जामुन, अंडा-रहित केक, दूध-दही। घर बैठे ऑनलाइन ऑर्डर, 6 km तक डिलीवरी।',
                 body, ld=[business_ld()])
 
 
@@ -950,7 +950,7 @@ def contact_page():
 </section>
 <section class="band">
  <div class="wrap story">
-  <div><div class="eyebrow">{T("हमारी कहानी", "Our story")}</div><h2>{T("2000 से, आपके साथ", "With you since 2000")}</h2>{art.lotus(120)}</div>
+  <div><div class="eyebrow">{T("हमारी कहानी", "Our story")}</div><h2>{T("2000 ईस्वी से, आपके साथ", "With you since 2000")}</h2>{art.lotus(120)}</div>
   <div><p>{T("पापा श्री दिनेश कुमार साहू ने सन् 2000 में ननौरा में यह दुकान शुरू की। 2006 में दुकान में आग लगी और दुकान बंद करनी पड़ी। 2017 में दुकान फिर से खुली — और तब से वही हाथ का बना छेना-खोआ, वही भरोसा। आज हम मिठाई के साथ केक, दूध-दही और घर तक डिलीवरी भी देते हैं।", "Our father, Shri Dinesh Kumar Sahu, started this shop in Nanaura in 2000. In 2006 a fire forced it to close. It reopened in 2017 — with the same handmade chhena and khoa and the same trust. Today we also offer cakes, dairy and home delivery.")}</p>
   <p>{T("— पंकज कुमार गुप्ता, माँ भगवती मिष्ठान भंडार", "— Pankaj Kumar Gupta, Maa Bhagwati Misthan Bhandar")}</p></div>
  </div>
