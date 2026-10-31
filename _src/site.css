@@ -344,6 +344,9 @@ section{padding:44px 0}
 .social a{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:rgba(255,231,179,.12);border:1px solid rgba(242,169,27,.5)}
 .social svg{width:22px;height:22px;fill:#FFE7B3}
 .fine{font-size:14px;color:#D9BD95;border-top:1px solid rgba(242,169,27,.25);margin-top:22px;padding-top:14px}
+.foot .fss{font-size:14px;color:#D9BD95;margin-top:10px}
+.foot .fss b{color:#FFE7B3;letter-spacing:.3px}
+.foot .fss a{text-decoration:underline}
 @media(min-width:960px){.foot{padding-bottom:40px}}
 @media(min-width:900px){.foot .cols{grid-template-columns:1.3fr 1fr 1fr 1fr}}
 @media(max-width:899px){.foot .fpages ul{grid-template-columns:1fr 1fr;column-gap:14px}}

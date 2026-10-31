@@ -18,6 +18,9 @@ SITE = 'https://mbsweets.github.io'
 ORDER = '/mb-sweets/order/'
 WA_NUM = '918002010218'
 PHONE1, PHONE2 = '8002010218', '8507844049'
+FSSAI = '20426312000140'   # FSSAI पंजीकरण सं. (30-10-2026 से) — footer में हर पेज पर (FSSAI नियम)
+FSC_ANDROID = 'https://play.google.com/store/apps/details?id=safety.connect.food'
+FSC_IOS = 'https://apps.apple.com/in/app/food-safety-connect/id6446887958'
 MAPS = 'https://maps.app.goo.gl/FhQMpwFatymkrWct9'
 REVIEW = 'https://g.page/r/CZ_aeVeX-ilKEBE/review'
 IG = 'https://www.instagram.com/maabhagwatimisthanbhandar/'
@@ -159,6 +162,7 @@ def footer():
   </ul></div>
  </div>
  <div class="wrap fine">{T("ऑनलाइन ऑर्डर में मिठाई या केक ज़रूरी है — दूध-दही, कोल्ड ड्रिंक और पैकेट सामान उसी के साथ। हम 6 km तक घर पर डिलीवरी करते हैं — ऑर्डर कम से कम ₹499 का, डिलीवरी का कोई चार्ज नहीं (सिर्फ़ दूध-दही पर छोटा चार्ज)। डिलीवरी की उपलब्धता देखकर ही हम आपकी डिलीवरी कन्फर्म करेंगे। पेमेंट: ऑर्डर कन्फर्म होने के बाद, कृपया डिलीवरी से पहले पूरा पेमेंट UPI से कर दीजिए — कैश ऑन डिलीवरी की सुविधा नहीं है। दाम वही जो दुकान में।", "Online orders must include sweets or cake — milk, curd, cold drinks and packaged items come along with them. We deliver to your home within 6 km — minimum order ₹499, no delivery charge (only milk & curd have a small charge). We confirm delivery only after checking availability. Payment: once your order is confirmed, please pay in full by UPI before delivery — sorry, no cash on delivery. Same prices as in the shop.")}<br>© <span id="yr">2026</span> MB Sweets · {T("माँ भगवती मिष्ठान भंडार, ननौरा, दरभंगा", "Maa Bhagwati Misthan Bhandar, Nanaura, Darbhanga")}</div>
+ <div class="wrap fss">{T("FSSAI पंजीकरण सं.", "FSSAI Reg. No.")} <b>{FSSAI}</b> · {T("शिकायत या जानकारी के लिए FSSAI का Food Safety Connect ऐप:", "For complaints or info, FSSAI's Food Safety Connect app:")} <a href="{FSC_ANDROID}" target="_blank" rel="noopener">Android</a> · <a href="{FSC_IOS}" target="_blank" rel="noopener">iPhone</a></div>
 </footer>
 <nav class="dock" aria-label="जल्दी संपर्क">
  <a class="o" href="{ORDER}" data-order>{icon("bag")}{T("ऑर्डर करें", "Order")}</a>
