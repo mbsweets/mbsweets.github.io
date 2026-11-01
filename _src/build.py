@@ -269,6 +269,8 @@ SWEETS = [
          d_hi='हाथ से बने बेसन के लड्डू — पूजा, प्रसाद और हर ख़ुशी के लिए।', d_en='Handmade besan laddoo — for pujas, prasad and every celebration.'),
     dict(key='milkcake', hi='मिल्क केक', en='Milk Cake', img='real-milkcake', real=True, ids=['i10'],
          d_hi='दूध से बनी दानेदार, हल्की मीठी मिठाई।', d_en='Grainy, mildly sweet milk fudge.'),
+    dict(key='kalakand', hi='कलाकंद', en='Kalakand', img='real-kalakand', real=True, ids=['i38', 'i39'],
+         d_hi='ताज़ा, मुलायम और दानेदार कलाकंद — त्योहार, पूजा और हर ख़ुशी के लिए।', d_en='Fresh, soft and grainy kalakand — for festivals, pujas and every celebration.'),
     dict(key='jalebi', hi='जलेबी', en='Jalebi', img=None, ids=['i12'],
          d_hi='कुरकुरी और रसीली जलेबी।', d_en='Crisp, syrupy jalebi.'),
     dict(key='boondi', hi='बूंदी', en='Boondi', img='real-boondi', real=True, ids=['i13'],
