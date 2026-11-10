@@ -831,6 +831,9 @@ export function makeBees(n = 9) {
   const IB = mk(mg.build(), toon(0xffffff, { vc: true }), n), IO = mk(ol.build(), outlineMat(0.02), n);
   const wm = basic(0xffffff, { op: 0.75, ds: true });
   const IR = mk(wr, wm, n), IL = mk(wl, wm, n);
+  const Z = new THREE.Matrix4().makeScale(0, 0, 0);
+  for (const im of [IB, IO, IR, IL]) for (let i = 0; i < n; i++) im.setMatrixAt(i, Z);
+  group.visible = false;
   const bees = [];
   for (let i = 0; i < n; i++) bees.push({ ph: Math.random() * 10, r: rand(0.35, 1.0), h: rand(-0.4, 0.5), sp: rand(2, 4) });
   const M = new THREE.Matrix4(), W = new THREE.Matrix4(), Q = new THREE.Quaternion(), E = new THREE.Euler(), P = new THREE.Vector3(), S = new THREE.Vector3(1, 1, 1);
