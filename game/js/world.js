@@ -1,0 +1,484 @@
+// दुनिया: सड़क, दोनों ओर के मकान, बीच-बीच में MB Sweets की दुकान + स्वागत द्वार, रुकावटें, मिठाइयाँ, पावर-अप, कण
+import * as THREE from './three.module.min.js';
+import {
+  OBST, makePowerup, makeHouse, makeAdWall, makePond, makeTemple, makeStalls, makeShop, makeGate,
+  sweetParts, SWEETS, CHUNK, ROAD_HALF,
+} from './models.js';
+import { toon, outlineMat, basic, dotTexture, repeatTex, C } from './art.js';
+import { rand, randi, pick, chance, weighted, clamp, lerp } from './util.js';
+
+export const LANE_W = 2.5;
+export const LANES = [-LANE_W, 0, LANE_W];
+export const SPAWN_Z = -150;
+const DESPAWN_Z = 14;
+const SHOP_EVERY = 430; // इतनी दूरी पर फिर दुकान (≈ 20–28 सेकंड)
+
+// ---------------- मिठाइयाँ (instanced — तेज़) ----------------
+class SweetSet {
+  constructor(scene, cap = 90) {
+    this.cap = cap;
+    this.meshes = {};
+    this.free = {};
+    this.items = [];
+    this.m = new THREE.Matrix4();
+    this.q = new THREE.Quaternion();
+    this.e = new THREE.Euler();
+    this.v = new THREE.Vector3();
+    this.s = new THREE.Vector3();
+    const zero = new THREE.Matrix4().makeScale(0, 0, 0);
+    for (const t of Object.keys(SWEETS)) {
+      const arr = [];
+      for (const p of sweetParts(t)) {
+        const add = (mat) => {
+          const im = new THREE.InstancedMesh(p.g, mat, cap);
+          im.frustumCulled = false;
+          im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+          for (let i = 0; i < cap; i++) im.setMatrixAt(i, zero);
+          scene.add(im);
+          arr.push(im);
+        };
+        add(toon(p.c));
+        if (p.ol) add(outlineMat(p.ol));
+      }
+      this.meshes[t] = arr;
+      this.free[t] = [];
+      for (let i = cap - 1; i >= 0; i--) this.free[t].push(i);
+    }
+    this.zero = zero;
+    this.t = 0;
+  }
+  spawn(type, x, y, z) {
+    const fr = this.free[type];
+    if (fr.dirty) { fr.sort((a, b) => b - a); fr.dirty = false; }
+    const slot = fr.pop();
+    if (slot == null) return null;
+    const it = { type, slot, x, y, z, ph: Math.random() * 6, mag: false, col: 0 };
+    this.items.push(it);
+    return it;
+  }
+  release(it) {
+    for (const im of this.meshes[it.type]) { im.setMatrixAt(it.slot, this.zero); }
+    this.free[it.type].push(it.slot);
+    this.free[it.type].dirty = true;
+  }
+  clear() {
+    for (const it of this.items) this.release(it);
+    this.items.length = 0;
+    this.flush();
+  }
+  flush() {
+    const top = {};
+    for (const t in this.meshes) top[t] = 0;
+    for (const it of this.items) top[it.type] = Math.max(top[it.type], it.slot + 1);
+    for (const t in this.meshes) for (const im of this.meshes[t]) { im.count = top[t]; im.instanceMatrix.needsUpdate = true; }
+  }
+  // ctx: {px, py, ph, magnet, collect(it)}
+  update(dt, dz, ctx) {
+    this.t += dt;
+    const keep = [];
+    for (const it of this.items) {
+      let sc = 1;
+      if (it.col > 0) {
+        // खाते हुए गोलू के मुँह की ओर
+        it.col -= dt;
+        const k = 1 - Math.exp(-22 * dt);
+        it.x += (ctx.px - it.x) * k; it.y += (ctx.py + ctx.mouth - it.y) * k; it.z += (-0.4 - it.z) * k;
+        sc = Math.max(0, it.col / 0.16);
+        if (it.col <= 0) { this.release(it); continue; }
+      } else {
+        it.z += dz;
+        if (ctx.magnet && !it.mag && it.z > -16 && it.z < 3 && Math.abs(it.x - ctx.px) < 9) it.mag = true;
+        if (it.mag) {
+          const k = 1 - Math.exp(-9 * dt);
+          it.x += (ctx.px - it.x) * k; it.y += (ctx.py + 0.9 - it.y) * k; it.z += (0 - it.z) * k * 1.1;
+        }
+        const dx = Math.abs(it.x - ctx.px);
+        const hit = it.mag ? (dx < 0.9 && Math.abs(it.z) < 1.0 && Math.abs(it.y - ctx.py - 0.9) < 1.4)
+          : (dx < 0.85 && it.z > -0.75 && it.z < 0.75 && it.y > ctx.py - 0.35 && it.y < ctx.py + ctx.ph + 0.25);
+        if (hit) { it.col = 0.16; ctx.collect(it); }
+        else if (it.z > 2.6) { this.release(it); continue; } // छूटी मिठाई कैमरे के सामने न आए
+      }
+      keep.push(it);
+      const bob = it.col > 0 ? 0 : Math.sin(this.t * 3 + it.ph) * 0.08;
+      this.e.set(0.25, this.t * 2.2 + it.ph, 0);
+      this.q.setFromEuler(this.e);
+      this.v.set(it.x, it.y + bob, it.z);
+      this.s.setScalar(sc * (it.type === 'rasmalai' ? 1.15 : 1));
+      this.m.compose(this.v, this.q, this.s);
+      for (const im of this.meshes[it.type]) im.setMatrixAt(it.slot, this.m);
+    }
+    this.items = keep;
+    this.flush();
+  }
+}
+
+// ---------------- चमकते कण ----------------
+class Particles {
+  constructor(scene, n = 320) {
+    this.n = n;
+    this.pos = new Float32Array(n * 3);
+    this.col = new Float32Array(n * 3);
+    this.ps = [];
+    for (let i = 0; i < n; i++) { this.ps.push({ life: 0 }); this.pos[i * 3 + 1] = -1000; }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(this.pos, 3).setUsage(THREE.DynamicDrawUsage));
+    g.setAttribute('color', new THREE.BufferAttribute(this.col, 3).setUsage(THREE.DynamicDrawUsage));
+    this.geo = g;
+    this.pts = new THREE.Points(g, new THREE.PointsMaterial({ size: 0.42, map: dotTexture(), vertexColors: true, transparent: true, depthWrite: false, sizeAttenuation: true }));
+    this.pts.frustumCulled = false;
+    scene.add(this.pts);
+    this.i = 0;
+    this.c = new THREE.Color();
+  }
+  burst(x, y, z, color, count = 8, sp = 4, up = 2, life = 0.6, grav = -9) {
+    this.c.set(color);
+    for (let k = 0; k < count; k++) {
+      const p = this.ps[this.i];
+      const idx = this.i;
+      this.i = (this.i + 1) % this.n;
+      const a = Math.random() * Math.PI * 2, r = Math.random() * sp;
+      Object.assign(p, { x, y, z, vx: Math.cos(a) * r, vy: up + Math.random() * up, vz: Math.sin(a) * r, life: life * (0.6 + Math.random() * 0.6), g: grav });
+      this.col[idx * 3] = this.c.r; this.col[idx * 3 + 1] = this.c.g; this.col[idx * 3 + 2] = this.c.b;
+    }
+  }
+  update(dt, dz) {
+    for (let i = 0; i < this.n; i++) {
+      const p = this.ps[i];
+      if (p.life <= 0) { if (this.pos[i * 3 + 1] > -999) this.pos[i * 3 + 1] = -1000; continue; }
+      p.life -= dt;
+      p.vy += p.g * dt;
+      p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt + dz;
+      this.pos[i * 3] = p.x; this.pos[i * 3 + 1] = p.life > 0 ? p.y : -1000; this.pos[i * 3 + 2] = p.z;
+    }
+    this.geo.attributes.position.needsUpdate = true;
+    this.geo.attributes.color.needsUpdate = true;
+  }
+  clear() { for (const p of this.ps) p.life = 0; }
+}
+
+// ---------------- दुनिया ----------------
+export class World {
+  constructor(scene) {
+    this.scene = scene;
+    this.sweets = new SweetSet(scene);
+    this.parts = new Particles(scene);
+    this.obs = []; this.pups = []; this.gates = [];
+    this.oPool = {}; this.pPool = {};
+    this.chunks = { '-1': [], '1': [] };
+    this.cPool = {};
+    this.buildRoad();
+    this.prebuild();
+  }
+
+  buildRoad() {
+    const len = 210;
+    this.roadTex = repeatTex('road', 2.2, len / 4.3);
+    const road = new THREE.Mesh(new THREE.PlaneGeometry(ROAD_HALF * 2, len), toon(0xffffff, { map: this.roadTex }));
+    road.rotation.x = -Math.PI / 2;
+    road.position.set(0, 0, -len / 2 + 22);
+    this.scene.add(road);
+    this.bandTex = repeatTex('band', 1, len / 3.2);
+    this.bandTex.rotation = Math.PI / 2;
+    for (const s of [-1, 1]) {
+      const curb = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.26, len), toon(0xfff1d6));
+      curb.position.set(s * (ROAD_HALF + 0.12), 0.13, -len / 2 + 22);
+      this.scene.add(curb);
+      const top = new THREE.Mesh(new THREE.PlaneGeometry(0.34, len), toon(0xffffff, { map: this.bandTex }));
+      top.rotation.x = -Math.PI / 2;
+      top.position.set(s * (ROAD_HALF + 0.12), 0.265, -len / 2 + 22);
+      this.scene.add(top);
+    }
+    // लेन की धारियाँ (चूने की)
+    const c = document.createElement('canvas'); c.width = 16; c.height = 128;
+    const x = c.getContext('2d'); x.fillStyle = 'rgba(255,246,227,0.85)'; x.fillRect(3, 0, 10, 70);
+    this.dashTex = new THREE.CanvasTexture(c);
+    this.dashTex.wrapS = this.dashTex.wrapT = THREE.RepeatWrapping;
+    this.dashTex.repeat.set(1, len / 6);
+    for (const lx of [-LANE_W / 2, LANE_W / 2]) {
+      const d = new THREE.Mesh(new THREE.PlaneGeometry(0.16, len), new THREE.MeshBasicMaterial({ map: this.dashTex, transparent: true, depthWrite: false }));
+      d.rotation.x = -Math.PI / 2;
+      d.position.set(lx, 0.012, -len / 2 + 22);
+      this.scene.add(d);
+    }
+    this.roadLen = len;
+    const gr = new THREE.Mesh(new THREE.PlaneGeometry(130, len + 20), toon(0xd9b48a));
+    gr.rotation.x = -Math.PI / 2;
+    gr.position.set(0, -0.02, -len / 2 + 22);
+    this.scene.add(gr);
+  }
+
+  prebuild() {
+    const mk = (key, fn, n) => {
+      this.cPool[key] = [];
+      for (let i = 0; i < n; i++) { const o = fn(i); o.visible = false; o.userData.key = key; this.scene.add(o); this.cPool[key].push(o); }
+    };
+    for (const s of [-1, 1]) {
+      mk('house' + s, (i) => makeHouse(s, i), 14);
+      mk('adwall' + s, () => makeAdWall(s), 2);
+      mk('pond' + s, () => makePond(s), 2);
+      mk('temple' + s, () => makeTemple(s), 2);
+      mk('stalls' + s, () => makeStalls(s), 2);
+      mk('shop' + s, () => makeShop(s), 2);
+    }
+    mk('gate', () => makeGate(), 2);
+    // पावर-अप और रुकावटें पहले से (पहली बार अटके नहीं)
+    for (const k of ['magnet', 'shoes', 'shield']) { this.pPool[k] = [this.newPu(k)]; }
+    for (const t of Object.keys(OBST)) { this.oPool[t] = []; for (let i = 0; i < 3; i++) { const o = this.newObs(t); o.visible = false; this.oPool[t].push(o); } }
+  }
+  newObs(t) { const o = OBST[t](); o.userData.type = t; this.scene.add(o); return o; }
+  newPu(k) { const o = makePowerup(k); o.visible = false; this.scene.add(o); return o; }
+
+  // ---------- नया खेल ----------
+  reset(tutorial) {
+    for (const o of this.obs) this.relObs(o);
+    for (const p of this.pups) { p.obj.visible = false; this.pPool[p.kind].push(p.obj); }
+    for (const g of this.gates) { g.visible = false; this.cPool.gate.push(g); }
+    for (const s of ['-1', '1']) { for (const c of this.chunks[s]) this.relChunk(c); this.chunks[s] = []; }
+    this.obs = []; this.pups = []; this.gates = [];
+    this.sweets.clear(); this.parts.clear();
+    this.dist = 0; this.diff = 0; this.speed = 14;
+    this.toNext = 60;
+    this.toPu = rand(260, 380);
+    this.shopDist = SHOP_EVERY - 120; // पहली दुकान जल्दी
+    this.shopSide = -1;
+    this.lastType = { '-1': '', '1': '' };
+    this.tut = tutorial ? 3 : 0;
+    this.tutRows = [];
+    this.farZ = { '-1': 22, '1': 22 };
+    for (const s of [-1, 1]) while (this.farZ[s] > SPAWN_Z - 20) this.spawnChunk(s);
+  }
+
+  // ---------- किनारे के मकान ----------
+  getChunk(key) {
+    const p = this.cPool[key];
+    if (!p || !p.length) return null;
+    const o = p.pop();
+    o.visible = true;
+    return o;
+  }
+  relChunk(o) { o.visible = false; this.cPool[o.userData.key].push(o); }
+  spawnChunk(side) {
+    const zc = this.farZ[side] - CHUNK / 2;
+    let type;
+    if (side === this.shopSide && this.shopDist >= SHOP_EVERY && this.cPool['shop' + side].length) {
+      type = 'shop';
+      this.shopDist = 0;
+      this.shopSide = -side;
+      const g = this.getChunk('gate');
+      if (g) { g.position.set(0, 0, zc + CHUNK / 2 - 1); this.gates.push(g); }
+    } else {
+      const last = this.lastType[side];
+      type = weighted([['house', 6], ['adwall', last === 'adwall' ? 0 : 1.1], ['pond', last === 'pond' ? 0 : 1.0], ['temple', last === 'temple' ? 0 : 0.6], ['stalls', last === 'stalls' ? 0 : 1.0]]);
+      if (!this.cPool[type + side].length) type = 'house';
+      if (!this.cPool['house' + side].length) type = pick(['adwall', 'pond', 'temple', 'stalls'].filter((t) => this.cPool[t + side].length));
+    }
+    const o = this.getChunk(type + side);
+    this.lastType[side] = type;
+    if (o) { o.position.z = zc; this.chunks[side].push(o); }
+    this.farZ[side] -= CHUNK;
+  }
+
+  // ---------- रुकावटें / पावर-अप ----------
+  getObs(t) {
+    const p = this.oPool[t];
+    const o = p && p.length ? p.pop() : this.newObs(t);
+    o.visible = true;
+    o.rotation.set(0, 0, 0);
+    return o;
+  }
+  relObs(e) { e.obj.visible = false; this.oPool[e.type].push(e.obj); }
+  addObs(t, lane, z, extra = {}) {
+    const obj = this.getObs(t);
+    const u = obj.userData;
+    const e = { obj, type: t, kind: u.kind, lane, x: LANES[lane], z, vz: 0, halfW: u.halfW, halfL: u.halfL, yMin: u.yMin, yMax: u.yMax, px: false, pz: false, dead: false, ...extra };
+    if (t === 'rickshaw' && e.vz > 0) obj.rotation.y = 0; // सामने से आता (मुँह +z)
+    else if (t === 'rickshaw') obj.rotation.y = chance(0.5) ? Math.PI : 0;
+    if (t === 'thela' || t === 'cans' || t === 'bricks') obj.rotation.y = chance(0.5) ? Math.PI : 0;
+    if (t === 'cow') { obj.rotation.y = e.cross ? 0 : (chance(0.5) ? 0 : Math.PI); }
+    obj.position.set(e.x, 0, z);
+    this.obs.push(e);
+    return e;
+  }
+  addPu(kind, lane, z) {
+    const p = this.pPool[kind];
+    const obj = p.length ? p.pop() : this.newPu(kind);
+    obj.visible = true;
+    const e = { obj, kind, x: LANES[lane], y: 1.05, z, t: Math.random() * 5 };
+    obj.position.set(e.x, e.y, z);
+    this.pups.push(e);
+    return e;
+  }
+
+  // ---------- मिठाई के पैटर्न ----------
+  sweetType() { return weighted([['rasgulla', 60], ['gulabjamun', 22], ['balushahi', 12], ['chamcham', 6]]); }
+  line(lane, z, n, type = this.sweetType(), y = 0.7, gap = 2.0) {
+    for (let i = 0; i < n; i++) this.sweets.spawn(type, LANES[lane], y, z - i * gap);
+  }
+  arc(lane, zc, type = this.sweetType(), top = 2.5) {
+    const n = 7;
+    for (let i = 0; i < n; i++) {
+      const t = i / (n - 1);
+      const z = zc + 5.2 - t * 10.4;
+      const y = 0.7 + top * 4 * t * (1 - t);
+      const tp = i === 3 && chance(0.28) ? 'rasmalai' : type;
+      this.sweets.spawn(tp, LANES[lane], y, z);
+    }
+  }
+
+  blockType() { return weighted([['rickshaw', 3], ['thela', 3], ['cow', this.diff > 0.1 ? 1.4 : 0.6]]); }
+  oneType() {
+    return weighted([['rickshaw', 2.4], ['thela', 2.4], ['cow', 1.0], ['cans', 1.6], ['barrier', 1.8], ['toran', this.diff > 0.05 ? 1.4 : 0.5], ['bricks', 1.2], ['mud', 0.8]]);
+  }
+
+  // एक "पंक्ति" — हमेशा कोई न कोई रास्ता खुला
+  spawnRow(z) {
+    const d = this.diff;
+    const lanes = [0, 1, 2];
+    const others = (l) => lanes.filter((x) => x !== l);
+    // ट्यूटोरियल
+    if (this.tut > 0) {
+      const step = 4 - this.tut; // 1,2,3
+      this.tut--;
+      if (step === 1) { this.addObs('rickshaw', 1, z, { need: 'lane' }); this.line(0, z + 6, 5, 'rasgulla'); this.line(2, z + 6, 5, 'rasgulla'); return 1.6; }
+      if (step === 2) { for (const l of lanes) this.addObs('barrier', l, z, { need: 'jump' }); this.arc(1, z, 'gulabjamun'); return 1.6; }
+      this.addObs('toran', 0, z, { need: 'roll' }); this.addObs('toran', 1, z); this.addObs('toran', 2, z);
+      this.line(1, z + 4, 6, 'balushahi', 0.5);
+      return 1.6;
+    }
+    const kind = weighted([
+      ['single', lerp(4, 2.2, d)], ['double', lerp(0.9, 2.8, d)], ['jumpAll', 1.1], ['rollAll', lerp(0.6, 1.2, d)],
+      ['mixed', lerp(0.3, 1.8, d)], ['moving', d > 0.2 ? lerp(0.5, 1.4, d) : 0], ['cow', d > 0.12 ? 0.8 : 0], ['breather', lerp(1.3, 0.6, d)],
+    ]);
+    let extra = 0;
+    let freeLane = randi(0, 2);
+    if (kind === 'single') {
+      const l = randi(0, 2), t = this.oneType();
+      this.addObs(t, l, z);
+      freeLane = pick(others(l));
+      if (t === 'barrier' || t === 'cans' || t === 'bricks') { if (chance(0.5)) { this.arc(l, z); freeLane = -1; } else this.line(freeLane, z + 5, 5); }
+      else if (t === 'toran') this.line(l, z + 4, 5, this.sweetType(), 0.45);
+      else this.line(freeLane, z + 5, 5);
+    } else if (kind === 'double') {
+      freeLane = randi(0, 2);
+      for (const l of others(freeLane)) this.addObs(chance(0.25) ? 'cans' : this.blockType(), l, z, {});
+      this.line(freeLane, z + 6, 6);
+      extra = 0.18;
+    } else if (kind === 'jumpAll') {
+      for (const l of lanes) this.addObs(chance(0.7) ? 'barrier' : 'cans', l, z);
+      freeLane = randi(0, 2);
+      this.arc(freeLane, z);
+    } else if (kind === 'rollAll') {
+      for (const l of lanes) this.addObs('toran', l, z);
+      freeLane = randi(0, 2);
+      this.line(freeLane, z + 4, 6, this.sweetType(), 0.45);
+    } else if (kind === 'mixed') {
+      const perm = [...lanes].sort(() => Math.random() - 0.5);
+      this.addObs(this.blockType(), perm[0], z);
+      this.addObs(chance(0.5) ? 'barrier' : 'cans', perm[1], z);
+      this.addObs(chance(0.7) ? 'toran' : 'bricks', perm[2], z);
+      this.arc(perm[1], z);
+      freeLane = -1;
+      extra = 0.2;
+    } else if (kind === 'moving') {
+      const l = randi(0, 2);
+      // सामने से आता रिक्शा: इतनी दूर से छोड़ो कि अपनी पंक्ति के साथ ही पहुँचे (दूसरी पंक्ति पर न चढ़े)
+      const vz = rand(5, 8);
+      this.addObs('rickshaw', l, z * (this.speed + vz) / this.speed, { vz });
+      freeLane = pick(others(l));
+      this.line(freeLane, z + 4, 7);
+      extra = 0.35;
+    } else if (kind === 'cow') {
+      const from = pick([0, 2]), to = 1;
+      this.addObs('cow', from, z, { cross: { from, to, t: 0, dur: 1.5 } });
+      freeLane = from === 0 ? 2 : 0;
+      this.line(freeLane, z + 5, 6);
+      extra = 0.15;
+    } else { // breather — टेढ़ी-मेढ़ी मिठाई
+      let l = randi(0, 2);
+      const tp = this.sweetType();
+      for (let i = 0; i < 12; i++) {
+        if (i % 4 === 3) l = clamp(l + pick([-1, 1]), 0, 2);
+        this.sweets.spawn(tp, LANES[l], 0.7, z + 8 - i * 2.0);
+      }
+      freeLane = l;
+      if (chance(0.35)) this.addObs('bricks', pick(others(l)), z - 6);
+    }
+    // पावर-अप
+    if (this.toPu <= 0 && freeLane >= 0) {
+      this.addPu(weighted([['magnet', 4], ['shoes', 3], ['shield', 2.6]]), freeLane, z - 7);
+      this.toPu = rand(420, 700);
+    }
+    return extra;
+  }
+
+  // ---------- हर फ़्रेम ----------
+  update(dt, dz, speed, ctx) {
+    this.speed = Math.max(8, speed);
+    this.dist += dz;
+    this.diff = clamp(this.dist / 4200, 0, 1);
+    this.shopDist += dz;
+    this.toPu -= dz;
+    // सड़क खिसकाओ
+    this.roadTex.offset.y += dz / 4.3;
+    this.bandTex.offset.x += dz / 3.2;
+    this.dashTex.offset.y += dz / 6;
+    // मकान
+    for (const s of [-1, 1]) {
+      const arr = this.chunks[s];
+      for (const c of arr) c.position.z += dz;
+      while (arr.length && arr[0].position.z - CHUNK / 2 > DESPAWN_Z) this.relChunk(arr.shift());
+      this.farZ[s] += dz;
+      while (this.farZ[s] > SPAWN_Z - 20) this.spawnChunk(s);
+      for (const c of arr) if (c.userData.halwai) c.userData.halwai.rotation.z = Math.sin(this.dist * 0.15) * 0.06;
+    }
+    for (let i = this.gates.length - 1; i >= 0; i--) {
+      const g = this.gates[i];
+      g.position.z += dz;
+      if (g.position.z > DESPAWN_Z + 6) { g.visible = false; this.cPool.gate.push(g); this.gates.splice(i, 1); }
+    }
+    // नई पंक्तियाँ
+    this.toNext -= dz;
+    while (this.toNext <= 0) {
+      const z = SPAWN_Z - this.toNext;
+      const extra = this.spawnRow(z);
+      const gapT = lerp(1.6, 0.95, this.diff) + extra;
+      this.toNext += Math.max(16, speed * gapT);
+    }
+    // रुकावटें
+    for (let i = this.obs.length - 1; i >= 0; i--) {
+      const e = this.obs[i];
+      e.z += dz + e.vz * dt;
+      if (e.cross && e.z > -38 && e.cross.t < 1) {
+        e.cross.t = Math.min(1, e.cross.t + dt / e.cross.dur);
+        const t = e.cross.t, k = t * t * (3 - 2 * t);
+        e.x = lerp(LANES[e.cross.from], LANES[e.cross.to], k);
+        e.lane = k < 0.5 ? e.cross.from : e.cross.to;
+        e.obj.rotation.y = (e.cross.to > e.cross.from ? -1 : 1) * Math.PI / 2 * (t < 1 ? 1 : 0.4);
+        if (e.obj.userData.inner) e.obj.userData.inner.position.y = Math.abs(Math.sin(t * 18)) * 0.05;
+      }
+      if (e.dead) {
+        e.fly = (e.fly || 0) + dt;
+        e.obj.position.y += (8 - e.fly * 22) * dt;
+        e.obj.rotation.x += dt * 9; e.obj.rotation.z += dt * 6;
+        e.obj.position.x += e.flyX * dt;
+      }
+      e.obj.position.x = e.dead ? e.obj.position.x : e.x;
+      e.obj.position.z = e.z;
+      if (e.z - e.halfL > DESPAWN_Z || (e.dead && e.fly > 1.2)) { this.relObs(e); this.obs.splice(i, 1); }
+    }
+    // पावर-अप
+    for (let i = this.pups.length - 1; i >= 0; i--) {
+      const p = this.pups[i];
+      p.t += dt;
+      p.z += dz;
+      p.obj.position.set(p.x, p.y + Math.sin(p.t * 3) * 0.15, p.z);
+      p.obj.userData.inner.rotation.y += dt * 2.2;
+      p.obj.userData.ring.rotation.set(Math.PI / 2, 0, p.t * 2);
+      p.obj.userData.ring.scale.setScalar(1 + Math.sin(p.t * 5) * 0.06);
+      for (const ch of p.obj.userData.inner.children) if (ch.userData.wing) ch.rotation.y = ch.userData.wing * Math.sin(p.t * 14) * 0.5;
+      if (p.z > DESPAWN_Z || p.taken) { p.obj.visible = false; this.pPool[p.kind].push(p.obj); this.pups.splice(i, 1); }
+    }
+    this.sweets.update(dt, dz, ctx);
+    this.parts.update(dt, dz);
+  }
+}

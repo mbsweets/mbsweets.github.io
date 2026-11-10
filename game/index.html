@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Rasgulla Run — रसगुल्ला रन | MB Sweets, Darbhanga</title>
+<meta name="description" content="Rasgulla Run — a sweet Mithila chase. Run through Darbhanga's painted streets with Golu, grab rasgullas and escape the bees! by MB Sweets (Maa Bhagwati Mishthan Bhandar), Nanaura Chowk, Darbhanga.">
+<meta name="theme-color" content="#7A111A">
+<meta property="og:title" content="Rasgulla Run — रसगुल्ला रन">
+<meta property="og:description" content="मिथिला की मीठी दौड़ — गोलू के साथ दौड़ो, रसगुल्ले लूटो, मधुमक्खियों से बचो!">
+<meta property="og:image" content="https://mbsweets.github.io/game/img/og.jpg">
+<link rel="icon" href="img/logo.webp">
+<style>
+@font-face{font-family:"Baloo 2";src:url(fonts/baloo2-800.woff2) format("woff2");font-weight:800;font-display:swap}
+@font-face{font-family:Mukta;src:url(fonts/mukta-400.woff2) format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:Mukta;src:url(fonts/mukta-700.woff2) format("woff2");font-weight:700;font-display:swap}
+:root{--ink:#2A1511;--sindoor:#D1261C;--haldi:#F2A91B;--gold:#E2B14A;--cream:#FFF6E3;--maroon:#7A111A;--leaf:#2E7B47;--pink:#D8457F;
+  --disp:"Baloo 2","Mukta",system-ui,sans-serif;--body:Mukta,system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{height:100%;overflow:hidden;color:var(--ink);font-family:var(--body);
+  background:url(img/sky.webp) center top/cover no-repeat,#FFE3A6}
+@media (max-aspect-ratio: 1/1){html,body{background:url(img/sky.webp) 50% 0/auto 52% repeat-x,linear-gradient(#A9DCF0 0,#FFE3A6 52%,#FFE3A6 100%)}}
+#app{position:fixed;inset:0;touch-action:none;user-select:none;-webkit-user-select:none;overflow:hidden}
+#c{position:absolute;inset:0;width:100%;height:100%;display:block}
+button{font-family:var(--disp);cursor:pointer;border:0;color:inherit}
+button:focus-visible,a:focus-visible{outline:3px solid #fff;outline-offset:3px}
+
+/* ---------- बटन (मधुबनी किनारी) ---------- */
+.big{display:block;width:100%;font-size:clamp(26px,7vw,34px);font-weight:800;color:#fff;letter-spacing:.5px;background:var(--sindoor);
+  border:4px solid var(--ink);border-radius:18px;padding:10px 18px 6px;box-shadow:inset 0 0 0 4px var(--haldi),inset 0 0 0 7px var(--sindoor),inset 0 0 0 9px #fff3,0 6px 0 var(--ink);
+  text-shadow:0 2px 0 var(--ink);transition:transform .08s}
+.big:active{transform:translateY(4px);box-shadow:inset 0 0 0 4px var(--haldi),inset 0 0 0 7px var(--sindoor),0 2px 0 var(--ink)}
+.sm{font-size:16px;font-weight:800;background:var(--cream);border:3px solid var(--ink);border-radius:14px;padding:7px 12px 4px;box-shadow:0 4px 0 var(--ink);flex:1}
+.sm:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.row{display:flex;gap:10px;width:100%}
+
+/* ---------- स्क्रीन ---------- */
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+  padding:max(14px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+.dim{background:rgba(42,21,17,.45);justify-content:center}
+.brand{display:flex;align-items:center;gap:8px;font:800 15px var(--disp);color:var(--maroon);background:#fff8;border:2px solid var(--ink);border-radius:999px;padding:3px 14px 1px 4px}
+.brand img{width:38px;height:auto}
+.titlewrap{text-align:center;margin-top:10px;isolation:isolate}
+.ttl{position:relative;display:inline-block;font:800 clamp(48px,14.5vw,96px)/1.05 var(--disp);color:var(--sindoor);z-index:0;white-space:nowrap}
+.ttl::before,.ttl::after{content:attr(data-text);position:absolute;left:0;top:0;z-index:-1}
+.ttl::before{color:var(--ink);-webkit-text-stroke:16px var(--ink);text-shadow:0 8px 0 var(--gold),0 9px 0 var(--ink)}
+.ttl::after{color:#fff;-webkit-text-stroke:8px #fff}
+.sub{display:inline-block;margin-top:6px;font:700 clamp(15px,4.2vw,20px) var(--body);color:#fff;background:var(--leaf);border:2.5px solid var(--ink);border-radius:999px;padding:2px 14px 0}
+.spacer{flex:1}
+.panel{width:min(100%,380px);display:flex;flex-direction:column;align-items:center;gap:12px}
+.stats{display:flex;gap:10px;width:100%}
+.stats>div{flex:1;background:#fffaf0e8;border:3px solid var(--ink);border-radius:14px;padding:4px 8px 2px;text-align:center}
+.stats small{display:block;font:700 13px var(--body);color:var(--maroon)}
+.stats b{font:800 24px/1.1 var(--disp)}
+.tiny{font:700 13px var(--body);text-align:center;color:var(--ink);background:#fff9;border-radius:10px;padding:2px 10px}
+.card{width:min(100%,380px);background:var(--cream);border:4px solid var(--ink);border-radius:22px;padding:22px 18px 18px;display:flex;flex-direction:column;align-items:center;gap:12px;
+  box-shadow:inset 0 0 0 6px var(--cream),inset 0 0 0 9px var(--sindoor),inset 0 0 0 11px var(--cream),inset 0 0 0 13px var(--haldi),0 8px 0 var(--ink);text-align:center}
+.card h2{font:800 clamp(24px,6.5vw,30px)/1.15 var(--disp);color:var(--maroon)}
+.big-score{font:800 58px/1 var(--disp);color:var(--sindoor);text-shadow:0 3px 0 var(--ink)}
+.badge{font:800 18px var(--disp);color:#fff;background:var(--leaf);border:3px solid var(--ink);border-radius:999px;padding:2px 14px 0;animation:pop .6s ease-out}
+.shopcard{margin-top:14px;width:min(100%,380px);display:flex;gap:12px;align-items:center;text-decoration:none;color:#fff;background:var(--maroon);border:3px solid var(--ink);border-radius:18px;
+  padding:10px 14px;box-shadow:inset 0 0 0 3px var(--gold),0 5px 0 var(--ink)}
+.shopcard img{width:62px;height:auto;flex:none}
+.shopcard b{display:block;font:800 18px/1.2 var(--disp);color:#FFE7A8}
+.shopcard small{display:block;font:700 13px var(--body)}
+.shopcard em{display:inline-block;margin-top:5px;font:800 15px var(--disp);font-style:normal;background:var(--haldi);color:var(--ink);border-radius:999px;padding:2px 12px 0;border:2px solid var(--ink)}
+#loading{justify-content:center;gap:16px;background:var(--maroon)}
+#loading img{width:120px}
+#loadbar{width:min(70vw,280px);height:14px;border:3px solid var(--ink);border-radius:99px;background:var(--cream);overflow:hidden}
+#loadbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--haldi),var(--sindoor));transition:width .2s}
+#loadmsg{color:#FFE7A8;font:700 16px var(--body)}
+
+/* ---------- HUD ---------- */
+#hud{position:absolute;inset:0;pointer-events:none}
+#hud button{pointer-events:auto}
+#hud .top{position:absolute;left:0;right:0;top:0;display:flex;align-items:flex-start;gap:8px;
+  padding:max(10px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) 0 max(12px,env(safe-area-inset-left))}
+.ib{width:46px;height:46px;flex:none;border-radius:14px;background:var(--cream);border:3px solid var(--ink);box-shadow:0 4px 0 var(--ink);font:800 18px var(--disp)}
+#pu{flex:1;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.chip{display:flex;align-items:center;gap:6px;background:#fffaf0ee;border:2.5px solid var(--ink);border-radius:999px;padding:2px 10px 0 4px;font:700 14px var(--body)}
+.chip b{font-size:18px}
+.chip em{font:800 15px var(--disp);font-style:normal;color:#fff;background:var(--sindoor);border-radius:99px;padding:0 7px;min-width:26px;text-align:center}
+.scorebox{text-align:right}
+#scoreV{font:800 clamp(30px,8.5vw,42px)/1 var(--disp);color:#fff;-webkit-text-stroke:6px var(--ink);paint-order:stroke fill;text-shadow:0 3px 0 var(--ink)}
+.sw{display:inline-flex;align-items:center;gap:6px;margin-top:4px;background:#fffaf0ee;border:2.5px solid var(--ink);border-radius:999px;padding:1px 12px 0 4px;font:800 20px var(--disp)}
+.rg{width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff 0 30%,#FFF4DC 31% 100%);border:2.5px solid var(--ink);display:inline-block}
+#combo{position:absolute;right:max(14px,env(safe-area-inset-right));top:calc(max(10px,env(safe-area-inset-top)) + 92px);font:800 22px var(--disp);color:var(--haldi);-webkit-text-stroke:5px var(--ink);paint-order:stroke fill;animation:pop .3s}
+#hud .bottom{position:absolute;left:0;right:0;bottom:max(18px,env(safe-area-inset-bottom));display:flex;flex-direction:column-reverse;align-items:center;gap:10px}
+#meter{position:relative;width:min(64vw,340px);height:22px;border:3px solid var(--ink);border-radius:99px;background:#fffaf0dd;overflow:hidden;box-shadow:0 3px 0 var(--ink)}
+#meter i{position:absolute;left:0;top:0;bottom:0;width:0;background:repeating-linear-gradient(135deg,var(--haldi) 0 10px,#F6C453 10px 20px);transition:width .15s}
+#meter span{position:absolute;right:8px;top:-2px;font:800 17px var(--disp)}
+#meter.full i{background:repeating-linear-gradient(135deg,var(--sindoor) 0 10px,#F05A3F 10px 20px);animation:slide 0.6s linear infinite}
+#btnRush{font:800 24px var(--disp);color:#fff;background:linear-gradient(var(--haldi),#E07B12);border:4px solid var(--ink);border-radius:999px;padding:8px 26px 4px;
+  box-shadow:0 5px 0 var(--ink),0 0 0 6px #fff8;text-shadow:0 2px 0 var(--ink);animation:pulse .7s ease-in-out infinite alternate}
+#hint{position:absolute;left:50%;top:36%;transform:translate(-50%,-50%);font:800 clamp(22px,6vw,32px)/1.15 var(--disp);color:#fff;background:var(--maroon);
+  border:4px solid var(--ink);border-radius:18px;padding:12px 22px 8px;box-shadow:inset 0 0 0 3px var(--gold),0 6px 0 var(--ink);text-align:center;pointer-events:none;animation:pulse .6s ease-in-out infinite alternate;white-space:nowrap}
+#toast{position:absolute;left:50%;top:24%;transform:translate(-50%,-50%) scale(.6);opacity:0;pointer-events:none;font:800 clamp(24px,7vw,40px)/1.1 var(--disp);color:#fff;
+  -webkit-text-stroke:7px var(--ink);paint-order:stroke fill;text-align:center;white-space:nowrap;transition:transform .18s,opacity .18s}
+#toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+#toast.gold{color:#FFD24D}
+#toast.warn{color:#FFB3A8}
+#toast.rush{color:#FFD24D;font-size:clamp(34px,10vw,58px)}
+body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 80px 20px #ff8a1c88;animation:pulse .35s ease-in-out infinite alternate}
+@keyframes pop{0%{transform:scale(.4)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+@keyframes pulse{from{filter:brightness(1)}to{filter:brightness(1.18)}}
+@keyframes slide{to{background-position:28px 0}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+@media (min-aspect-ratio: 4/3){.titlewrap{margin-top:4px}.ttl{font-size:clamp(44px,8vw,84px)}
+  #menu{align-items:flex-start}
+  #menu .brand,#menu .titlewrap{align-self:flex-start;margin-left:2vw}
+  #menu .titlewrap{text-align:left}
+  #menu .panel{position:absolute;right:max(28px,env(safe-area-inset-right));bottom:max(24px,env(safe-area-inset-bottom));width:min(360px,40vw)}}
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="c"></canvas>
+
+  <div id="hud" hidden>
+    <div class="top">
+      <button id="btnPause" class="ib" aria-label="Pause">❚❚</button>
+      <div id="pu"></div>
+      <div class="scorebox">
+        <div id="scoreV">0</div>
+        <div class="sw"><i class="rg"></i><span id="sweetsV">0</span></div>
+      </div>
+    </div>
+    <div id="combo" hidden></div>
+    <div class="bottom">
+      <div id="meter"><i></i><span>⚡</span></div>
+      <button id="btnRush" data-t="rushBtn" hidden></button>
+    </div>
+  </div>
+  <div id="hint" hidden></div>
+  <div id="toast"></div>
+
+  <section id="menu" class="screen" hidden>
+    <div class="brand"><img src="img/logo.webp" alt="" width="38" height="35"><span>MB Sweets · दरभंगा</span></div>
+    <div class="titlewrap">
+      <h1 id="ttl" class="ttl" data-t="title" data-text="Rasgulla Run">Rasgulla Run</h1><br>
+      <p class="sub" data-t="sub"></p>
+    </div>
+    <div class="spacer"></div>
+    <div class="panel">
+      <button id="btnPlay" class="big" data-t="play">PLAY</button>
+      <div class="stats">
+        <div><small data-t="best"></small><b id="bestV">0</b></div>
+        <div><small data-t="sweets"></small><b id="totalV">0</b></div>
+      </div>
+      <div class="row"><button id="btnLang" class="sm"></button><button id="btnSound" class="sm"></button></div>
+      <p id="keysTip" class="tiny" data-t="keys"></p>
+      <p class="tiny local" data-t="soon"></p>
+    </div>
+  </section>
+
+  <section id="pauseS" class="screen dim" hidden>
+    <div class="card">
+      <h2 data-t="paused"></h2>
+      <button id="btnResume" class="big" data-t="resume"></button>
+      <div class="row"><button id="btnHome2" class="sm" data-t="home"></button></div>
+    </div>
+  </section>
+
+  <section id="over" class="screen dim" hidden>
+    <div class="card">
+      <h2 id="overTitle"></h2>
+      <div id="newBest" class="badge" data-t="newBest" hidden></div>
+      <div class="big-score" id="overScore">0</div>
+      <div class="stats">
+        <div><small data-t="sweets"></small><b id="overSweets">0</b></div>
+        <div><small data-t="best"></small><b id="overBest">0</b></div>
+      </div>
+      <button id="btnAgain" class="big" data-t="again"></button>
+      <div class="row"><button id="btnHome" class="sm" data-t="home"></button><button id="btnShare" class="sm local" data-t="share"></button></div>
+    </div>
+    <a id="orderLink" class="shopcard local" target="_blank" rel="noopener">
+      <img src="img/logo.webp" alt="MB Sweets" width="62" height="57">
+      <span><b data-t="shopT"></b><small data-t="shopS"></small><em data-t="order"></em></span>
+    </a>
+  </section>
+
+  <div id="loading" class="screen">
+    <img src="img/logo.webp" alt="MB Sweets" width="120" height="110">
+    <div id="loadbar"><i></i></div>
+    <p id="loadmsg" data-t="loading">Loading…</p>
+  </div>
+</div>
+<script type="module" src="js/game.js"></script>
+</body>
+</html>
