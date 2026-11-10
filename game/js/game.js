@@ -2,7 +2,7 @@
 import * as THREE from './three.module.min.js';
 import { loadTextures } from './art.js';
 import { makeBees, makeSkyline, SWEETS } from './models.js';
-import { Hero } from './hero.js';
+import { Golu } from './golu.js';
 import { World, LANES } from './world.js';
 import { Sound } from './audio.js';
 import { T, LANG, setLang, applyLang } from './i18n.js';
@@ -57,7 +57,7 @@ class Game {
     sc.add(dl);
     sc.add(makeSkyline());
     this.world = new World(sc);
-    this.golu = new Hero();
+    this.golu = new Golu();
     sc.add(this.golu.root);
     this.beeKit = makeBees();
     this.bees = this.beeKit.bees;
