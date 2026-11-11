@@ -44,8 +44,8 @@ function hoodieTexture() {
 
 export class Hero {
   constructor() {
-    const vc = this.vc = new THREE.MeshToonMaterial({ color: 0xffffff, vertexColors: true, gradientMap: GRAD });
-    const hoodM = this.hoodM = new THREE.MeshToonMaterial({ color: 0xffffff, map: hoodieTexture(), gradientMap: GRAD });
+    const vc = this.vc = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.82 });
+    const hoodM = this.hoodM = new THREE.MeshStandardMaterial({ color: 0xffffff, map: hoodieTexture(), roughness: 0.82 });
     this.glowMats = [vc, hoodM];
     const mesh = (mg, th = 0.02) => { const m = new THREE.Mesh(mg.build(), vc); if (th) addOutline(m, th); return m; };
     const root = this.root = new THREE.Group();

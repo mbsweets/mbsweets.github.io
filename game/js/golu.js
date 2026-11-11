@@ -73,11 +73,11 @@ function ribbon(points, width, segs = 40, side = new THREE.Vector3(1, 0, 0)) {
 
 export class Golu {
   constructor() {
-    const vc = new THREE.MeshToonMaterial({ color: 0xffffff, vertexColors: true, gradientMap: GRAD });
-    const kurM = new THREE.MeshToonMaterial({ color: 0xffffff, map: kurtaTex(), gradientMap: GRAD });
-    const turM = new THREE.MeshToonMaterial({ color: 0xffffff, map: gamTex(3, 1.5), gradientMap: GRAD });
-    const turM2 = new THREE.MeshToonMaterial({ color: 0xffffff, map: gamTex(1.2, 1.2), gradientMap: GRAD });
-    const scM = new THREE.MeshToonMaterial({ color: 0xffffff, map: scarfTex(), gradientMap: GRAD, side: THREE.DoubleSide });
+    const vc = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.82 });
+    const kurM = new THREE.MeshStandardMaterial({ color: 0xffffff, map: kurtaTex(), roughness: 0.82 });
+    const turM = new THREE.MeshStandardMaterial({ color: 0xffffff, map: gamTex(3, 1.5), roughness: 0.82 });
+    const turM2 = new THREE.MeshStandardMaterial({ color: 0xffffff, map: gamTex(1.2, 1.2), roughness: 0.82 });
+    const scM = new THREE.MeshStandardMaterial({ color: 0xffffff, map: scarfTex(), roughness: 0.82, side: THREE.DoubleSide });
     this.glowMats = [vc, kurM, turM, turM2, scM];
     const mesh = (mg, th = 0.02) => { const m = new THREE.Mesh(mg.build(), vc); if (th) addOutline(m, th); return m; };
     const root = this.root = new THREE.Group();

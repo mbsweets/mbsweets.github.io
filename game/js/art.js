@@ -1,5 +1,8 @@
-// टेक्सचर, टून मटेरियल, काली (मधुबनी) किनारी, ज्योमेट्री जोड़ने वाला
+// टेक्सचर, मटेरियल (असली-जैसी रोशनी, PBR), ज्योमेट्री जोड़ने वाला
 import * as THREE from './three.module.min.js';
+
+// असली-जैसा लुक: काली किनारियाँ बंद (कार्टून वाली)
+export const OUTLINES = false;
 
 export const INK = 0x2a1511;
 export const C = {
@@ -55,11 +58,15 @@ export const GRAD = (() => {
 })();
 
 const mats = {};
+// नाम पुराना (toon) रखा ताकि बाकी कोड न बदले — अब यह असली रोशनी वाला (PBR) मटेरियल है
+// o.r = खुरदुरापन (0 चिकना-चमकदार, 1 खुरदुरा), o.m = धातु, o.nm = उभार (normal map)
 export function toon(color, o = {}) {
-  const k = [color, o.map ? o.map.uuid : '', o.vc ? 1 : 0, o.em || 0, o.op || 1, o.ds ? 1 : 0].join('|');
+  const k = [color, o.map ? o.map.uuid : '', o.vc ? 1 : 0, o.em || 0, o.op || 1, o.ds ? 1 : 0, o.r ?? 0.86, o.m ?? 0, o.nm ? o.nm.uuid : ''].join('|');
   if (!o.fresh && mats[k]) return mats[k];
-  const m = new THREE.MeshToonMaterial({
-    color, gradientMap: GRAD, map: o.map || null, vertexColors: !!o.vc,
+  const m = new THREE.MeshStandardMaterial({
+    color, map: o.map || null, vertexColors: !!o.vc,
+    roughness: o.r ?? 0.86, metalness: o.m ?? 0,
+    normalMap: o.nm || null, normalScale: new THREE.Vector2(o.ns ?? 1, o.ns ?? 1),
     emissive: new THREE.Color(o.em || 0), transparent: (o.op || 1) < 1, opacity: o.op || 1,
     side: o.ds ? THREE.DoubleSide : THREE.FrontSide,
   });
@@ -84,7 +91,7 @@ const outlines = {};
 export function outlineMat(th) {
   const k = th.toFixed(3);
   if (outlines[k]) return outlines[k];
-  const m = new THREE.MeshBasicMaterial({ color: INK, side: THREE.BackSide });
+  const m = new THREE.MeshBasicMaterial({ color: INK, side: THREE.BackSide, visible: OUTLINES });
   const u = { value: th };
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uTh = u;
@@ -95,6 +102,7 @@ export function outlineMat(th) {
   return m;
 }
 export function addOutline(mesh, th) {
+  if (!OUTLINES) return mesh;
   const o = new THREE.Mesh(mesh.geometry, outlineMat(th));
   o.raycast = () => {};
   mesh.add(o);

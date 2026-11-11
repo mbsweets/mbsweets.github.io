@@ -4,7 +4,8 @@ import {
   OBST, makePowerup, makeHouse, makeAdWall, makePond, makeTemple, makeStalls, makeShop, makeGate,
   sweetParts, SWEETS, CHUNK, ROAD_HALF,
 } from './models.js';
-import { toon, outlineMat, basic, dotTexture, repeatTex, C } from './art.js';
+import { toon, outlineMat, basic, dotTexture, repeatTex, C, OUTLINES } from './art.js';
+import { RT, shadows } from './real.js';
 import { rand, randi, pick, chance, weighted, clamp, lerp } from './util.js';
 
 export const LANE_W = 2.5;
@@ -32,13 +33,15 @@ class SweetSet {
         const add = (mat) => {
           const im = new THREE.InstancedMesh(p.g, mat, cap);
           im.frustumCulled = false;
+          im.castShadow = !mat.isMeshBasicMaterial;
           im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
           for (let i = 0; i < cap; i++) im.setMatrixAt(i, zero);
           scene.add(im);
           arr.push(im);
         };
-        add(toon(p.c));
-        if (p.ol) add(outlineMat(p.ol));
+        const m = toon(p.c, { r: p.r, m: p.m, nm: p.nm, ns: p.ns, vc: p.vc });
+        add(m);
+        if (p.ol && OUTLINES) add(outlineMat(p.ol));
       }
       this.meshes[t] = arr;
       this.free[t] = [];
@@ -171,46 +174,54 @@ export class World {
   }
 
   buildRoad() {
-    const len = 210;
-    this.roadTex = repeatTex('road', 2.2, len / 4.3);
-    const road = new THREE.Mesh(new THREE.PlaneGeometry(ROAD_HALF * 2, len), toon(0xffffff, { map: this.roadTex }));
+    const len = 210, z0 = -len / 2 + 22;
+    // असली जैसी ईंट की सड़क (उभार के साथ)
+    const rep = (t, rx, ry) => { const c = t.clone(); c.needsUpdate = true; c.wrapS = c.wrapT = THREE.RepeatWrapping; c.repeat.set(rx, ry); return c; };
+    this.roadTile = ROAD_HALF * 2 / 3;
+    this.roadTex = rep(RT.road, 3, len / this.roadTile);
+    this.roadN = rep(RT.roadN, 3, len / this.roadTile);
+    const road = new THREE.Mesh(new THREE.PlaneGeometry(ROAD_HALF * 2, len), new THREE.MeshStandardMaterial({ map: this.roadTex, normalMap: this.roadN, normalScale: new THREE.Vector2(1.2, 1.2), roughness: 0.93 }));
     road.rotation.x = -Math.PI / 2;
-    road.position.set(0, 0, -len / 2 + 22);
+    road.position.set(0, 0, z0);
+    road.receiveShadow = true;
     this.scene.add(road);
-    this.bandTex = repeatTex('band', 1, len / 3.2);
-    this.bandTex.rotation = Math.PI / 2;
+    // पत्थर का किनारा
+    this.curbTile = 3;
+    this.curbN = rep(RT.dirtN, 1, len / this.curbTile);
     for (const s of [-1, 1]) {
-      const curb = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.26, len), toon(0xfff1d6));
-      curb.position.set(s * (ROAD_HALF + 0.12), 0.13, -len / 2 + 22);
+      const curb = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.26, len), new THREE.MeshStandardMaterial({ color: 0xcfc2a8, roughness: 0.9, normalMap: this.curbN }));
+      curb.position.set(s * (ROAD_HALF + 0.12), 0.13, z0);
+      curb.receiveShadow = true; curb.castShadow = true;
       this.scene.add(curb);
-      const top = new THREE.Mesh(new THREE.PlaneGeometry(0.34, len), toon(0xffffff, { map: this.bandTex }));
-      top.rotation.x = -Math.PI / 2;
-      top.position.set(s * (ROAD_HALF + 0.12), 0.265, -len / 2 + 22);
-      this.scene.add(top);
     }
-    // लेन की धारियाँ (चूने की)
+    // लेन की हल्की चूने की धारियाँ (घिसी हुई)
     const c = document.createElement('canvas'); c.width = 16; c.height = 128;
-    const x = c.getContext('2d'); x.fillStyle = 'rgba(255,246,227,0.85)'; x.fillRect(3, 0, 10, 70);
+    const x = c.getContext('2d'); x.fillStyle = 'rgba(245,238,222,0.55)'; x.fillRect(4, 0, 8, 70);
     this.dashTex = new THREE.CanvasTexture(c);
     this.dashTex.wrapS = this.dashTex.wrapT = THREE.RepeatWrapping;
     this.dashTex.repeat.set(1, len / 6);
     for (const lx of [-LANE_W / 2, LANE_W / 2]) {
-      const d = new THREE.Mesh(new THREE.PlaneGeometry(0.16, len), new THREE.MeshBasicMaterial({ map: this.dashTex, transparent: true, depthWrite: false }));
+      const d = new THREE.Mesh(new THREE.PlaneGeometry(0.13, len), new THREE.MeshBasicMaterial({ map: this.dashTex, transparent: true, depthWrite: false, opacity: 0.55 }));
       d.rotation.x = -Math.PI / 2;
-      d.position.set(lx, 0.012, -len / 2 + 22);
+      d.position.set(lx, 0.012, z0);
       this.scene.add(d);
     }
     this.roadLen = len;
-    const gr = new THREE.Mesh(new THREE.PlaneGeometry(130, len + 20), toon(0xd9b48a));
+    // मिट्टी वाली ज़मीन (फ़ुटपाथ)
+    this.groundTile = 5;
+    this.groundTex = rep(RT.dirt, 130 / this.groundTile, (len + 20) / this.groundTile);
+    this.groundN = rep(RT.dirtN, 130 / this.groundTile, (len + 20) / this.groundTile);
+    const gr = new THREE.Mesh(new THREE.PlaneGeometry(130, len + 20), new THREE.MeshStandardMaterial({ map: this.groundTex, normalMap: this.groundN, roughness: 0.97 }));
     gr.rotation.x = -Math.PI / 2;
-    gr.position.set(0, -0.02, -len / 2 + 22);
+    gr.position.set(0, -0.02, z0);
+    gr.receiveShadow = true;
     this.scene.add(gr);
   }
 
   prebuild() {
     const mk = (key, fn, n) => {
       this.cPool[key] = [];
-      for (let i = 0; i < n; i++) { const o = fn(i); o.visible = false; o.userData.key = key; this.scene.add(o); this.cPool[key].push(o); }
+      for (let i = 0; i < n; i++) { const o = fn(i); o.visible = false; o.userData.key = key; shadows(o, true, true); this.scene.add(o); this.cPool[key].push(o); }
     };
     for (const s of [-1, 1]) {
       mk('house' + s, (i) => makeHouse(s, i), 14);
@@ -225,8 +236,8 @@ export class World {
     for (const k of ['magnet', 'shoes', 'shield']) { this.pPool[k] = [this.newPu(k)]; }
     for (const t of Object.keys(OBST)) { this.oPool[t] = []; for (let i = 0; i < 3; i++) { const o = this.newObs(t); o.visible = false; this.oPool[t].push(o); } }
   }
-  newObs(t) { const o = OBST[t](); o.userData.type = t; this.scene.add(o); return o; }
-  newPu(k) { const o = makePowerup(k); o.visible = false; this.scene.add(o); return o; }
+  newObs(t) { const o = OBST[t](); o.userData.type = t; shadows(o, true, true); this.scene.add(o); return o; }
+  newPu(k) { const o = makePowerup(k); o.visible = false; shadows(o, true, false); this.scene.add(o); return o; }
 
   // ---------- नया खेल ----------
   reset(tutorial) {
@@ -419,8 +430,9 @@ export class World {
     this.shopDist += dz;
     this.toPu -= dz;
     // सड़क खिसकाओ
-    this.roadTex.offset.y += dz / 4.3;
-    this.bandTex.offset.x += dz / 3.2;
+    this.roadTex.offset.y += dz / this.roadTile; this.roadN.offset.y = this.roadTex.offset.y;
+    this.groundTex.offset.y += dz / this.groundTile; this.groundN.offset.y = this.groundTex.offset.y;
+    this.curbN.offset.y += dz / this.curbTile;
     this.dashTex.offset.y += dz / 6;
     // मकान
     for (const s of [-1, 1]) {

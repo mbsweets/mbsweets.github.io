@@ -1,6 +1,7 @@
 // गेम की सारी चीज़ें — गोलू, मिठाइयाँ, रुकावटें, मकान, MB Sweets की दुकान, स्वागत द्वार, मधुमक्खियाँ
 import * as THREE from './three.module.min.js';
-import { TEX, C, GRAD, tile, repeatTex, toon, basic, addOutline, outlineMat, mat4, Merge, MergeUV } from './art.js';
+import { TEX, C, GRAD, tile, repeatTex, toon, basic, addOutline, outlineMat, mat4, Merge, MergeUV, OUTLINES } from './art.js';
+import { RT } from './real.js';
 import { rand, pick, chance } from './util.js';
 
 const PI = Math.PI;
@@ -25,15 +26,15 @@ function boxOutline(mesh, w, h, d, t = 0.05) {
   mesh.add(o);
   return mesh;
 }
-const outlineBack = new THREE.MeshBasicMaterial({ color: C.ink, side: THREE.BackSide });
+const outlineBack = new THREE.MeshBasicMaterial({ color: C.ink, side: THREE.BackSide, visible: OUTLINES });
 
 // ======================= गोलू =======================
 export class Golu {
   constructor() {
     const m = this.m = {
-      kurta: new THREE.MeshToonMaterial({ color: 0xffffff, map: tile('props', 4, 4, 2), gradientMap: GRAD }),
-      paag: new THREE.MeshToonMaterial({ color: 0xffffff, map: tile('props', 4, 4, 10), gradientMap: GRAD }),
-      vc: new THREE.MeshToonMaterial({ color: 0xffffff, vertexColors: true, gradientMap: GRAD }),
+      kurta: new THREE.MeshStandardMaterial({ color: 0xffffff, map: tile('props', 4, 4, 2), roughness: 0.82 }),
+      paag: new THREE.MeshStandardMaterial({ color: 0xffffff, map: tile('props', 4, 4, 10), roughness: 0.82 }),
+      vc: new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.82 }),
       cheek: toon(0xf08a8a), mouth: toon(0x7a1a1a), maroon: toon(C.maroon),
       box: toon(0xffffff, { map: tile('props', 4, 4, 5) }),
     };
@@ -218,33 +219,51 @@ export const SWEETS = {
   chamcham: { pts: 5, meter: 0.065, color: '#F6A8C0' },
   rasmalai: { pts: 10, meter: 0.12, color: '#FFE08A' },
 };
+// हाथ से बनी जैसी हल्की ऊबड़-खाबड़ सतह (हर बिंदु normal की दिशा में थोड़ा)
+function bumpy(g, amt = 0.02, f = 9) {
+  const P = g.attributes.position, N = g.attributes.normal;
+  for (let i = 0; i < P.count; i++) {
+    const x = P.getX(i), y = P.getY(i), z = P.getZ(i);
+    const n = Math.sin(x * f + 1.3) * Math.sin(y * f * 1.3 + 0.7) * Math.sin(z * f * 0.9 + 2.1) + 0.5 * Math.sin((x + y + z) * f * 2.1);
+    P.setXYZ(i, x + N.getX(i) * n * amt, y + N.getY(i) * n * amt, z + N.getZ(i) * n * amt);
+  }
+  g.computeVertexNormals();
+  return g;
+}
+// हर मिठाई के हिस्से: g ज्योमेट्री, c रंग, r खुरदुरापन (कम = चाशनी वाली चमक), m धातु, nm उभार
 export function sweetParts(type) {
   if (type === 'rasgulla') {
-    return [{ g: G.sph(0.3, 14, 10), c: 0xfff8ea, ol: 0.035 }, { g: (() => { const g = G.sph(0.08, 8, 6); g.translate(-0.11, 0.13, 0.22); return g; })(), c: 0xffffff, ol: 0 }];
+    // छेने का नरम गोला, चाशनी से भीगा — हल्की चमक, स्पंज जैसे छेद
+    const g = bumpy(G.sph(0.3, 28, 20), 0.012, 11); g.scale(1, 0.94, 1);
+    return [{ g, c: 0xf6eedc, r: 0.3, nm: RT.spongeN, ns: 0.55, ol: 0.035 }];
   }
   if (type === 'gulabjamun') {
-    const g = G.sph(0.28, 14, 10); g.scale(1.18, 0.92, 0.92);
-    const s = G.sph(0.07, 8, 6); s.translate(-0.12, 0.13, 0.2);
-    return [{ g, c: 0x6b2412, ol: 0.035 }, { g: s, c: 0xc0603a, ol: 0 }];
+    const g = bumpy(G.sph(0.28, 28, 20), 0.01, 8); g.scale(1.2, 0.92, 0.92);
+    const pis = new Merge();
+    for (let i = 0; i < 4; i++) pis.add(G.box(0.07, 0.015, 0.025), mat4(-0.1 + i * 0.065, 0.255 - Math.abs(i - 1.5) * 0.012, (i % 2 - 0.5) * 0.06, 0, i * 0.8, 0.2), i % 2 ? 0x8bc34a : 0x6fa63a);
+    return [{ g, c: 0x4e1a0c, r: 0.16, ol: 0.035 }, { g: pis.build(), c: 0xffffff, vc: true, r: 0.6 }];
   }
   if (type === 'balushahi') {
-    const pts = [[0.001, -0.11], [0.26, -0.11], [0.33, -0.05], [0.35, 0.03], [0.29, 0.11], [0.14, 0.13], [0.07, 0.08], [0.001, 0.09]].map((a) => new THREE.Vector2(a[0], a[1]));
-    const g = new THREE.LatheGeometry(pts, 20);
-    const top = G.cyl(0.2, 0.25, 0.03, 16); top.translate(0, 0.115, 0);
-    return [{ g, c: 0xe2a14a, ol: 0.035 }, { g: top, c: 0xf6d27e, ol: 0 }];
+    const pts = [[0.001, -0.11], [0.24, -0.115], [0.32, -0.07], [0.355, 0.0], [0.33, 0.07], [0.25, 0.12], [0.13, 0.13], [0.06, 0.085], [0.001, 0.09]].map((a) => new THREE.Vector2(a[0], a[1]));
+    const g = bumpy(new THREE.LatheGeometry(pts, 40), 0.012, 14);
+    const gar = new Merge();
+    for (let i = 0; i < 6; i++) gar.add(G.box(0.045, 0.012, 0.02), mat4(Math.cos(i * 1.05) * 0.05, 0.1, Math.sin(i * 1.05) * 0.05, 0, i * 0.9, 0), i % 2 ? 0x8bc34a : 0xd7b56d);
+    return [{ g, c: 0xcf8f3e, r: 0.42, nm: RT.flakyN, ns: 1.2, ol: 0.035 }, { g: gar.build(), c: 0xffffff, vc: true, r: 0.6 }];
   }
   if (type === 'chamcham') {
-    const g = G.cap(0.16, 0.3, 12); g.rotateZ(PI / 2);
-    const k = G.cap(0.1, 0.28, 8); k.rotateZ(PI / 2); k.translate(0, 0.1, 0);
-    return [{ g, c: 0xf6a8c0, ol: 0.035 }, { g: k, c: 0xfff3f6, ol: 0 }];
+    const g = bumpy(G.cap(0.16, 0.32, 20), 0.008, 10); g.rotateZ(PI / 2); g.scale(1, 0.95, 1.05);
+    const k = G.cap(0.06, 0.3, 10); k.rotateZ(PI / 2); k.scale(1, 0.6, 1); k.translate(0, 0.155, 0);
+    return [{ g, c: 0xf2b2c2, r: 0.62, nm: RT.coconutN, ns: 1.4, ol: 0.035 }, { g: k, c: 0xfff3e0, r: 0.5 }];
   }
-  // rasmalai — पीतल की कटोरी
-  const bp = [[0.001, -0.15], [0.2, -0.15], [0.3, -0.05], [0.35, 0.1], [0.32, 0.11], [0.27, -0.02], [0.001, -0.07]].map((a) => new THREE.Vector2(a[0], a[1]));
-  const bowl = new THREE.LatheGeometry(bp, 22);
-  const milk = G.cyl(0.3, 0.3, 0.02, 20); milk.translate(0, 0.07, 0);
-  const pat = G.sph(0.17, 14, 10); pat.scale(1, 0.42, 1); pat.translate(0, 0.1, 0);
-  const pis = G.box(0.05, 0.02, 0.03); pis.translate(0.05, 0.17, 0.03);
-  return [{ g: bowl, c: 0xd9a441, ol: 0.03 }, { g: milk, c: 0xffd772, ol: 0 }, { g: pat, c: 0xfff6de, ol: 0.02 }, { g: pis, c: 0x4caf50, ol: 0 }];
+  // rasmalai — पीतल की कटोरी में केसर वाला दूध
+  const bp = [[0.001, -0.15], [0.2, -0.15], [0.3, -0.06], [0.355, 0.1], [0.335, 0.115], [0.28, -0.02], [0.001, -0.07]].map((a) => new THREE.Vector2(a[0], a[1]));
+  const bowl = new THREE.LatheGeometry(bp, 40);
+  const milk = new THREE.CylinderGeometry(0.295, 0.295, 0.02, 36); milk.translate(0, 0.07, 0);
+  const pat = bumpy(G.sph(0.17, 22, 16), 0.008, 12); pat.scale(1, 0.42, 1); pat.translate(0, 0.1, 0);
+  const gar = new Merge();
+  for (let i = 0; i < 5; i++) gar.add(G.box(0.05, 0.012, 0.022), mat4(-0.08 + i * 0.04, 0.17, (i % 2 - 0.5) * 0.05, 0, i, 0), 0x7cb342);
+  for (let i = 0; i < 4; i++) gar.add(G.box(0.08, 0.006, 0.006), mat4(0.06 - i * 0.04, 0.165, 0.04 - i * 0.025, 0, i * 1.3, 0), 0xe65100);
+  return [{ g: bowl, c: 0xc9963a, r: 0.28, m: 0.9, ol: 0.03 }, { g: milk, c: 0xf3d58a, r: 0.18 }, { g: pat, c: 0xfbf1da, r: 0.42, nm: RT.spongeN, ns: 0.4, ol: 0.02 }, { g: gar.build(), c: 0xffffff, vc: true, r: 0.6 }];
 }
 
 // ======================= पावर-अप =======================
@@ -538,7 +557,7 @@ function building(grp, mg, side, cx, d, h, len, color, tex) {
   hull.scale.set(d + 0.12, h + 0.12, len + 0.12);
   hull.position.set(cx, h / 2, 0);
   grp.add(hull);
-  const fp = new THREE.Mesh(new THREE.PlaneGeometry(len, h), toon(0xffffff, { map: tex }));
+  const fp = new THREE.Mesh(new THREE.PlaneGeometry(len, h), toon(0xffffff, { map: tex, nm: RT.wallN, ns: 0.7, r: 0.92 }));
   fp.rotation.y = side < 0 ? PI / 2 : -PI / 2;
   fp.position.set(side * FACADE_X - side * 0.02, h / 2, 0);
   grp.add(fp);
@@ -807,7 +826,7 @@ export function makeGate() {
     mg.add(G.cone(0.08, 0.3, 5), mat4(x, 3.95, 0.02, PI, 0, 0), C.leaf);
   }
   g.add(mg.mesh(0.03));
-  const banner = new THREE.Mesh(new THREE.PlaneGeometry(10.2, 2.55), new THREE.MeshToonMaterial({ map: TEX.gate, gradientMap: GRAD, transparent: true, alphaTest: 0.4 }));
+  const banner = new THREE.Mesh(new THREE.PlaneGeometry(10.2, 2.55), new THREE.MeshStandardMaterial({ map: TEX.gate, roughness: 0.82, transparent: true, alphaTest: 0.4 }));
   banner.position.set(0, 6.9, 0.05);
   g.add(banner);
   const back = new THREE.Mesh(new THREE.PlaneGeometry(10.2, 2.0), toon(C.maroon));
@@ -850,12 +869,13 @@ export function makeBees(n = 9) {
 // ======================= दूर का नज़ारा =======================
 export function makeSkyline() {
   const g = new THREE.Group();
-  const m = new THREE.MeshBasicMaterial({ map: TEX.skyline, transparent: true, fog: false, depthWrite: false, opacity: 0.95 });
+  // दूर के महल-मंदिर: धुंध में हल्के नीले-भूरे (असली दूरी जैसा)
+  const m = new THREE.MeshBasicMaterial({ map: TEX.skyline, color: 0xb9c3cf, transparent: true, fog: false, depthWrite: false, opacity: 0.6 });
   const p = new THREE.Mesh(new THREE.PlaneGeometry(420, 79), m);
   p.position.set(0, 26, -205);
   g.add(p);
   // दूर के खेत
-  const f = new THREE.Mesh(new THREE.PlaneGeometry(600, 200), basic(0xb9d68a, { fog: true }));
+  const f = new THREE.Mesh(new THREE.PlaneGeometry(600, 200), basic(0xa9b98a, { fog: true }));
   f.rotation.x = -PI / 2; f.position.set(0, -0.05, -160);
   g.add(f);
   return g;

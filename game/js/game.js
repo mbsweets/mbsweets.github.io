@@ -1,6 +1,7 @@
 // रसगुल्ला रन — मुख्य खेल (MB Sweets, दरभंगा)
 import * as THREE from './three.module.min.js';
 import { loadTextures } from './art.js';
+import { buildRealTextures, makeSky, makeEnv, shadows, SUN, HORIZON } from './real.js';
 import { makeBees, makeSkyline, SWEETS } from './models.js';
 import { Golu } from './golu.js';
 import { World, LANES } from './world.js';
@@ -29,7 +30,8 @@ class Game {
     applyLang();
     const bar = $('#loadbar i');
     try {
-      await Promise.all([loadTextures((p) => { bar.style.width = (p * 90) + '%'; }), document.fonts ? document.fonts.ready : null]);
+      await Promise.all([loadTextures((p) => { bar.style.width = (p * 80) + '%'; }), document.fonts ? document.fonts.ready : null]);
+      buildRealTextures();
     } catch (e) {
       $('#loadmsg').textContent = 'Error: ' + e;
       return;
@@ -44,20 +46,39 @@ class Game {
 
   setup() {
     const canvas = $('#c');
-    const r = this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
-    r.setClearColor(0x000000, 0);
+    const r = this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+    r.outputColorSpace = THREE.SRGBColorSpace;
+    r.toneMapping = THREE.ACESFilmicToneMapping;
+    r.toneMappingExposure = 1.45;
+    r.shadowMap.enabled = true;
+    r.shadowMap.type = THREE.PCFSoftShadowMap;
     this.pr = Math.min(window.devicePixelRatio || 1, 2);
     r.setPixelRatio(this.pr);
     const sc = this.scene = new THREE.Scene();
-    sc.fog = new THREE.Fog(0xffe3a6, 62, 150);
+    sc.fog = new THREE.Fog(HORIZON.clone(), 70, 155);
     this.cam = new THREE.PerspectiveCamera(62, 1, 0.1, 420);
-    sc.add(new THREE.HemisphereLight(0xfff4e0, 0xc89a72, 1.6));
-    const dl = new THREE.DirectionalLight(0xffffff, 2.0);
-    dl.position.set(-6, 14, 9);
-    sc.add(dl);
+    // आसमान + उससे आने वाली रोशनी/चमक
+    this.sky = makeSky(300, true);
+    sc.add(this.sky);
+    sc.environment = makeEnv(r);
+    sc.add(new THREE.HemisphereLight(0xcfe3ff, 0x9a7a5a, 0.6));
+    // सूरज — असली परछाईं (सिर्फ़ खिलाड़ी के आस-पास, ताकि फ़ोन पर तेज़ चले)
+    const dl = this.sun = new THREE.DirectionalLight(0xfff0d8, 3.0);
+    dl.target.position.set(0, 0, -15);
+    dl.position.copy(SUN).multiplyScalar(45).add(dl.target.position);
+    dl.castShadow = true;
+    const big = Math.min(window.innerWidth, window.innerHeight) > 700;
+    dl.shadow.mapSize.set(big ? 2048 : 1024, big ? 2048 : 1024);
+    const sc2 = dl.shadow.camera;
+    sc2.left = -16; sc2.right = 16; sc2.top = 32; sc2.bottom = -32; sc2.near = 5; sc2.far = 110;
+    dl.shadow.bias = -0.0006; dl.shadow.normalBias = 0.03;
+    sc.add(dl); sc.add(dl.target);
     sc.add(makeSkyline());
     this.world = new World(sc);
     this.golu = new Golu();
+    shadows(this.golu.root, true, false);
+    this.golu.shadow.material = this.golu.shadow.material.clone();
+    this.golu.shadow.material.opacity = 0.16;
     sc.add(this.golu.root);
     this.beeKit = makeBees();
     this.bees = this.beeKit.bees;
@@ -347,6 +368,8 @@ class Game {
     requestAnimationFrame(() => this.frame());
     const rdt = Math.min(this.clock.getDelta(), 1 / 20);
     this.update(rdt);
+    this.sky.position.copy(this.cam.position);
+    this.sky.material.uniforms.uTime.value += rdt;
     this.renderer.render(this.scene, this.cam);
   }
 
@@ -573,6 +596,13 @@ class Game {
         this.pr = Math.max(1, this.pr * 0.72);
         this.renderer.setPixelRatio(this.pr);
         this.resize();
+        q.t = 0; q.n = 0; q.sum = 0;
+      } else if (avg > 1 / 40 && this.renderer.shadowMap.enabled) {
+        // फिर भी धीमा — परछाईं बंद (कमज़ोर फ़ोन)
+        this.renderer.shadowMap.enabled = false;
+        this.sun.castShadow = false;
+        this.golu.shadow.material.opacity = 0.28;
+        this.scene.traverse((o) => { if (o.material) for (const m of [].concat(o.material)) m.needsUpdate = true; });
         q.t = 0; q.n = 0; q.sum = 0;
       } else q.done = true;
     }
