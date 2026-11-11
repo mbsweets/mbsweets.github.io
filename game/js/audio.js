@@ -153,6 +153,49 @@ export class Sound {
       return tt + d;
     }, t);
   }
+  // बारात — ढोल की थाप + शहनाई की धुन (~5 सेकंड)
+  baraat() {
+    if (!this.ok()) return;
+    const t0 = this.now(), bt = 0.16;
+    for (let i = 0; i < 30; i++) {
+      const t = t0 + i * bt;
+      if (i % 4 === 0 || i % 4 === 3) this.tone(i % 8 === 0 ? 85 : 110, t, 0.18, { vol: 0.34, to: 50 });
+      if (i % 2 === 1) this.hiss(t, 0.05, { vol: 0.1, fq: 3200 });
+    }
+    const mel = [[7, 2], [9, 1], [11, 1], [12, 2], [11, 1], [9, 1], [7, 2], [4, 2], [7, 2], [9, 2], [7, 4]];
+    mel.reduce((tt, [n, d]) => { this.tone(f(n, 440), tt, d * bt * 0.95, { type: 'sawtooth', vol: 0.065, att: 0.02, vib: 3 }); return tt + d * bt; }, t0 + 0.32);
+  }
+  // सुनहरा छल्ला — घंटी जैसी चमक
+  ring() { if (!this.ok()) return; const t = this.now(); [0, 7, 12, 19].forEach((n, k) => this.tone(f(n, 783.99), t + k * 0.05, 0.4, { vol: 0.09, type: 'sine' })); this.hiss(t, 0.25, { vol: 0.08, fq: 5000, to: 9000 }); }
+  // लेवल बढ़ा — ढोलक + ऊपर चढ़ती धुन
+  levelUp() {
+    if (!this.ok()) return;
+    const t = this.now();
+    [0, 0.09, 0.18].forEach((d, i) => { this.tone(i === 2 ? 95 : 140, t + d, 0.16, { vol: 0.35, to: 60 }); this.hiss(t + d, 0.06, { vol: 0.12, fq: 2500 }); });
+    [[0, 0.1], [4, 0.1], [7, 0.1], [12, 0.18], [16, 0.35]].reduce((tt, [n, d]) => { this.tone(f(n, 587.33), tt, d, { type: 'sawtooth', vol: 0.075, att: 0.015, vib: 2 }); return tt + d; }, t + 0.27);
+  }
+  // उड़न समोसा — सर्र से ऊपर, उड़ते समय हवा की सरसराहट
+  fly(on) {
+    if (!this.ctx) return;
+    const c = this.ctx;
+    if (on) {
+      if (this.ok()) { const t = this.now(); this.tone(220, t, 0.6, { vol: 0.16, to: 880, type: 'triangle' }); this.hiss(t, 0.7, { vol: 0.2, fq: 500, to: 2600, q: 0.7 }); }
+      if (this.wind) return;
+      const len = c.sampleRate * 2, buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      const src = c.createBufferSource(); src.buffer = buf; src.loop = true;
+      const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 700; bp.Q.value = 0.6;
+      const g = c.createGain(); g.gain.value = 0.0001;
+      src.connect(bp); bp.connect(g); g.connect(this.fx); src.start();
+      g.gain.setTargetAtTime(0.07, c.currentTime, 0.2);
+      this.wind = { src, g };
+    } else if (this.wind) {
+      const w = this.wind; this.wind = null;
+      w.g.gain.setTargetAtTime(0.0001, c.currentTime, 0.15);
+      setTimeout(() => { try { w.src.stop(); } catch (e) { /* */ } }, 800);
+      if (this.ok()) this.tone(700, this.now(), 0.4, { vol: 0.12, to: 200, type: 'triangle' });
+    }
+  }
   smash() { if (!this.ok()) return; const t = this.now(); this.hiss(t, 0.3, { vol: 0.35, fq: 1200, to: 300 }); this.tone(200, t, 0.2, { vol: 0.25, to: 60, type: 'square' }); }
   near() { if (!this.ok()) return; const t = this.now(); this.hiss(t, 0.3, { vol: 0.2, fq: 400, to: 3000, q: 2 }); }
   splash() { if (!this.ok()) return; this.hiss(this.now(), 0.3, { vol: 0.25, type: 'lowpass', fq: 900, to: 300 }); }

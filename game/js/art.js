@@ -14,12 +14,12 @@ export const C = {
 export const TEX = {};
 const loader = new THREE.TextureLoader();
 export function loadTextures(onProgress) {
-  const names = ['walls', 'props', 'road', 'band', 'sign', 'gate', 'skyline', 'logo'];
+  const names = ['walls', 'props', 'road', 'band', 'sign', 'gate', 'flex', 'skyline', 'logo'];
   let n = 0;
   return Promise.all(names.map((nm) => new Promise((res, rej) => {
     loader.load('img/' + nm + '.webp', (t) => {
       t.colorSpace = THREE.SRGBColorSpace;
-      t.anisotropy = 4;
+      t.anisotropy = nm === 'sign' || nm === 'gate' || nm === 'flex' ? 8 : 4;
       TEX[nm] = t;
       n++;
       if (onProgress) onProgress(n / names.length);
@@ -27,6 +27,18 @@ export function loadTextures(onProgress) {
     }, undefined, rej);
   })));
 }
+
+// बोर्ड/बैनर: अपनी रोशनी से चमके (धूप-छाँव या tone mapping से फीका न हो) — पीछे से बत्ती वाला बोर्ड जैसा
+const signMats = {};
+export function signMat(map, o = {}) {
+  const k = map.uuid + (o.alpha ? 'a' : '') + (o.side || '');
+  if (signMats[k]) return signMats[k];
+  const m = new THREE.MeshBasicMaterial({ map, color: o.color != null ? o.color : 0xf4f4f4, toneMapped: false, side: o.side || THREE.FrontSide });
+  if (o.alpha) { m.transparent = true; m.alphaTest = 0.4; }
+  signMats[k] = m;
+  return m;
+}
+export const SIGN_EDGE = 0xd3121f; // बैनर की लाल किनारी
 
 const tiles = {};
 // atlas का एक हिस्सा (cols×rows में i-वाँ, ऊपर-बाएँ से)

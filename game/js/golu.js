@@ -244,6 +244,7 @@ export class Golu {
   }
   eat() { this.eatT = 0.16; }
   update(dt, mode, o = {}) {
+    if (mode === 'fly') mode = 'jump';
     const k = (cur, tgt, sp = 16) => cur + (tgt - cur) * (1 - Math.exp(-sp * dt));
     const sp = o.speed || 14;
     const run = mode === 'run' || mode === 'stumble';

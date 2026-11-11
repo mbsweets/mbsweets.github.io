@@ -1,7 +1,9 @@
 // गेम की सारी चीज़ें — गोलू, मिठाइयाँ, रुकावटें, मकान, MB Sweets की दुकान, स्वागत द्वार, मधुमक्खियाँ
 import * as THREE from './three.module.min.js';
-import { TEX, C, GRAD, tile, repeatTex, toon, basic, addOutline, outlineMat, mat4, Merge, MergeUV, OUTLINES } from './art.js';
+import { TEX, C, GRAD, tile, repeatTex, toon, basic, addOutline, outlineMat, mat4, Merge, MergeUV, OUTLINES, signMat, SIGN_EDGE } from './art.js';
 import { RT } from './real.js';
+import { makeVillager, HAAT_OBST } from './haat.js';
+import { EVENT_OBST } from './events.js';
 import { rand, pick, chance } from './util.js';
 
 const PI = Math.PI;
@@ -218,7 +220,14 @@ export const SWEETS = {
   balushahi: { pts: 3, meter: 0.05, color: '#E8A447' },
   chamcham: { pts: 5, meter: 0.065, color: '#F6A8C0' },
   rasmalai: { pts: 10, meter: 0.12, color: '#FFE08A' },
+  // सिर्फ़ आसमान में (उड़न समोसे पर) — नीचे नहीं मिलतीं
+  jalebi: { pts: 2, meter: 0.03, color: '#F39A1E', sky: true },
+  laddoo: { pts: 3, meter: 0.035, color: '#F7A21B', sky: true },
+  peda: { pts: 3, meter: 0.035, color: '#D9B07A', sky: true },
+  kalakand: { pts: 4, meter: 0.04, color: '#F3E2B0', sky: true },
+  milkcake: { pts: 6, meter: 0.06, color: '#B9772E', sky: true },
 };
+export const SKY_SWEETS = Object.keys(SWEETS).filter((k) => SWEETS[k].sky);
 // हाथ से बनी जैसी हल्की ऊबड़-खाबड़ सतह (हर बिंदु normal की दिशा में थोड़ा)
 function bumpy(g, amt = 0.02, f = 9) {
   const P = g.attributes.position, N = g.attributes.normal;
@@ -254,6 +263,39 @@ export function sweetParts(type) {
     const g = bumpy(G.cap(0.16, 0.32, 20), 0.008, 10); g.rotateZ(PI / 2); g.scale(1, 0.95, 1.05);
     const k = G.cap(0.06, 0.3, 10); k.rotateZ(PI / 2); k.scale(1, 0.6, 1); k.translate(0, 0.155, 0);
     return [{ g, c: 0xf2b2c2, r: 0.62, nm: RT.coconutN, ns: 1.4, ol: 0.035 }, { g: k, c: 0xfff3e0, r: 0.5 }];
+  }
+  if (type === 'jalebi') { // चमकदार केसरिया कुंडली
+    class Spiral extends THREE.Curve {
+      getPoint(t, v = new THREE.Vector3()) { const a = t * PI * 5.2; const r = 0.04 + a * 0.0175; return v.set(Math.cos(a) * r, Math.sin(a * 3) * 0.012, Math.sin(a) * r); }
+    }
+    const g = new THREE.TubeGeometry(new Spiral(), 140, 0.045, 8, false);
+    g.rotateX(PI / 2.4);
+    return [{ g, c: 0xf2861a, r: 0.14 }];
+  }
+  if (type === 'laddoo') { // मोतीचूर — दानेदार
+    const g = bumpy(G.sph(0.27, 30, 22), 0.016, 34);
+    const gar = new Merge();
+    for (let i = 0; i < 3; i++) gar.add(G.box(0.07, 0.014, 0.025), mat4(-0.05 + i * 0.05, 0.262, (i % 2 - 0.5) * 0.04, 0, i, 0.2), 0x7cb342);
+    return [{ g, c: 0xf59b1c, r: 0.55, ol: 0.03 }, { g: gar.build(), c: 0xffffff, vc: true, r: 0.6 }];
+  }
+  if (type === 'peda') { // बीच में अंगूठे का निशान + पिस्ता
+    const pts = [[0.001, -0.07], [0.2, -0.07], [0.26, -0.03], [0.27, 0.02], [0.23, 0.065], [0.12, 0.075], [0.07, 0.045], [0.001, 0.04]].map((a) => new THREE.Vector2(a[0], a[1]));
+    const g = bumpy(new THREE.LatheGeometry(pts, 36), 0.006, 16);
+    const gar = new Merge();
+    for (let i = 0; i < 3; i++) gar.add(G.box(0.06, 0.012, 0.022), mat4(-0.03 + i * 0.03, 0.055, (i % 2 - 0.5) * 0.03, 0, i * 1.2, 0), 0x8bc34a);
+    return [{ g, c: 0xd8ad78, r: 0.7, ol: 0.03 }, { g: gar.build(), c: 0xffffff, vc: true, r: 0.6 }];
+  }
+  if (type === 'kalakand') { // दानेदार चौकोर टुकड़ा, ऊपर पिस्ता + चाँदी का वर्क
+    const g = bumpy(new THREE.BoxGeometry(0.46, 0.2, 0.46, 6, 3, 6), 0.012, 30);
+    const top = new Merge();
+    for (let i = 0; i < 7; i++) top.add(G.box(0.07, 0.012, 0.024), mat4(-0.15 + (i % 4) * 0.1, 0.105, -0.1 + Math.floor(i / 4) * 0.18, 0, i * 0.9, 0), 0x7cb342);
+    top.add(G.box(0.3, 0.004, 0.3), mat4(0, 0.101, 0), 0xe9ecef);
+    return [{ g, c: 0xf1dfa8, r: 0.8, ol: 0.03 }, { g: top.build(), c: 0xffffff, vc: true, r: 0.35, m: 0.3 }];
+  }
+  if (type === 'milkcake') { // नीचे गहरा कैरामल, ऊपर हल्की परत
+    const b = bumpy(new THREE.BoxGeometry(0.5, 0.16, 0.4, 6, 2, 5), 0.01, 26); b.translate(0, -0.04, 0);
+    const t = bumpy(new THREE.BoxGeometry(0.5, 0.09, 0.4, 6, 2, 5), 0.008, 30); t.translate(0, 0.085, 0);
+    return [{ g: b, c: 0xa8642a, r: 0.75, ol: 0.03 }, { g: t, c: 0xe6c487, r: 0.8 }];
   }
   // rasmalai — पीतल की कटोरी में केसर वाला दूध
   const bp = [[0.001, -0.15], [0.2, -0.15], [0.3, -0.06], [0.355, 0.1], [0.335, 0.115], [0.28, -0.02], [0.001, -0.07]].map((a) => new THREE.Vector2(a[0], a[1]));
@@ -294,12 +336,92 @@ export function makePowerup(kind) {
       w.scale.x = s;
       w.userData.wing = s;
     }
+  } else if (kind === 'samosa') {
+    const m = new THREE.Mesh(samosaGeo(0.75), samosaMat());
+    m.rotation.set(-0.25, 0.5, 0);
+    m.position.y = -0.2;
+    inner.add(m);
+    // भाप
+    for (let i = 0; i < 3; i++) { const st = new THREE.Mesh(G.sph(0.11 - i * 0.02, 8, 6), basic(0xffffff, { op: 0.55 - i * 0.12 })); st.position.set(0.08 * (i - 1), 0.55 + i * 0.22, 0); st.userData.steam = i; inner.add(st); }
+  } else if (kind === 'thali') {
+    const brass = toon(0xd9a441, { r: 0.28, m: 0.85 });
+    const plate = new THREE.Mesh(G.cyl(0.62, 0.55, 0.08, 28), brass);
+    inner.add(plate);
+    const rim = new THREE.Mesh(G.tor(0.6, 0.04, 6, 28), brass); rim.rotation.x = PI / 2; rim.position.y = 0.05; inner.add(rim);
+    const mg = new Merge();
+    const cols = [0xf6eedc, 0x4e1a0c, 0xcf8f3e, 0xf2b2c2, 0xf6eedc, 0x4e1a0c];
+    for (let i = 0; i < 6; i++) { const a = i / 6 * PI * 2; mg.add(G.sph(0.15, 10, 8), mat4(Math.cos(a) * 0.36, 0.16, Math.sin(a) * 0.36), cols[i]); }
+    mg.add(G.sph(0.17, 10, 8), mat4(0, 0.2, 0), 0xf39a1e);
+    inner.add(mg.mesh(0));
+    inner.rotation.x = 0.5;
+    // ×2 का बिल्ला
+    const c = document.createElement('canvas'); c.width = 128; c.height = 128;
+    const x = c.getContext('2d'); x.fillStyle = '#d3121f'; x.beginPath(); x.arc(64, 64, 60, 0, PI * 2); x.fill();
+    x.lineWidth = 8; x.strokeStyle = '#ffd23a'; x.stroke();
+    x.fillStyle = '#fff'; x.font = '900 64px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('×2', 64, 68);
+    const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace;
+    const badge = new THREE.Sprite(new THREE.SpriteMaterial({ map: tx, toneMapped: false }));
+    badge.scale.set(0.55, 0.55, 1); badge.position.set(0.5, 0.6, 0);
+    g.add(badge);
   } else { // shield
     part(G.sph(0.42, 20, 16), toon(0xffffff, { map: tile('props', 4, 4, 7) }), 0.03, inner);
   }
   const ring = new THREE.Mesh(ringG, basic(0xffd24d, { add: true, op: 0.85 }));
   g.add(ring);
   g.userData = { kind, inner, ring };
+  return g;
+}
+
+// समोसा — गोल किनारों वाला तिकोना "तकिया", सुनहरी-भूरी फफोलेदार परत, ऊपर सिलाई (vertex colors)
+const TET = [[1, 1, 1], [1, -1, -1], [-1, 1, -1], [-1, -1, 1]].map((v) => new THREE.Vector3(...v).normalize());
+export function samosaGeo(s = 1) {
+  const g = new THREE.SphereGeometry(s * 0.6, 40, 28);
+  const P = g.attributes.position, d = new THREE.Vector3();
+  const col = new Float32Array(P.count * 3), c = new THREE.Color();
+  // एक फलक नीचे रहे: टेट्राहेड्रॉन को घुमाओ ताकि [-1,-1,-1] वाली दिशा (फलक) नीचे
+  const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(-1, -1, -1).normalize(), new THREE.Vector3(0, -1, 0));
+  const N = TET.map((n) => n.clone().multiplyScalar(-1).applyQuaternion(q));
+  for (let i = 0; i < P.count; i++) {
+    d.set(P.getX(i), P.getY(i), P.getZ(i)).normalize();
+    let m = 0;
+    for (const n of N) m = Math.max(m, d.dot(n));
+    const rt = 1 / (3 * m); // टेट्राहेड्रॉन की सतह
+    const r = s * 0.6 * (0.42 + 0.58 * rt) * 1.25;
+    const n1 = Math.sin(d.x * 23 + 1) * Math.sin(d.y * 19 + 2) * Math.sin(d.z * 21 + 3);
+    const n2 = Math.sin(d.x * 61) * Math.sin(d.y * 53 + 1) * Math.sin(d.z * 57 + 2);
+    const rr = r * (1 + 0.025 * n1 + 0.012 * n2);
+    P.setXYZ(i, d.x * rr, d.y * rr, d.z * rr);
+    // रंग: किनारे गहरे सुनहरे, फफोले हल्के
+    const edge = Math.min(1, Math.max(0, (rt - 1.1) / 1.4));
+    c.setHSL(0.08 + 0.012 * n1, 0.78, 0.47 - 0.16 * edge + 0.07 * n2 + 0.04 * n1, THREE.SRGBColorSpace);
+    col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
+  }
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  g.computeVertexNormals();
+  g.translate(0, s * 0.18, 0);
+  return g;
+}
+const samosaMat = () => new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.42, metalness: 0 });
+// उड़न समोसा — गोलू इस पर बैठकर उड़ता है (नोक आगे)
+export function makeSamosaMount() {
+  const g = new THREE.Group();
+  const geo = samosaGeo(1.55);
+  geo.computeBoundingBox();
+  const m = new THREE.Mesh(geo, samosaMat());
+  m.rotation.y = PI / 3 + PI; // एक नोक आगे (-z)
+  m.scale.set(1.2, 0.6, 1.3);
+  m.position.set(0, 0.18 - geo.boundingBox.max.y * 0.6, 0.15); // ऊपरी सतह पर गोलू बैठे
+  m.castShadow = true;
+  g.add(m);
+  // पीछे से भाप + मसाले की चमक
+  const puffs = [];
+  for (let i = 0; i < 6; i++) {
+    const p = new THREE.Mesh(G.sph(0.14, 8, 6), basic(i % 2 ? 0xffc14d : 0xffffff, { op: 0.5 }));
+    p.position.set(0, 0.0, 1.4 + i * 0.3);
+    g.add(p); puffs.push(p);
+  }
+  g.userData = { puffs };
+  g.visible = false;
   return g;
 }
 
@@ -460,6 +582,7 @@ export const OBST = {
 
 // ======================= मकान / किनारे की चीज़ें =======================
 // side: -1 बायाँ, +1 दायाँ. सड़क का किनारा x=±4.3, फ़ुटपाथ 4.3–7.8, मकान 8.0 से
+Object.assign(OBST, HAAT_OBST, EVENT_OBST);
 export const ROAD_HALF = 4.3, FACADE_X = 8.0, CHUNK = 20;
 
 function facadeMats(texture, wallColor, side) {
@@ -590,17 +713,58 @@ export function makeHouse(side, variant) {
   return grp;
 }
 
-// दीवार पर MB Sweets का विज्ञापन (पेंट किया हुआ)
-export function makeAdWall(side) {
+// दीवार पर MB Sweets का बड़ा फ्लेक्स बोर्ड (छत पर, दौड़ने वाले की ओर मुड़ा) + दीवार पर बैनर
+export function makeAdWall(side, i = 0) {
   const grp = new THREE.Group();
   const h = 7, d = 6.5, len = 17.5, cx = side * (FACADE_X + d / 2);
   const mg = new Merge();
-  building(grp, mg, side, cx, d, h, len, 0xfff1d6, tile('walls', 4, 2, 7));
+  building(grp, mg, side, cx, d, h, len, 0xfff1d6, tile('walls', 4, 2, [0, 2, 4, 5][i % 4]));
   mg.add(G.box(d + 0.3, 0.45, len + 0.3), mat4(cx, h + 0.22, 0), C.sindoor);
   propLamp(mg, side * 5.6, -7); propBanana(mg, side * 6.4, 6.5);
   grp.add(mg.mesh(0.03));
+  // छत पर होर्डिंग
+  const hd = new THREE.Group();
+  const fm = signMat(tile('flex', 1, 4, (i + 1) % 4));
+  const face = new THREE.Mesh(new THREE.PlaneGeometry(12.4, 3.1), fm);
+  hd.add(face);
+  const back = new THREE.Mesh(G.box(12.7, 3.4, 0.16), toon(SIGN_EDGE));
+  back.position.z = -0.1;
+  hd.add(back);
+  for (const s of [-1, 1]) { const pl = new THREE.Mesh(G.cyl(0.11, 0.11, 2.2, 6), toon(0x4a4a4a)); pl.position.set(s * 4.8, -2.7, -0.15); hd.add(pl); }
+  hd.position.set(cx - side * 0.8, h + 3.1, 1.5);
+  hd.rotation.y = side < 0 ? 0.62 : -0.62;
+  grp.add(hd);
+  // दीवार पर टँगा बैनर
+  const wb = new THREE.Mesh(new THREE.PlaneGeometry(11, 2.75), signMat(tile('flex', 1, 4, i % 4)));
+  wb.rotation.y = side < 0 ? PI / 2 : -PI / 2;
+  wb.position.set(side * FACADE_X - side * 0.05, 4.6, -1.5);
+  grp.add(wb);
   grp.userData = { type: 'adwall', len: CHUNK };
   return grp;
+}
+
+// सड़क के ऊपर टँगा कपड़े/फ्लेक्स का बैनर (बाँस के खंभों पर) — सामने से सीधा पढ़ा जाए
+export function makeFlex(i) {
+  const g = new THREE.Group();
+  const mg = new Merge();
+  for (const s of [-1, 1]) {
+    mg.add(G.cyl(0.13, 0.16, 9.2, 7), mat4(s * 4.85, 4.6, 0), C.bamboo);
+    for (let y = 1; y < 9; y += 1.3) mg.add(G.cyl(0.165, 0.165, 0.08, 7), mat4(s * 4.85, y, 0), 0x9a7a3c);
+    mg.add(G.sph(0.2, 8, 6), mat4(s * 4.85, 9.25, 0), C.sindoor);
+  }
+  // रस्सी
+  for (let k = 0; k <= 12; k++) { const t = k / 12; mg.add(G.sph(0.035, 4, 3), mat4(-4.85 + t * 9.7, 8.9 - Math.sin(t * PI) * 0.25, 0), 0x3a2a1a); }
+  g.add(mg.mesh(0.03));
+  const cloth = new THREE.Group();
+  const b = new THREE.Mesh(new THREE.PlaneGeometry(9.2, 2.3, 8, 1), signMat(tile('flex', 1, 4, i % 4), { side: THREE.DoubleSide }));
+  const pa = b.geometry.attributes.position;
+  for (let k = 0; k < pa.count; k++) pa.setZ(k, Math.sin((pa.getX(k) / 9.2 + 0.5) * PI) * 0.12); // हल्का फूला कपड़ा
+  b.geometry.computeVertexNormals();
+  cloth.add(b);
+  cloth.position.set(0, 7.45, 0);
+  g.add(cloth);
+  g.userData = { type: 'flex', cloth };
+  return g;
 }
 
 // पोखर + मखाना + कमल
@@ -701,26 +865,26 @@ export function makeShop(side) {
   inside.rotation.y = face; inside.position.set(fx - side * 0.03, 1.9, 0);
   grp.add(inside);
   // बोर्ड (बैनर वाला नाम) — दीवार पर
-  const signM = toon(0xffffff, { map: TEX.sign });
+  const signM = signMat(TEX.sign);
   const sign = new THREE.Mesh(new THREE.PlaneGeometry(13, 3.8), signM);
   sign.rotation.y = face; sign.position.set(fx - side * 0.06, 5.85, 0);
   grp.add(sign);
-  const sb = new THREE.Mesh(G.box(0.15, 4.1, 13.3), toon(C.maroon));
+  const sb = new THREE.Mesh(G.box(0.15, 4.1, 13.3), toon(SIGN_EDGE));
   sb.position.set(fx + side * 0.02, 5.85, 0);
   grp.add(sb);
   // छत पर बड़ा बोर्ड — दौड़ते हुए सामने दिखे
   const roofSign = new THREE.Group();
-  const rs = new THREE.Mesh(new THREE.PlaneGeometry(9.5, 2.78), signM);
+  const rs = new THREE.Mesh(new THREE.PlaneGeometry(12, 3.52), signM);
   roofSign.add(rs);
-  const rsb = new THREE.Mesh(G.box(9.8, 3.05, 0.14), toon(C.maroon));
+  const rsb = new THREE.Mesh(G.box(12.3, 3.8, 0.14), toon(SIGN_EDGE));
   rsb.position.z = -0.08;
-  boxOutline(rsb, 9.8, 3.05, 0.14, 0.05);
+  boxOutline(rsb, 12.3, 3.8, 0.14, 0.05);
   roofSign.add(rsb);
-  roofSign.position.set(cx - side * 0.5, h + 2.4, len / 2 - 2.5);
-  roofSign.rotation.y = side < 0 ? 0.55 : -0.55;
+  for (const s of [-1, 1]) { const pl = new THREE.Mesh(G.cyl(0.1, 0.1, 1.5, 6), toon(0x3d3d3d)); pl.position.set(s * 4.6, -2.45, -0.12); roofSign.add(pl); }
+  roofSign.position.set(cx - side * 1.2, h + 2.75, len / 2 - 2.5);
+  roofSign.rotation.y = side < 0 ? 0.7 : -0.7;
   grp.add(roofSign);
   const mg = new Merge();
-  for (const s of [-1, 1]) mg.add(G.cyl(0.08, 0.08, 2.4, 6), mat4(cx - side * 0.5 + s * 3.5, h + 1.1, len / 2 - 2.3), 0x3d3d3d);
   // छज्जा (लाल-सफ़ेद धारी)
   for (let i = 0; i < 12; i++) {
     const z = -6.6 + i * 1.2;
@@ -777,14 +941,28 @@ export function makeShop(side) {
   mg2.add(G.cyl(0.05, 0.05, 1.2, 5), mat4(side * 6.2, 0.6, -8.2), 0x6b3f1f);
   propTulsi(mg2, side * 6.4, 8.2);
   grp.add(mg2.mesh(0.03));
-  // ग्राहक
-  const kid = makePerson(0x2f6fb6, 0xe8a07a, false, 0.75);
-  kid.position.set(fx - side * 2.6, 0, -2.0); kid.rotation.y = side < 0 ? -PI / 2 : PI / 2;
-  grp.add(kid);
-  const man = makePerson(0x2fa36b, 0xd99a6c, false, 1.0);
-  man.position.set(fx - side * 2.7, 0, 1.6); man.rotation.y = side < 0 ? -PI / 2 + 0.3 : PI / 2 - 0.3;
-  grp.add(man);
-  grp.userData = { type: 'shop', len: CHUNK, halwai };
+  // दुकानदार डिब्बा थमाता, ग्राहक लेते — मिठाई बिक रही है
+  const pf = side < 0 ? -PI / 2 : PI / 2;
+  const seller = makeVillager({ kind: 'man', mode: 'serve', cloth: 0xffffff });
+  seller.position.set(fx - side * 0.75, 0, -1.2); seller.rotation.y = pf;
+  const c1 = makeVillager({ mode: 'buy', kind: 'kid' }), c2 = makeVillager({ mode: 'buy', kind: 'woman' }), c3 = makeVillager({ mode: 'walk', kind: 'man' });
+  c1.position.set(fx - side * 2.7, 0, -1.4); c1.rotation.y = -pf;
+  c2.position.set(fx - side * 2.8, 0, 1.4); c2.rotation.y = -pf + side * 0.3;
+  c3.position.set(fx - side * 3.6, 0, 4.0); c3.rotation.y = 0;
+  const people = [seller, c1, c2, c3];
+  for (const p of people) grp.add(p);
+  // हाथ से हाथ जाता मिठाई का डिब्बा
+  const box = new THREE.Mesh(G.box(0.36, 0.2, 0.28), toon(0xd3121f));
+  const bow = new THREE.Mesh(G.box(0.38, 0.05, 0.06), toon(C.gold)); box.add(bow);
+  grp.add(box);
+  const anim = (t, near) => {
+    for (const p of people) { p.visible = near; if (near) p.userData.anim(t); }
+    const k = (t * 0.45) % 1, e = k < 0.5 ? k * 2 : 1;
+    box.visible = k < 0.75;
+    box.position.set(fx - side * (0.9 + e * 1.55), 1.35 + Math.sin(e * PI) * 0.35, -1.3);
+    c3.position.z = 4.0 - ((t * 0.6) % 8); // सामने से गुज़रता आदमी
+  };
+  grp.userData = { type: 'shop', len: CHUNK, halwai, anim };
   return grp;
 }
 
@@ -826,10 +1004,10 @@ export function makeGate() {
     mg.add(G.cone(0.08, 0.3, 5), mat4(x, 3.95, 0.02, PI, 0, 0), C.leaf);
   }
   g.add(mg.mesh(0.03));
-  const banner = new THREE.Mesh(new THREE.PlaneGeometry(10.2, 2.55), new THREE.MeshStandardMaterial({ map: TEX.gate, roughness: 0.82, transparent: true, alphaTest: 0.4 }));
+  const banner = new THREE.Mesh(new THREE.PlaneGeometry(10.2, 2.55), signMat(TEX.gate, { alpha: true }));
   banner.position.set(0, 6.9, 0.05);
   g.add(banner);
-  const back = new THREE.Mesh(new THREE.PlaneGeometry(10.2, 2.0), toon(C.maroon));
+  const back = new THREE.Mesh(new THREE.PlaneGeometry(10.2, 2.0), toon(SIGN_EDGE));
   back.position.set(0, 7.15, -0.02); back.rotation.y = PI;
   g.add(back);
   g.userData = { type: 'gate' };

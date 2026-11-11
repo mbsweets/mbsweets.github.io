@@ -226,7 +226,7 @@ export function buildRealTextures() {
 export const SUN = new THREE.Vector3(-0.45, 0.62, 0.64).normalize();
 export const HORIZON = new THREE.Color().setRGB(0.93, 0.82, 0.66, THREE.LinearSRGBColorSpace);
 const SKY_FRAG = `
-uniform vec3 uSun; uniform float uTime; uniform float uClouds;
+uniform vec3 uSun; uniform float uTime; uniform float uClouds; uniform float uEve; uniform float uNight;
 varying vec3 vDir;
 float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float noise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);
@@ -235,16 +235,28 @@ float fbm(vec2 p){ float v = 0.0, a = 0.5; for (int i = 0; i < 5; i++){ v += a*n
 void main(){
   vec3 d = normalize(vDir);
   float h = clamp(d.y, 0.0, 1.0);
-  vec3 zen = vec3(0.16, 0.38, 0.78), mid = vec3(0.42, 0.62, 0.88), hor = vec3(0.93, 0.82, 0.66);
+  // दिन → शाम (सुनहरी) → रात (तारे, चाँद)
+  vec3 zen = mix(mix(vec3(0.16, 0.38, 0.78), vec3(0.2, 0.2, 0.5), uEve), vec3(0.012, 0.02, 0.07), uNight);
+  vec3 mid = mix(mix(vec3(0.42, 0.62, 0.88), vec3(0.9, 0.5, 0.42), uEve), vec3(0.035, 0.055, 0.15), uNight);
+  vec3 hor = mix(mix(vec3(0.93, 0.82, 0.66), vec3(0.82, 0.48, 0.26), uEve), vec3(0.13, 0.1, 0.2), uNight);
   vec3 col = mix(hor, mid, smoothstep(0.0, 0.18, h));
   col = mix(col, zen, smoothstep(0.18, 0.75, h));
   float s = max(dot(d, uSun), 0.0);
-  col += vec3(1.0, 0.86, 0.62) * (pow(s, 6.0) * 0.28 + pow(s, 60.0) * 0.6) + vec3(1.0, 0.95, 0.85) * smoothstep(0.9993, 0.9997, s) * 6.0;
+  col += ((vec3(1.0, 0.86, 0.62) + vec3(0.0, -0.2, -0.3) * uEve) * (pow(s, 6.0) * (0.28 + 0.35 * uEve) + pow(s, 60.0) * 0.6) + vec3(1.0, 0.95, 0.85) * smoothstep(0.9993, 0.9997, s) * 6.0) * (1.0 - uNight);
+  if (uNight > 0.01 && d.y > 0.0) {
+    vec2 sp = d.xz / (d.y + 0.08) * 90.0;
+    float st = step(0.9965, hash(floor(sp))) * (0.6 + 0.4 * sin(uTime * 3.0 + hash(floor(sp) + 3.1) * 40.0));
+    col += vec3(st) * smoothstep(0.04, 0.3, d.y) * uNight;
+    vec3 md = normalize(vec3(0.45, 0.42, -0.79));
+    float mm = max(dot(d, md), 0.0);
+    col += (vec3(1.0, 0.97, 0.88) * smoothstep(0.99925, 0.9996, mm) * 1.4 + vec3(0.55, 0.62, 0.85) * pow(mm, 60.0) * 0.35) * uNight;
+  }
   if (d.y > 0.0 && uClouds > 0.5) {
     vec2 uv = d.xz / (d.y + 0.12) * 1.25 + vec2(uTime * 0.006, uTime * 0.002);
     float c = fbm(uv * 1.6);
     float m = smoothstep(0.52, 0.78, c) * smoothstep(0.0, 0.16, d.y);
     vec3 cc = mix(vec3(0.82, 0.8, 0.82), vec3(1.0, 0.98, 0.95), smoothstep(0.55, 0.85, c)) + vec3(1.0, 0.8, 0.55) * pow(s, 4.0) * 0.25;
+    cc = mix(cc * mix(vec3(1.0), vec3(1.05, 0.68, 0.52), uEve), vec3(0.07, 0.08, 0.13), uNight);
     col = mix(col, cc, m * 0.9);
   }
   if (d.y < 0.0) col = hor;
@@ -255,7 +267,7 @@ void main(){
 const SKY_VERT = `varying vec3 vDir; void main(){ vDir = position; vec4 p = projectionMatrix * modelViewMatrix * vec4(position, 1.0); gl_Position = p.xyww; }`;
 export function makeSky(radius = 300, clouds = true) {
   const m = new THREE.ShaderMaterial({
-    uniforms: { uSun: { value: SUN }, uTime: { value: 0 }, uClouds: { value: clouds ? 1 : 0 } },
+    uniforms: { uSun: { value: SUN }, uTime: { value: 0 }, uClouds: { value: clouds ? 1 : 0 }, uEve: { value: 0 }, uNight: { value: 0 } },
     vertexShader: SKY_VERT, fragmentShader: SKY_FRAG, side: THREE.BackSide, depthWrite: false, fog: false,
   });
   const s = new THREE.Mesh(new THREE.SphereGeometry(radius, 32, 16), m);
@@ -264,11 +276,13 @@ export function makeSky(radius = 300, clouds = true) {
   return s;
 }
 // आसमान से रोशनी/चमक (environment map) — मिठाई और पीतल पर असली प्रतिबिंब
-export function makeEnv(renderer) {
+export function makeEnv(renderer, eve = 0, night = 0) {
   const pm = new THREE.PMREMGenerator(renderer);
   const sc = new THREE.Scene();
-  sc.add(makeSky(50, false));
-  const g = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshBasicMaterial({ color: 0x8a6a50 }));
+  const sk = makeSky(50, false);
+  sk.material.uniforms.uEve.value = eve; sk.material.uniforms.uNight.value = night;
+  sc.add(sk);
+  const g = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshBasicMaterial({ color: new THREE.Color(0x8a6a50).multiplyScalar(1 - 0.75 * night) }));
   g.rotation.x = -Math.PI / 2; g.position.y = -2;
   sc.add(g);
   const rt = pm.fromScene(sc, 0.03);

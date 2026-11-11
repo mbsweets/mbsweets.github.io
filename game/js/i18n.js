@@ -13,6 +13,9 @@ const S = {
     sound: 'Sound', on: 'On', off: 'Off', lang: 'हिंदी', combo: 'combo', shieldUsed: 'Laddoo shield saved you!', smash: 'SMASH!',
     shareText: (s) => `I scored ${s} in Rasgulla Run — a sweet Mithila chase! Can you beat me?`,
     tip: 'Collect sweets to fill the meter, then tap SUGAR RUSH!', gotIt: 'Go!',
+    samosa: 'FLYING SAMOSA!', samosaS: 'Flying Samosa', thali: 'Double Thali ×2', level: 'Level',
+    lv1: 'Easy Lane', lv2: 'Market Rush', lv3: 'Full Speed', lv4: 'Tough Turns', lv5: 'Ustad Mode',
+    haat: 'Mithila Haat!', baraat: 'Baraat ahead!', mela: 'Mela bonus! Sweets everywhere!',
   },
   hi: {
     title: 'रसगुल्ला रन', sub: 'मिथिला की मीठी दौड़', play: 'खेलो', best: 'सबसे अच्छा', sweets: 'मिठाई', score: 'स्कोर',
@@ -25,6 +28,9 @@ const S = {
     sound: 'आवाज़', on: 'चालू', off: 'बंद', lang: 'English', combo: 'कॉम्बो', shieldUsed: 'लड्डू कवच ने बचा लिया!', smash: 'धमाका!',
     shareText: (s) => `मैंने रसगुल्ला रन (मिथिला की मीठी दौड़) में ${s} स्कोर किया! क्या तुम मुझे हरा सकते हो?`,
     tip: 'मिठाई जमा करो, मीटर भरे तो शुगर रश दबाओ!', gotIt: 'चलो!',
+    samosa: 'उड़न समोसा!', samosaS: 'उड़न समोसा', thali: 'डबल थाली ×2', level: 'लेवल',
+    lv1: 'आसान गली', lv2: 'बाज़ार की भीड़', lv3: 'तेज़ रफ़्तार', lv4: 'मुश्किल मोड़', lv5: 'उस्ताद',
+    haat: 'मिथिला हाट!', baraat: 'आगे बारात!', mela: 'मेला बोनस! मिठाई ही मिठाई!',
   },
 };
 
