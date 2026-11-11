@@ -214,11 +214,65 @@ function sweetsTex() {
   RT.coconut = tex(k, false);
 }
 
+// ---------- मिठाइयों के असली रंग (हर मिठाई की अपनी सतह) ----------
+function sweetsColor() {
+  const S = 256;
+  const mk = (base) => { const c = document.createElement('canvas'); c.width = c.height = S; const x = c.getContext('2d'); x.fillStyle = base; x.fillRect(0, 0, S, S); return [c, x]; };
+  const soft = (x, a = 0.6, oct = 4, sc = 6) => { x.save(); x.globalAlpha = a; x.globalCompositeOperation = 'soft-light'; x.drawImage(noiseCanvas(S, oct, sc), 0, 0); x.restore(); };
+  const dots = (x, n, r0, r1, col, a0, a1) => { for (let i = 0; i < n; i++) { x.fillStyle = col; x.globalAlpha = a0 + rnd() * (a1 - a0); x.beginPath(); x.arc(rnd() * S, rnd() * S, r0 + rnd() * (r1 - r0), 0, Math.PI * 2); x.fill(); } x.globalAlpha = 1; };
+  const blob = (x, n, r0, r1, col, a) => { for (let i = 0; i < n; i++) { const px = rnd() * S, py = rnd() * S, r = r0 + rnd() * (r1 - r0); const g = x.createRadialGradient(px, py, 0, px, py, r); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)'); x.globalAlpha = a; x.fillStyle = g; x.fillRect(px - r, py - r, r * 2, r * 2); } x.globalAlpha = 1; };
+  let c, x;
+  // रसगुल्ला: दूधिया-सफ़ेद, हल्की पीली चाशनी की धारियाँ, बारीक छेद
+  [c, x] = mk('#f7f0e1'); soft(x, 0.45, 4, 5); blob(x, 26, 10, 34, 'rgba(240,222,170,1)', 0.35); dots(x, 900, 0.5, 1.6, '#cbb894', 0.25, 0.55);
+  RT.rasgullaC = tex(c);
+  // गुलाब जामुन: गहरा भूरा, किनारों पर सुनहरी-भूरी झलक
+  [c, x] = mk('#5c210e'); soft(x, 0.7, 5, 5); blob(x, 40, 10, 40, 'rgba(150,72,28,1)', 0.45); blob(x, 30, 6, 20, 'rgba(40,10,4,1)', 0.4); dots(x, 400, 0.4, 1.2, '#2a0b04', 0.3, 0.6);
+  RT.jamunC = tex(c);
+  // बालूशाही: सुनहरी, किनारे गहरे, ऊपर चीनी की परत में दरारें
+  [c, x] = mk('#d18f3f'); soft(x, 0.7, 5, 7); blob(x, 30, 12, 40, 'rgba(150,84,30,1)', 0.35);
+  x.strokeStyle = 'rgba(250,238,210,0.65)';
+  for (let i = 0; i < 90; i++) { x.lineWidth = 0.6 + rnd() * 1.6; let px = rnd() * S, py = rnd() * S; x.beginPath(); x.moveTo(px, py); for (let k = 0; k < 4; k++) { px += (rnd() - 0.5) * 30; py += (rnd() - 0.5) * 30; x.lineTo(px, py); } x.stroke(); }
+  RT.balushahiC = tex(c);
+  // चमचम: गुलाबी, ऊपर नारियल का बुरादा
+  [c, x] = mk('#f0a9bc'); soft(x, 0.5, 4, 6); blob(x, 20, 10, 30, 'rgba(255,214,224,1)', 0.4);
+  for (let i = 0; i < 1600; i++) { x.fillStyle = `rgba(255,250,246,${0.5 + rnd() * 0.5})`; x.save(); x.translate(rnd() * S, rnd() * S); x.rotate(rnd() * 3); x.fillRect(0, 0, 1.5 + rnd() * 3.5, 0.8 + rnd() * 1.2); x.restore(); }
+  RT.chamchamC = tex(c);
+  // जलेबी: केसरिया, कुरकुरी गहरी धारियाँ
+  [c, x] = mk('#f28a1a'); soft(x, 0.7, 5, 8); blob(x, 40, 4, 14, 'rgba(190,80,10,1)', 0.45); blob(x, 30, 4, 12, 'rgba(255,190,90,1)', 0.45);
+  RT.jalebiC = tex(c);
+  // मोतीचूर लड्डू: छोटे-छोटे बूंदी के दाने (रंग + उभार)
+  const lh = document.createElement('canvas'); lh.width = lh.height = S; const lx = lh.getContext('2d'); lx.fillStyle = '#000'; lx.fillRect(0, 0, S, S);
+  [c, x] = mk('#e98a10');
+  for (let i = 0; i < 1500; i++) {
+    const px = rnd() * S, py = rnd() * S, r = 2.2 + rnd() * 2.0;
+    const g = x.createRadialGradient(px - r * 0.3, py - r * 0.3, 0, px, py, r); g.addColorStop(0, '#ffd27a'); g.addColorStop(0.55, '#f7a21b'); g.addColorStop(1, '#c86a08');
+    x.fillStyle = g; x.beginPath(); x.arc(px, py, r, 0, Math.PI * 2); x.fill();
+    const h = lx.createRadialGradient(px, py, 0, px, py, r); h.addColorStop(0, '#fff'); h.addColorStop(1, '#000');
+    lx.fillStyle = h; lx.beginPath(); lx.arc(px, py, r, 0, Math.PI * 2); lx.fill();
+  }
+  RT.laddooC = tex(c); RT.laddooN = tex(normalFrom(lh, 3.2), false);
+  // पेड़ा: हल्का भूरा, सिका हुआ, थोड़े गहरे धब्बे
+  [c, x] = mk('#d6a96f'); soft(x, 0.6, 5, 7); blob(x, 26, 6, 22, 'rgba(160,104,52,1)', 0.35); dots(x, 500, 0.5, 1.5, '#f0d3a0', 0.3, 0.6);
+  RT.pedaC = tex(c);
+  // कलाकंद: दानेदार, दूधिया-पीला
+  const kh = document.createElement('canvas'); kh.width = kh.height = S; const kx = kh.getContext('2d'); kx.fillStyle = '#777'; kx.fillRect(0, 0, S, S);
+  [c, x] = mk('#efdcab'); soft(x, 0.4, 4, 6);
+  for (let i = 0; i < 2200; i++) { const px = rnd() * S, py = rnd() * S, r = 1 + rnd() * 3; const l = rnd(); x.fillStyle = l < 0.5 ? 'rgba(255,246,220,0.7)' : 'rgba(214,186,120,0.55)'; x.beginPath(); x.arc(px, py, r, 0, Math.PI * 2); x.fill(); kx.fillStyle = l < 0.5 ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.6)'; kx.beginPath(); kx.arc(px, py, r, 0, Math.PI * 2); kx.fill(); }
+  RT.kalakandC = tex(c); RT.grainN = tex(normalFrom(kh, 2.4), false);
+  // मिल्क केक: कैरामल, दानेदार
+  [c, x] = mk('#a9652b'); soft(x, 0.6, 5, 6);
+  for (let i = 0; i < 1800; i++) { const px = rnd() * S, py = rnd() * S, r = 1 + rnd() * 3; x.fillStyle = rnd() < 0.55 ? 'rgba(214,150,84,0.6)' : 'rgba(110,56,20,0.55)'; x.beginPath(); x.arc(px, py, r, 0, Math.PI * 2); x.fill(); }
+  RT.milkcakeC = tex(c);
+  [c, x] = mk('#e7c58a'); soft(x, 0.5, 4, 6); dots(x, 1500, 0.8, 2.6, '#f6e2b6', 0.4, 0.8); dots(x, 600, 0.8, 2.2, '#c99a58', 0.3, 0.6);
+  RT.milkcakeTopC = tex(c);
+}
+
 export function buildRealTextures() {
   brickRoad();
   dirt();
   weatherWalls();
   sweetsTex();
+  sweetsColor();
 }
 
 // ---------- आसमान: नीला से सुनहरा क्षितिज, सूरज, धीरे चलते बादल ----------

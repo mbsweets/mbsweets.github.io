@@ -7,6 +7,7 @@ import { Golu as GoluCode } from './golu.js';
 import { Golu as Golu3D, loadGolu } from './golu3d.js';
 import { World, LANES } from './world.js';
 import { SkyShow } from './skyshow.js';
+import { Leaderboard } from './lb.js';
 import { Sound } from './audio.js';
 import { T, LANG, setLang, applyLang } from './i18n.js';
 import { clamp, lerp, damp, rand, store, storeNum, vibrate } from './util.js';
@@ -44,8 +45,8 @@ function baseSpeed(d) {
   return Math.min(38.5, 37.5 + (d - 9000) / 3000);
 }
 const CHEER = {
-  hi: ['गज़ब!', 'का बात है!', 'बड़ नीक!', 'जबरदस्त!', 'बाह रे गोलू!', 'धुआँधार!'],
-  en: ['Gazab!', 'Kya baat hai!', 'Badd neek!', 'Zabardast!', 'Wah re Golu!', 'Dhuandhaar!'],
+  hi: ['गज़ब!', 'की बात!', 'बड़ नीक!', 'जबरदस्त!', 'बाह रे गोलू!', 'धुआँधार!', 'जय मिथिला!', 'एकदम फर्स्ट क्लास!'],
+  en: ['Gazab!', 'Ki baat!', 'Badd neek!', 'Zabardast!', 'Wah re Golu!', 'Dhuandhaar!', 'Jai Mithila!'],
 };
 const SW_COL = { rasgulla: 0xffffff, gulabjamun: 0x9a3b1c, balushahi: 0xf2b84b, chamcham: 0xff8fb1, rasmalai: 0xffd24d, jalebi: 0xf39a1e, laddoo: 0xf7a21b, peda: 0xd9b07a, kalakand: 0xf3e2b0, milkcake: 0xc58a3e };
 const SKY_NAME = { hi: { jalebi: 'जलेबी', laddoo: 'लड्डू', peda: 'पेड़ा', kalakand: 'कलाकंद', milkcake: 'मिल्क केक' }, en: { jalebi: 'Jalebi', laddoo: 'Laddoo', peda: 'Peda', kalakand: 'Kalakand', milkcake: 'Milk Cake' } };
@@ -163,6 +164,7 @@ class Game {
     c.addEventListener('pointerup', end);
     c.addEventListener('pointercancel', end);
     window.addEventListener('keydown', (e) => {
+      if (e.target && /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return; // नाम लिखते समय खेल के बटन नहीं
       const k = e.key;
       if (['ArrowLeft', 'a', 'A'].includes(k)) this.act('left');
       else if (['ArrowRight', 'd', 'D'].includes(k)) this.act('right');
@@ -217,6 +219,11 @@ class Game {
     click('#btnLang', () => { setLang(LANG === 'hi' ? 'en' : 'hi'); this.refreshMenu(); });
     click('#btnSound', () => { this.sound.setMuted(!this.sound.muted); this.refreshMenu(); });
     click('#btnShare', () => this.share());
+    this.lb = new Leaderboard();
+    this.lb.bind(() => {});
+    click('#btnLb', () => this.lb.open());
+    click('#btnLb2', () => this.lb.open());
+    $('#overLb').addEventListener('click', () => this.lb.open());
     for (const el of document.querySelectorAll('.local')) el.hidden = !LOCAL;
     $('#orderLink').href = ORDER_URL;
   }
@@ -442,7 +449,9 @@ class Game {
     $('#overSweets').textContent = this.got.toLocaleString('en-IN');
     $('#overBest').textContent = Math.floor(this.best).toLocaleString('en-IN');
     $('#newBest').hidden = !nb;
+    $('#overLb').hidden = true;
     this.show(['#over']);
+    this.lb.afterGame(sc, this.world.dist, this.runT);
   }
 
   // ------------------------------------------------ हर फ़्रेम
@@ -578,7 +587,7 @@ class Game {
       this.score += 100 * hits; this.got += 3 * hits;
       this.sound.ring(); vibrate(20);
       this.world.parts.burst(p.x, p.y + 1, -0.5, 0xffd24d, 26, 5, 4, 0.8, 0);
-      this.toast((LANG === 'hi' ? 'सुनहरा छल्ला! +' : 'Golden ring! +') + 100 * hits, 800, 'gold');
+      this.toast((LANG === 'hi' ? 'सोनाक छल्ला! +' : 'Golden ring! +') + 100 * hits, 800, 'gold');
     }
     // उड़न समोसा गोलू के नीचे
     const sm = this.samosa;

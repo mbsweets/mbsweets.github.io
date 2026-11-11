@@ -249,7 +249,7 @@ export function makeHaatGate() {
   for (let i = 0; i < 34; i++) { x.fillStyle = i % 2 ? '#ffd23a' : '#d3121f'; x.beginPath(); x.moveTo(20 + i * 29.5, 22); x.lineTo(34 + i * 29.5, 40); x.lineTo(49 + i * 29.5, 22); x.fill(); }
   x.fillStyle = '#fff'; x.textAlign = 'center'; x.textBaseline = 'middle';
   x.font = '800 104px "Baloo 2", Mukta, sans-serif'; x.fillText('॥ मिथिला हाट ॥', 512, 122);
-  x.fillStyle = '#ffe45c'; x.font = '800 40px "Baloo 2", Mukta, sans-serif'; x.fillText('MITHILA HAAT  •  सब्ज़ी • फल • फूल • मछली • मखाना', 512, 206);
+  x.fillStyle = '#ffe45c'; x.font = '800 40px "Baloo 2", Mukta, sans-serif'; x.fillText('पग पग पोखरि माछ मखान  •  MITHILA HAAT', 512, 206);
   const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
   const b = new THREE.Mesh(new THREE.PlaneGeometry(9.4, 2.35), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false, color: 0xf2f2f2, side: THREE.DoubleSide }));
   b.position.set(0, 7.6, 0);

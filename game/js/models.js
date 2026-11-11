@@ -244,25 +244,25 @@ export function sweetParts(type) {
   if (type === 'rasgulla') {
     // छेने का नरम गोला, चाशनी से भीगा — हल्की चमक, स्पंज जैसे छेद
     const g = bumpy(G.sph(0.3, 28, 20), 0.012, 11); g.scale(1, 0.94, 1);
-    return [{ g, c: 0xf6eedc, r: 0.3, nm: RT.spongeN, ns: 0.55, ol: 0.035 }];
+    return [{ g, c: 0xffffff, map: RT.rasgullaC, r: 0.42, nm: RT.spongeN, ns: 0.5, cc: 0.65, ccr: 0.22, ol: 0.035 }];
   }
   if (type === 'gulabjamun') {
     const g = bumpy(G.sph(0.28, 28, 20), 0.01, 8); g.scale(1.2, 0.92, 0.92);
     const pis = new Merge();
     for (let i = 0; i < 4; i++) pis.add(G.box(0.07, 0.015, 0.025), mat4(-0.1 + i * 0.065, 0.255 - Math.abs(i - 1.5) * 0.012, (i % 2 - 0.5) * 0.06, 0, i * 0.8, 0.2), i % 2 ? 0x8bc34a : 0x6fa63a);
-    return [{ g, c: 0x4e1a0c, r: 0.16, ol: 0.035 }, { g: pis.build(), c: 0xffffff, vc: true, r: 0.6 }];
+    return [{ g, c: 0xffffff, map: RT.jamunC, r: 0.3, nm: RT.spongeN, ns: 0.25, cc: 1.0, ccr: 0.12, ol: 0.035 }, { g: pis.build(), c: 0xffffff, vc: true, r: 0.6 }];
   }
   if (type === 'balushahi') {
     const pts = [[0.001, -0.11], [0.24, -0.115], [0.32, -0.07], [0.355, 0.0], [0.33, 0.07], [0.25, 0.12], [0.13, 0.13], [0.06, 0.085], [0.001, 0.09]].map((a) => new THREE.Vector2(a[0], a[1]));
     const g = bumpy(new THREE.LatheGeometry(pts, 40), 0.012, 14);
     const gar = new Merge();
     for (let i = 0; i < 6; i++) gar.add(G.box(0.045, 0.012, 0.02), mat4(Math.cos(i * 1.05) * 0.05, 0.1, Math.sin(i * 1.05) * 0.05, 0, i * 0.9, 0), i % 2 ? 0x8bc34a : 0xd7b56d);
-    return [{ g, c: 0xcf8f3e, r: 0.42, nm: RT.flakyN, ns: 1.2, ol: 0.035 }, { g: gar.build(), c: 0xffffff, vc: true, r: 0.6 }];
+    return [{ g, c: 0xffffff, map: RT.balushahiC, r: 0.5, nm: RT.flakyN, ns: 1.3, cc: 0.45, ccr: 0.35, ol: 0.035 }, { g: gar.build(), c: 0xffffff, vc: true, r: 0.6 }];
   }
   if (type === 'chamcham') {
     const g = bumpy(G.cap(0.16, 0.32, 20), 0.008, 10); g.rotateZ(PI / 2); g.scale(1, 0.95, 1.05);
     const k = G.cap(0.06, 0.3, 10); k.rotateZ(PI / 2); k.scale(1, 0.6, 1); k.translate(0, 0.155, 0);
-    return [{ g, c: 0xf2b2c2, r: 0.62, nm: RT.coconutN, ns: 1.4, ol: 0.035 }, { g: k, c: 0xfff3e0, r: 0.5 }];
+    return [{ g, c: 0xffffff, map: RT.chamchamC, r: 0.7, nm: RT.coconutN, ns: 1.5, ol: 0.035 }, { g: k, c: 0xfff1d6, map: RT.kalakandC, r: 0.6 }];
   }
   if (type === 'jalebi') { // चमकदार केसरिया कुंडली
     class Spiral extends THREE.Curve {
@@ -270,32 +270,31 @@ export function sweetParts(type) {
     }
     const g = new THREE.TubeGeometry(new Spiral(), 140, 0.045, 8, false);
     g.rotateX(PI / 2.4);
-    return [{ g, c: 0xf2861a, r: 0.14 }];
+    return [{ g, c: 0xffffff, map: RT.jalebiC, r: 0.25, cc: 1.0, ccr: 0.1 }];
   }
   if (type === 'laddoo') { // मोतीचूर — दानेदार
-    const g = bumpy(G.sph(0.27, 30, 22), 0.016, 34);
+    const g = bumpy(G.sph(0.27, 32, 24), 0.008, 9);
     const gar = new Merge();
     for (let i = 0; i < 3; i++) gar.add(G.box(0.07, 0.014, 0.025), mat4(-0.05 + i * 0.05, 0.262, (i % 2 - 0.5) * 0.04, 0, i, 0.2), 0x7cb342);
-    return [{ g, c: 0xf59b1c, r: 0.55, ol: 0.03 }, { g: gar.build(), c: 0xffffff, vc: true, r: 0.6 }];
+    return [{ g, c: 0xffffff, map: RT.laddooC, nm: RT.laddooN, ns: 1.6, r: 0.45, cc: 0.35, ccr: 0.4, ol: 0.03 }, { g: gar.build(), c: 0xffffff, vc: true, r: 0.6 }];
   }
   if (type === 'peda') { // बीच में अंगूठे का निशान + पिस्ता
     const pts = [[0.001, -0.07], [0.2, -0.07], [0.26, -0.03], [0.27, 0.02], [0.23, 0.065], [0.12, 0.075], [0.07, 0.045], [0.001, 0.04]].map((a) => new THREE.Vector2(a[0], a[1]));
     const g = bumpy(new THREE.LatheGeometry(pts, 36), 0.006, 16);
     const gar = new Merge();
     for (let i = 0; i < 3; i++) gar.add(G.box(0.06, 0.012, 0.022), mat4(-0.03 + i * 0.03, 0.055, (i % 2 - 0.5) * 0.03, 0, i * 1.2, 0), 0x8bc34a);
-    return [{ g, c: 0xd8ad78, r: 0.7, ol: 0.03 }, { g: gar.build(), c: 0xffffff, vc: true, r: 0.6 }];
+    return [{ g, c: 0xffffff, map: RT.pedaC, nm: RT.grainN, ns: 0.6, r: 0.75, ol: 0.03 }, { g: gar.build(), c: 0xffffff, vc: true, r: 0.6 }];
   }
   if (type === 'kalakand') { // दानेदार चौकोर टुकड़ा, ऊपर पिस्ता + चाँदी का वर्क
     const g = bumpy(new THREE.BoxGeometry(0.46, 0.2, 0.46, 6, 3, 6), 0.012, 30);
     const top = new Merge();
     for (let i = 0; i < 7; i++) top.add(G.box(0.07, 0.012, 0.024), mat4(-0.15 + (i % 4) * 0.1, 0.105, -0.1 + Math.floor(i / 4) * 0.18, 0, i * 0.9, 0), 0x7cb342);
-    top.add(G.box(0.3, 0.004, 0.3), mat4(0, 0.101, 0), 0xe9ecef);
-    return [{ g, c: 0xf1dfa8, r: 0.8, ol: 0.03 }, { g: top.build(), c: 0xffffff, vc: true, r: 0.35, m: 0.3 }];
+    return [{ g, c: 0xffffff, map: RT.kalakandC, nm: RT.grainN, ns: 1.2, r: 0.7, ol: 0.03 }, { g: top.build(), c: 0xffffff, vc: true, r: 0.5 }];
   }
   if (type === 'milkcake') { // नीचे गहरा कैरामल, ऊपर हल्की परत
     const b = bumpy(new THREE.BoxGeometry(0.5, 0.16, 0.4, 6, 2, 5), 0.01, 26); b.translate(0, -0.04, 0);
     const t = bumpy(new THREE.BoxGeometry(0.5, 0.09, 0.4, 6, 2, 5), 0.008, 30); t.translate(0, 0.085, 0);
-    return [{ g: b, c: 0xa8642a, r: 0.75, ol: 0.03 }, { g: t, c: 0xe6c487, r: 0.8 }];
+    return [{ g: b, c: 0xffffff, map: RT.milkcakeC, nm: RT.grainN, ns: 1.0, r: 0.7, ol: 0.03 }, { g: t, c: 0xffffff, map: RT.milkcakeTopC, nm: RT.grainN, ns: 1.0, r: 0.75 }];
   }
   // rasmalai — पीतल की कटोरी में केसर वाला दूध
   const bp = [[0.001, -0.15], [0.2, -0.15], [0.3, -0.06], [0.355, 0.1], [0.335, 0.115], [0.28, -0.02], [0.001, -0.07]].map((a) => new THREE.Vector2(a[0], a[1]));
@@ -305,7 +304,7 @@ export function sweetParts(type) {
   const gar = new Merge();
   for (let i = 0; i < 5; i++) gar.add(G.box(0.05, 0.012, 0.022), mat4(-0.08 + i * 0.04, 0.17, (i % 2 - 0.5) * 0.05, 0, i, 0), 0x7cb342);
   for (let i = 0; i < 4; i++) gar.add(G.box(0.08, 0.006, 0.006), mat4(0.06 - i * 0.04, 0.165, 0.04 - i * 0.025, 0, i * 1.3, 0), 0xe65100);
-  return [{ g: bowl, c: 0xc9963a, r: 0.28, m: 0.9, ol: 0.03 }, { g: milk, c: 0xf3d58a, r: 0.18 }, { g: pat, c: 0xfbf1da, r: 0.42, nm: RT.spongeN, ns: 0.4, ol: 0.02 }, { g: gar.build(), c: 0xffffff, vc: true, r: 0.6 }];
+  return [{ g: bowl, c: 0xc9963a, r: 0.28, m: 0.9, ol: 0.03 }, { g: milk, c: 0xf3d58a, r: 0.18 }, { g: pat, c: 0xfff6e6, map: RT.rasgullaC, r: 0.45, nm: RT.spongeN, ns: 0.4, cc: 0.5, ccr: 0.25, ol: 0.02 }, { g: gar.build(), c: 0xffffff, vc: true, r: 0.6 }];
 }
 
 // ======================= पावर-अप =======================
@@ -891,8 +890,16 @@ export function makeShop(side) {
     mg.add(G.box(2.4, 0.08, 1.2), mat4(fx - side * 1.15, 3.85, z, 0, 0, side * -0.28), i % 2 ? 0xffffff : 0xd1261c);
     mg.add(new THREE.CylinderGeometry(0.3, 0.3, 0.07, 12, 1, false, 0, PI), mat4(fx - side * 2.3, 3.5, z, PI / 2, 0, side * PI / 2), i % 2 ? 0xffffff : 0xd1261c);
   }
-  // बत्तियों की लड़ी
-  for (let i = 0; i < 20; i++) mg.add(G.sph(0.09, 6, 5), mat4(fx - side * 2.33, 3.35 - Math.sin(i / 19 * PI) * 0.2, -7 + i * 0.74), pick([0xffe066, 0xff6b6b, 0x7bd389, 0x74b9ff]));
+  // बत्तियों की लड़ी + दीये — अपनी रोशनी से (रात में जगमग)
+  const glow = new Merge();
+  for (let i = 0; i < 20; i++) glow.add(G.sph(0.09, 6, 5), mat4(fx - side * 2.33, 3.35 - Math.sin(i / 19 * PI) * 0.2, -7 + i * 0.74), pick([0xffe066, 0xff6b6b, 0x7bd389, 0x74b9ff]));
+  for (let i = 0; i < 9; i++) {
+    const z = -7.2 + i * 1.8, x = fx - side * 2.25;
+    mg.add(G.cyl(0.13, 0.08, 0.09, 8), mat4(x, 0.05, z), 0xb5541f); // माटिक दीया
+    glow.add(G.cone(0.055, 0.17, 6), mat4(x, 0.18, z), 0xffb23c);
+    glow.add(G.sph(0.035, 5, 4), mat4(x, 0.12, z), 0xfff3c0);
+  }
+  { const gm = new THREE.Mesh(glow.build(), new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false })); grp.add(gm); }
   // गेंदे की माला बोर्ड के नीचे
   for (let k = 0; k < 4; k++) {
     const z0 = -6.4 + k * 3.2;

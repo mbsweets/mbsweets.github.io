@@ -41,7 +41,9 @@ class SweetSet {
           scene.add(im);
           arr.push(im);
         };
-        const m = toon(p.c, { r: p.r, m: p.m, nm: p.nm, ns: p.ns, vc: p.vc });
+        // चाशनी वाली मिठाई: ऊपर गीली चमक (clearcoat)
+        const m = p.cc ? new THREE.MeshPhysicalMaterial({ color: p.c, map: p.map || null, roughness: p.r, metalness: p.m || 0, normalMap: p.nm || null, normalScale: new THREE.Vector2(p.ns || 1, p.ns || 1), clearcoat: p.cc, clearcoatRoughness: p.ccr || 0.2 })
+          : toon(p.c, { r: p.r, m: p.m, nm: p.nm, ns: p.ns, vc: p.vc, map: p.map });
         add(m);
         if (p.ol && OUTLINES) add(outlineMat(p.ol));
       }

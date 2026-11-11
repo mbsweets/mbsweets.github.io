@@ -100,6 +100,27 @@ button:focus-visible,a:focus-visible{outline:3px solid #fff;outline-offset:3px}
 #toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
 #toast.gold{color:#FFD24D}
 #toast.warn{color:#FFB3A8}
+#overLb{font:700 15px/1.3 var(--body);color:var(--maroon);margin:-2px 0 8px;text-align:center}
+.wide{width:100%;margin-top:8px}
+.lbcard{max-height:92vh;display:flex;flex-direction:column;gap:8px;width:min(94vw,420px)}
+.seg{align-self:stretch;display:flex;gap:4px;background:rgba(0,0,0,.08);border-radius:12px;padding:3px}
+.seg button{flex:1;border:0;background:transparent;font:800 15px var(--disp);padding:8px 4px;border-radius:9px;color:var(--ink);white-space:nowrap}
+.seg button.on{background:var(--sindoor);color:#fff}
+.seg.sm2 button{font-size:13px;padding:5px 4px}
+#lbForm{align-self:stretch;display:flex;flex-direction:column;gap:8px}
+#lbForm label{display:flex;flex-direction:column;gap:3px;font:700 14px var(--body)}
+#lbForm input,#lbForm select{font:600 17px var(--body);padding:9px 10px;border:2px solid var(--ink);border-radius:10px;background:#fff}
+.lbnote{font:500 13px/1.35 var(--body);color:#6b4a3a;text-align:center;margin:6px 0}
+.lbnote.warn{color:#c62828}
+#lbList{align-self:stretch;list-style:none;overflow:auto;flex:1;min-height:120px;margin:0;padding:0}
+#lbList li{display:flex;align-items:center;gap:10px;padding:7px 8px;border-bottom:1px solid rgba(0,0,0,.08)}
+#lbList li b{width:34px;text-align:center;font:800 17px var(--disp)}
+#lbList li span{flex:1;font:700 16px var(--body);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#lbList li small{display:block;font:500 12px var(--body);color:#7a6152}
+#lbList li em{font:800 17px var(--disp);font-style:normal;color:var(--maroon)}
+#lbList li.me{background:#fff3c4;border-radius:10px}
+#lbMe{font:800 15px var(--disp);color:var(--maroon);text-align:center}
+#vig{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse 120% 95% at 50% 46%,rgba(0,0,0,0) 58%,rgba(70,30,6,.16) 85%,rgba(40,14,2,.34) 100%)}
 #toast.cheer{color:#FFE45C;font-size:clamp(30px,9vw,50px);letter-spacing:.5px}
 #lvl{position:absolute;left:50%;top:15%;transform:translate(-50%,-50%) scale(.5);opacity:0;pointer-events:none;text-align:center;
   background:linear-gradient(#FFD23A,#FF8A12);border:4px solid #D3121F;border-radius:18px;padding:8px 22px 10px;box-shadow:0 6px 0 rgba(0,0,0,.25);white-space:nowrap}
@@ -140,6 +161,7 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
     </div>
   </div>
   <div id="hint" hidden></div>
+  <div id="vig"></div>
   <div id="toast"></div>
   <div id="lvl"></div>
 
@@ -157,6 +179,7 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
         <div><small data-t="sweets"></small><b id="totalV">0</b></div>
       </div>
       <div class="row"><button id="btnLang" class="sm"></button><button id="btnSound" class="sm"></button></div>
+      <button id="btnLb" class="sm lbbtn wide" data-t="lb" hidden></button>
       <p id="keysTip" class="tiny" data-t="keys"></p>
       <p class="tiny local" data-t="soon"></p>
     </div>
@@ -179,13 +202,31 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
         <div><small data-t="sweets"></small><b id="overSweets">0</b></div>
         <div><small data-t="best"></small><b id="overBest">0</b></div>
       </div>
+      <div id="overLb" hidden></div>
       <button id="btnAgain" class="big" data-t="again"></button>
-      <div class="row"><button id="btnHome" class="sm" data-t="home"></button><button id="btnShare" class="sm local" data-t="share"></button></div>
+      <div class="row"><button id="btnHome" class="sm" data-t="home"></button><button id="btnShare" class="sm local" data-t="share"></button><button id="btnLb2" class="sm lbbtn" data-t="lbShort" hidden></button></div>
     </div>
     <a id="orderLink" class="shopcard local" target="_blank" rel="noopener">
       <img src="img/logo.webp" alt="MB Sweets" width="62" height="57">
       <span><b data-t="shopT"></b><small data-t="shopS"></small><em data-t="order"></em></span>
     </a>
+  </section>
+
+  <section id="lbS" class="screen dim" hidden>
+    <div class="card lbcard">
+      <h2 data-t="lb"></h2>
+      <div id="lbTabs" class="seg"><button data-s="city"></button><button data-s="india" data-t="lbIndia"></button><button data-s="world" data-t="lbWorld"></button></div>
+      <div id="lbPer" class="seg sm2"><button data-p="week" data-t="lbWeek"></button><button data-p="all" data-t="lbAll"></button></div>
+      <div id="lbForm" hidden>
+        <label><span data-t="lbYourName"></span><input id="lbName" maxlength="16" autocomplete="nickname"></label>
+        <label><span data-t="lbCityL"></span><select id="lbCity"></select></label>
+        <p class="lbnote" data-t="lbPrivacy"></p><p id="lbMsg" class="lbnote warn"></p>
+        <button id="lbSave" class="big" data-t="lbSave"></button>
+      </div>
+      <ol id="lbList"></ol>
+      <div id="lbMe"></div>
+      <div class="row"><button id="lbEdit" class="sm" data-t="lbEdit"></button><button id="lbClose" class="sm" data-t="lbClose"></button></div>
+    </div>
   </section>
 
   <div id="loading" class="screen">
