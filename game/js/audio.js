@@ -38,7 +38,15 @@ export class Sound {
   }
   setMusic(on) {
     this.musOn = on;
-    if (this.mus) this.mus.gain.setTargetAtTime(on ? 0.5 : 0, this.ctx.currentTime, 0.05);
+    if (this.mus) this.mus.gain.setTargetAtTime(on ? (this.ducked ? 0.1 : 0.5) : 0, this.ctx.currentTime, 0.05);
+  }
+  // गोलू बोल रहा है — तब तक धुन और आवाज़ें धीमी, ताकि बोली साफ़ सुनाई दे
+  duck(on) {
+    this.ducked = on;
+    if (!this.ctx || !this.mus) return;
+    const t = this.ctx.currentTime, k = on ? 0.08 : 0.35;
+    this.mus.gain.setTargetAtTime(this.musOn === false ? 0 : (on ? 0.1 : 0.5), t, k);
+    this.fx.gain.setTargetAtTime(on ? 0.38 : 0.75, t, k);
   }
   setMuted(m) {
     this.muted = m;
