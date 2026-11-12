@@ -5,6 +5,7 @@ import { RT } from './real.js';
 import { makeVillager, HAAT_OBST } from './haat.js';
 import { EVENT_OBST } from './events.js';
 import { RAIL_OBST } from './rail.js';
+import { EXTRA_OBST } from './extra.js';
 import { rand, pick, chance } from './util.js';
 
 const PI = Math.PI;
@@ -593,7 +594,7 @@ export const OBST = {
 
 // ======================= मकान / किनारे की चीज़ें =======================
 // side: -1 बायाँ, +1 दायाँ. सड़क का किनारा x=±4.3, फ़ुटपाथ 4.3–7.8, मकान 8.0 से
-Object.assign(OBST, HAAT_OBST, EVENT_OBST, RAIL_OBST);
+Object.assign(OBST, HAAT_OBST, EVENT_OBST, RAIL_OBST, EXTRA_OBST);
 export const ROAD_HALF = 4.3, FACADE_X = 8.0, CHUNK = 20;
 
 function facadeMats(texture, wallColor, side) {

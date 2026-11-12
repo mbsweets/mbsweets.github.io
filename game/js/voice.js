@@ -12,6 +12,13 @@ export class Voice {
       load(); window.speechSynthesis.onvoiceschanged = load;
     }
   }
+  // फ़ोन/कंप्यूटर में हिंदी आवाज़ है? (नहीं तो English बोलो — मैथिली को अंग्रेज़ी आवाज़ बिगाड़ देगी)
+  canHi() {
+    if (VOICE_FILES.hi && Object.keys(VOICE_FILES.hi).length) return true;
+    if (!this.tts) return false;
+    if (!this.voices.length) return true; // अभी सूची नहीं आई — मान लो है
+    return this.voices.some((x) => /^hi/i.test(x.lang));
+  }
   pick(lang) {
     const v = this.voices;
     if (lang === 'hi') return v.find((x) => /^hi(-|_)IN/i.test(x.lang) && /google/i.test(x.name)) || v.find((x) => /^hi/i.test(x.lang)) || null;
@@ -22,7 +29,7 @@ export class Voice {
     const s = this.sound;
     if (!s || s.silent || !text) return;
     const now = performance.now() / 1000;
-    if (!prio && now - this.last < 1.4) return;
+    if (!prio && now - this.last < 3) return; // शोर नहीं — 3 सेकंड में एक बार
     this.last = now;
     const file = (VOICE_FILES[lang] || {})[text];
     if (file && s.ctx) { this.play(`voice/${lang}/${file}`); return; }

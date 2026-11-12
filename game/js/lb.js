@@ -35,7 +35,7 @@ export class Leaderboard {
   async submit(score, dist, secs) {
     if (!this.on || !this.name || score <= 0) return null;
     try {
-      const r = await fetch(this.url + '/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pid: this.pid, name: this.name, city: this.city, score: Math.floor(score), dist: Math.floor(dist), secs: +secs.toFixed(1) }) });
+      const r = await fetch(this.url + '/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pid: this.pid, name: this.name, city: this.city, score: Math.floor(score), dist: Math.floor(dist), secs: +secs.toFixed(1), mult: this.mult || 1 }) });
       return await r.json();
     } catch (e) { return null; }
   }
@@ -86,7 +86,8 @@ export class Leaderboard {
     } catch (e) { list.innerHTML = `<p class="lbnote">${T('lbErr')}</p>`; }
   }
   // गेम ख़त्म: स्कोर भेजो (नाम हो तो), नहीं तो बाद में भेजने के लिए रखो
-  async afterGame(score, dist, secs) {
+  async afterGame(score, dist, secs, mult = 1) {
+    this.mult = mult;
     if (!this.on || score <= 0) return;
     const el = $('#overLb');
     if (!this.name) { this.pending = { score, dist, secs }; el.textContent = T('lbJoin'); el.hidden = false; return; }

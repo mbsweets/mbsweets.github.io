@@ -2,6 +2,7 @@
 // मॉडल में हड्डियाँ नहीं थीं — कोड से 11 हड्डियाँ लगाई (skin weights पहले से गणना करके models/golu.bin में)।
 // इंटरफ़ेस पुराने Golu जैसा: root, shadow, aura, setGlow(), eat(), update(dt, mode, o)
 import * as THREE from './three.module.min.js';
+import { LOOKS, makeTexture, makeAttachment, makeBackItem, animWear } from './wardrobe.js';
 
 const PI = Math.PI, D2R = PI / 180;
 let DATA = null;
@@ -94,6 +95,26 @@ export class Golu {
     this.phase = 0; this.spin = 0; this.eatT = 0; this.scale = 1; this.glow = 0;
     this.cur = null;
   }
+  // अलमारी: { head, body, feet, extra }
+  wear(outfit) {
+    const key = JSON.stringify(outfit || {});
+    if (key === this.wornKey) return;
+    this.wornKey = key;
+    const o = outfit || {};
+    const tex = makeTexture(o, DATA.tex);
+    if (this.customTex && this.customTex !== tex) this.customTex.dispose();
+    this.customTex = tex;
+    this.mat.map = tex || DATA.tex; this.mat.needsUpdate = true;
+    for (const a of this.atts || []) a.parent && a.parent.remove(a);
+    this.atts = []; this.wa = {};
+    const add = (bone, g) => { bone.add(g); this.atts.push(g); Object.assign(this.wa, g.userData); };
+    const headAtt = (LOOKS[o.head] || {}).att, xAtt = (LOOKS[o.extra] || {}).att, bodyAtt = (LOOKS[o.body] || {}).att;
+    if (headAtt) add(this.B.head, makeAttachment(headAtt));
+    if (xAtt === 'chashma') add(this.B.head, makeAttachment('chashma'));
+    if (xAtt === 'gubbara') add(this.B.spine, makeBackItem('gubbara'));
+    if (bodyAtt === 'cape') add(this.B.spine, makeBackItem('cape'));
+    this.fx = (LOOKS[o.feet] || {}).fx || (LOOKS[o.extra] || {}).fx || null;
+  }
   setGlow(v) {
     if (Math.abs(v - this.glow) < 0.01) return;
     this.glow = v;
@@ -166,6 +187,8 @@ export class Golu {
     const hy = (o.y || 0) - (o.gy || 0); // परछाईं ज़मीन/छत पर
     this.shadow.scale.setScalar(Math.max(0.35, 1 - hy * 0.18));
     this.shadow.position.y = 0.02 - hy / this.scale;
+    this.wt = (this.wt || 0) + dt;
+    if (this.wa) animWear(this.wa, this.wt, run ? sp : mode === 'fly' ? 22 : 0);
     this.aura.visible = !!o.shield;
     if (o.shield) { this.aura.rotation.y += dt * 2; this.aura.scale.setScalar(1 + Math.sin(this.phase * 0.7) * 0.04); }
   }

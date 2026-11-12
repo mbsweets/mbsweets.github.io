@@ -98,6 +98,7 @@ button:focus-visible,a:focus-visible{outline:3px solid #fff;outline-offset:3px}
 #toast{position:absolute;left:50%;top:24%;transform:translate(-50%,-50%) scale(.6);opacity:0;pointer-events:none;font:800 clamp(24px,7vw,40px)/1.1 var(--disp);color:#fff;
   -webkit-text-stroke:7px var(--ink);paint-order:stroke fill;text-align:center;white-space:nowrap;transition:transform .18s,opacity .18s}
 #toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+#toast{max-width:94vw;white-space:normal;line-height:1.05}
 #toast.gold{color:#FFD24D}
 #toast.warn{color:#FFB3A8}
 #overLb{font:700 15px/1.3 var(--body);color:var(--maroon);margin:-2px 0 8px;text-align:center}
@@ -139,6 +140,50 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
 .revpay{display:flex;align-items:center;justify-content:center;gap:6px;background:var(--haldi)}
 .revpay .rg{width:18px;height:18px;border-width:2px}
 #revAd{font-size:clamp(20px,5.6vw,26px)}
+.hschip{width:100%;font:800 15px var(--disp);color:var(--ink);background:#fff8e8;border:2.5px dashed var(--ink);border-radius:14px;padding:6px 10px 3px;margin-top:-4px}
+.hschip.on{background:var(--haldi);border-style:solid;box-shadow:0 3px 0 var(--ink)}
+.sm.ward{background:linear-gradient(#FFE08A,#F2A91B)}
+.multv{display:inline-block;margin-top:3px;font:800 15px var(--disp);color:#fff;background:var(--leaf);border:2.5px solid var(--ink);border-radius:999px;padding:0 9px}
+.mshead{display:flex;gap:8px}
+.mshead>div{flex:1;background:var(--maroon);color:#FFE7B3;border:2.5px solid var(--ink);border-radius:14px;padding:4px 10px 2px;text-align:center}
+.mshead small{display:block;font:700 12px var(--body)}
+.mshead b{font:800 24px/1.1 var(--disp)}
+.mshead .mult{background:var(--leaf);color:#fff}
+.msnext{background:#FFF3C4;border:2.5px solid var(--ink);border-radius:12px;padding:6px 10px 4px;font:700 15px var(--body);text-align:center}
+.msnext .rg{width:16px;height:16px;border-width:2px;vertical-align:-2px}
+.day.big7{background:#FFE08A}
+.bgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.bdg{background:#eee6d6;border:2.5px solid #b9ab92;border-radius:14px;padding:8px 4px 6px;text-align:center;opacity:.7}
+.bdg b{display:block;font-size:30px;line-height:1.1}
+.bdg span{display:block;font:700 12px/1.2 var(--body)}
+.bdg.on{background:#FFF3C4;border-color:var(--ink);opacity:1}
+.wardsheet{position:absolute;left:0;right:0;bottom:0;z-index:5;display:flex;justify-content:center;padding:0 10px max(10px,env(safe-area-inset-bottom))}
+.wcard{width:min(100%,520px);max-height:52vh;display:flex;flex-direction:column;gap:8px;background:var(--cream);border:4px solid var(--ink);border-radius:22px 22px 16px 16px;padding:12px;box-shadow:0 -6px 24px rgba(0,0,0,.25)}
+.wgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;overflow:auto;min-height:0;flex:1;padding:2px}
+.witem{position:relative;background:#fff;border:2.5px solid var(--ink);border-radius:14px;padding:8px 4px 6px;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
+.witem b{font-size:32px;line-height:1.1}
+.witem span{font:700 13px/1.15 var(--body)}
+.witem em{font:800 12px var(--disp);font-style:normal;color:var(--maroon)}
+.witem em.on{color:var(--leaf)}
+.witem small{font:700 11px var(--body);color:#6b4a3a}
+.witem.on{background:#E9F8E4;border-color:var(--leaf);box-shadow:0 0 0 3px #2E7B4755}
+.witem.lock b{filter:grayscale(.2)}
+.witem.prev{box-shadow:0 0 0 3px var(--haldi)}
+.wbuy{margin-top:2px;font:800 13px var(--disp);background:var(--haldi);border:2px solid var(--ink);border-radius:10px;padding:3px 7px 1px;display:flex;align-items:center;gap:3px}
+.wbuy.poor{opacity:.55}
+.wbuy .rg{width:13px;height:13px;border-width:2px}
+#wardClose{flex:none}
+.unlockcard{position:relative;overflow:hidden;z-index:2}
+.unlockcard small{font:800 16px var(--disp);color:var(--sindoor);letter-spacing:.5px}
+.unicon{font-size:96px;line-height:1.1;animation:unpop 1s cubic-bezier(.2,1.6,.4,1) both,unbob 1.6s 1s ease-in-out infinite alternate}
+.unglow{position:absolute;left:50%;top:38%;width:340px;height:340px;margin:-170px 0 0 -170px;background:repeating-conic-gradient(#F2A91B44 0 10deg,transparent 10deg 20deg);border-radius:50%;animation:spin 8s linear infinite;z-index:-1}
+.conf{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:3}
+.conf i{position:absolute;top:-20px;width:10px;height:16px;border-radius:2px;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+@keyframes unpop{0%{transform:scale(0) rotate(-30deg)}100%{transform:scale(1) rotate(0)}}
+@keyframes unbob{to{transform:translateY(-8px) rotate(4deg)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+#unlockS{z-index:6}
 .metacard{gap:10px;height:min(92vh,660px)}
 #metaClose{flex:none;margin-top:2px}
 .mhead{align-self:stretch;display:flex;gap:8px;align-items:center}
@@ -199,6 +244,7 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
       <div id="pu"></div>
       <div class="scorebox">
         <div id="scoreV">0</div>
+        <div id="multV" class="multv" hidden></div>
         <div class="sw"><i class="rg"></i><span id="sweetsV">0</span></div>
       </div>
     </div>
@@ -222,12 +268,13 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
     <div class="spacer"></div>
     <div class="panel">
       <button id="btnPlay" class="big" data-t="play">PLAY</button>
+      <button id="hsChip" class="hschip" aria-pressed="false"></button>
       <div class="stats">
         <div><small data-t="best"></small><b id="bestV">0</b></div>
         <div><small data-t="sweets"></small><b id="totalV">0</b></div>
       </div>
-      <div class="row"><button id="btnMs" class="sm" data-t="btnMs"></button><button id="btnUp" class="sm" data-t="btnUp"></button></div>
-      <div class="row"><button id="btnSet" class="sm" data-t="btnSet"></button><button id="btnLang" class="sm"></button></div>
+      <div class="row"><button id="btnMs" class="sm" data-t="btnMs"></button><button id="btnWard" class="sm ward" data-t="btnWard"></button></div>
+      <div class="row"><button id="btnUp" class="sm" data-t="btnUp"></button><button id="btnSet" class="sm" data-t="btnSet"></button></div>
       <button id="btnLb" class="sm lbbtn wide" data-t="lb" hidden></button>
       <p id="keysTip" class="tiny" data-t="keys"></p>
       <p class="tiny local" data-t="soon"></p>
@@ -291,10 +338,32 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
 
   <section id="metaS" class="screen dim" hidden>
     <div class="card lbcard metacard">
-      <div class="mhead"><div id="metaTabs" class="seg"><button data-m="ms" data-t="msT"></button><button data-m="up" data-t="upT"></button><button data-m="set" data-t="setT"></button></div>
+      <div class="mhead"><div id="metaTabs" class="seg"><button data-m="ms" data-t="msT"></button><button data-m="bd" data-t="bdT"></button><button data-m="up" data-t="upT"></button><button data-m="set" data-t="setT"></button></div>
         <div id="metaWallet" class="sw"></div></div>
       <div id="metaBody"></div>
       <button id="metaClose" class="sm wide" data-t="lbClose"></button>
+    </div>
+  </section>
+
+  <section id="wardS" class="wardsheet" hidden>
+    <div class="wcard">
+      <div class="mhead"><div id="wardTabs" class="seg"><button data-w="head" data-t="wHead"></button><button data-w="body" data-t="wBody"></button><button data-w="feet" data-t="wFeet"></button><button data-w="extra" data-t="wExtra"></button></div>
+        <div id="wardWallet" class="sw"></div></div>
+      <div id="wardGrid" class="wgrid"></div>
+      <p id="wardNote" class="lbnote"></p>
+      <button id="wardClose" class="sm wide" data-t="lbClose"></button>
+    </div>
+  </section>
+
+  <section id="unlockS" class="screen dim" hidden>
+    <div id="unConf" class="conf"></div>
+    <div class="card unlockcard">
+      <div class="unglow"></div>
+      <small data-t="unTitle"></small>
+      <div id="unIcon" class="unicon"></div>
+      <h2 id="unName"></h2>
+      <button id="unWear" class="big" data-t="unWear"></button>
+      <button id="unLater" class="sm wide" data-t="unLater"></button>
     </div>
   </section>
 

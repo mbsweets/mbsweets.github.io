@@ -398,7 +398,9 @@ export class World {
   }
   oneType() {
     if (this.haatObs > 0) return weighted([['tokri', 3.2], ['bhains', 1.6], ['bail', 1.2], ['thela', 1.2], ['cans', 0.8], ['toran', 1.2], ['mud', 0.6]]);
-    return weighted([['rickshaw', 2.4], ['thela', 2.4], ['cow', 1.0], ['cans', 1.6], ['barrier', 1.8], ['toran', this.diff > 0.05 ? 1.4 : 0.5], ['bricks', 1.2], ['mud', 0.8]]);
+    const d = this.diff;
+    return weighted([['rickshaw', 2.4], ['thela', 2.4], ['cow', 1.0], ['cans', 1.6], ['barrier', 1.8], ['toran', d > 0.05 ? 1.4 : 0.5], ['bricks', 1.2], ['mud', 0.8],
+      ['pothole', d > 0.08 ? 1.3 : 0], ['kapda', d > 0.12 ? 1.0 : 0], ['taar', d > 0.2 ? 0.9 : 0]]);
   }
 
   // एक "पंक्ति" — हमेशा कोई न कोई रास्ता खुला
@@ -436,9 +438,10 @@ export class World {
       return 1.0;
     }
     const kind = weighted([
-      ['single', lerp(4, 2.2, d)], ['double', lerp(0.9, 2.8, d)], ['jumpAll', 1.1], ['rollAll', lerp(0.6, 1.2, d)],
-      ['mixed', lerp(0.3, 1.8, d)], ['moving', d > 0.2 ? lerp(0.5, 1.4, d) : 0], ['cow', d > 0.12 ? 0.8 : 0], ['breather', lerp(1.3, 0.5, d)],
-      ['jumpLane', d > 0.28 ? lerp(0.6, 1.5, d) : 0], ['zigzag', d > 0.42 ? lerp(0.5, 1.4, d) : 0], ['rollJump', d > 0.35 ? lerp(0.5, 1.2, d) : 0],
+      ['single', lerp(4, 1.6, d)], ['double', lerp(0.9, 3.2, d)], ['jumpAll', 1.1], ['rollAll', lerp(0.6, 1.3, d)],
+      ['mixed', lerp(0.3, 2.2, d)], ['moving', d > 0.15 ? lerp(0.5, 1.5, d) : 0], ['cow', d > 0.1 ? 0.8 : 0], ['breather', lerp(1.3, 0.35, d)],
+      ['jumpLane', d > 0.22 ? lerp(0.6, 1.7, d) : 0], ['zigzag', d > 0.35 ? lerp(0.5, 1.6, d) : 0], ['rollJump', d > 0.3 ? lerp(0.5, 1.4, d) : 0],
+      ['goats', d > 0.1 && this.haatObs <= 0 ? lerp(0.6, 1.0, d) : 0], ['swerve', d > 0.3 ? lerp(0.4, 1.3, d) : 0],
     ]);
     const gap2 = Math.max(9, this.speed * 0.62); // दूसरी पंक्ति कितनी पीछे (समय के हिसाब से — हर रफ़्तार पर संभव)
     let extra = 0;
@@ -456,11 +459,12 @@ export class World {
       this.line(freeLane, z + 6, 6);
       extra = 0.18;
     } else if (kind === 'jumpAll') {
-      for (const l of lanes) this.addObs(this.haatObs > 0 ? (chance(0.7) ? 'tokri' : 'cans') : chance(0.7) ? 'barrier' : 'cans', l, z);
+      for (const l of lanes) this.addObs(this.haatObs > 0 ? (chance(0.7) ? 'tokri' : 'cans') : weighted([['barrier', 3], ['cans', 1.3], ['pothole', d > 0.08 ? 1 : 0]]), l, z);
       freeLane = randi(0, 2);
       this.arc(freeLane, z);
     } else if (kind === 'rollAll') {
-      for (const l of lanes) this.addObs('toran', l, z);
+      const rt = this.haatObs > 0 ? 'toran' : weighted([['toran', 2], ['kapda', d > 0.12 ? 1.4 : 0], ['taar', d > 0.2 ? 1.2 : 0]]);
+      for (const l of lanes) this.addObs(rt, l, z);
       freeLane = randi(0, 2);
       this.line(freeLane, z + 4, 6, this.sweetType(), 0.45);
     } else if (kind === 'mixed') {
@@ -479,6 +483,20 @@ export class World {
       freeLane = pick(others(l));
       this.line(freeLane, z + 4, 7);
       extra = 0.35;
+    } else if (kind === 'goats') { // बकरियाँ सड़क पार करती — कहीं भी कूदो
+      const from = pick([0, 2]);
+      const e = this.addObs('goats', from, z, { cross: { from, to: 2 - from, t: 0, dur: 2.6 }, noTurn: true });
+      e.obj.rotation.y = from === 0 ? 0 : Math.PI;
+      freeLane = -1;
+      this.arc(1, z, this.sweetType(), 2.8);
+      extra = 0.2;
+    } else if (kind === 'swerve') { // सामने से आता ई-रिक्शा अचानक लेन बदले (पहले डगमगाता है)
+      const a = pick([0, 1, 2]), b = a === 1 ? pick([0, 2]) : 1, c = [0, 1, 2].find((l) => l !== a && l !== b);
+      const vz = rand(5, 7);
+      this.addObs('rickshaw', a, z * (this.speed + vz) / this.speed, { vz, shift: { from: a, to: b, t: 0, dur: 0.75, at: -64 } });
+      freeLane = c;
+      this.line(c, z + 4, 7);
+      extra = 0.45;
     } else if (kind === 'cow') {
       const from = pick([0, 2]), to = 1;
       this.addObs('cow', from, z, { cross: { from, to, t: 0, dur: 1.5 } });
@@ -524,7 +542,7 @@ export class World {
       this.toPu = Math.max(this.toPu, 200);
     } else if (this.toPu <= 0 && freeLane >= 0) {
       this.addPu(weighted([['magnet', 4], ['shoes', 3], ['shield', 2.6], ['thali', this.dist > 300 ? 2.4 : 0]]), freeLane, z - 7);
-      this.toPu = rand(420, 700);
+      this.toPu = rand(420, 700) * lerp(1, 1.7, this.diff); // आगे चलकर बूस्टर कम
     }
     return extra;
   }
@@ -614,7 +632,7 @@ export class World {
   update(dt, dz, speed, ctx) {
     this.speed = Math.max(8, speed);
     this.dist += dz;
-    this.diff = clamp(this.dist / 3600, 0, 1);
+    this.diff = clamp(this.dist / 2400, 0, 1);
     this.shopDist += dz;
     this.toPu -= dz;
     this.toSam -= dz;
@@ -699,7 +717,7 @@ export class World {
     while (this.toNext <= 0) {
       const z = SPAWN_Z - this.toNext;
       const extra = this.spawnRow(z);
-      const gapT = lerp(1.5, 0.82, this.diff) + extra;
+      const gapT = lerp(1.5, 0.65, Math.pow(this.diff, 0.85)) + extra;
       this.toNext += Math.max(16, speed * gapT);
     }
     // रुकावटें
@@ -712,8 +730,18 @@ export class World {
         const t = e.cross.t, k = t * t * (3 - 2 * t);
         e.x = lerp(LANES[e.cross.from], LANES[e.cross.to], k);
         e.lane = k < 0.5 ? e.cross.from : e.cross.to;
-        e.obj.rotation.y = (e.cross.to > e.cross.from ? -1 : 1) * Math.PI / 2 * (t < 1 ? 1 : 0.4);
+        if (!e.noTurn) e.obj.rotation.y = (e.cross.to > e.cross.from ? -1 : 1) * Math.PI / 2 * (t < 1 ? 1 : 0.4);
         if (e.obj.userData.inner) e.obj.userData.inner.position.y = Math.abs(Math.sin(t * 18)) * 0.05;
+      }
+      if (e.shift && !e.dead) {
+        const sh = e.shift;
+        if (e.z > sh.at - 26 && e.z <= sh.at) e.obj.rotation.z = Math.sin(this.time * 22) * 0.06; // डगमगाना = चेतावनी
+        if (e.z > sh.at && sh.t < 1) {
+          sh.t = Math.min(1, sh.t + dt / sh.dur);
+          const k = sh.t * sh.t * (3 - 2 * sh.t);
+          e.x = lerp(LANES[sh.from], LANES[sh.to], k); e.lane = k < 0.5 ? sh.from : sh.to;
+          e.obj.rotation.z = (sh.to > sh.from ? -1 : 1) * Math.sin(k * Math.PI) * 0.12;
+        }
       }
       if (e.dead) {
         e.fly = (e.fly || 0) + dt;

@@ -1,5 +1,5 @@
 // रसगुल्ला रन — लीडरबोर्ड सर्वर (Cloudflare Worker + D1). Binding: DB (D1), Secret: ADMIN_KEY
-// POST /submit  {pid, name, city, score, dist, secs}
+// POST /submit  {pid, name, city, score, dist, secs, mult}
 // GET  /top?scope=city|india|world&city=darbhanga&period=week|all&pid=...
 // POST /admin/remove {key, pid}   (सिर्फ़ मालिक — ADMIN_KEY से)
 // POST /ping  {src, ev:'open'|'game', nd:0|1, nf:0|1}  — कुल खिलाड़ी गिनती (कोई पहचान नहीं, सिर्फ़ गिनती)
@@ -78,7 +78,8 @@ export default {
         const city = CITIES.includes(b.city) ? b.city : 'abroad';
         const score = Math.floor(+b.score || 0), dist = Math.floor(+b.dist || 0), secs = +b.secs || 0;
         // सीधी जाँच: इतने समय में इतना स्कोर/दूरी संभव है या नहीं
-        if (score <= 0 || secs < 3 || dist > secs * 42 + 60 || score > secs * 520 + 2500) return json(req, { ok: false, err: 'check' }, 400);
+        const mult = Math.max(1, Math.min(31, Math.floor(+b.mult || 1))); // मिशन-सेट वाला स्कोर गुणक
+        if (score <= 0 || secs < 3 || dist > secs * 46 + 60 || score > (secs * 560 + 2500) * mult) return json(req, { ok: false, err: 'check' }, 400);
         const now = Date.now();
         const last = await env.DB.prepare('SELECT ts FROM best WHERE pid=? AND period=?').bind(pid, 'all').first();
         if (last && now - last.ts < 8000) return json(req, { ok: false, err: 'slow' }, 429);

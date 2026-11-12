@@ -22,9 +22,15 @@ const S = {
     lbEmpty: 'Nobody yet — be the first!', lbErr: 'Could not connect. Try again.', lbMyRank: 'Your rank', lbJoin: '🏆 Add your name to join the leaderboard',
     btnMs: '🎯 Missions', btnUp: '⬆️ Upgrades', btnSet: '⚙️ Settings', msT: 'Missions', upT: 'Upgrades', setT: 'Settings',
     daily: 'Daily reward', day: 'Day', claim: 'Collect', dailyDone: 'Come back tomorrow — the reward grows!', dailySub: 'Play every day, the reward grows!',
-    msDone: 'Mission complete!', msReward: 'Reward', msNote: 'Mission rewards are added when the run ends.', msGain: (n) => `🎯 Missions: +${n} sweets`,
+    msDone: 'Mission complete!', msReward: 'Reward', msNote: 'Rewards come when the run ends. Finish all 3 = set complete: a new outfit or sweets + score multiplier +1!', msGain: (n) => `🎯 Missions: +${n} sweets`,
     upNote: 'Spend sweets to make power-ups last longer.', sec: 'sec', max: 'MAX', noSweets: 'Not enough sweets', upDone: 'Upgraded!',
+    monkey: 'Monkey! Save your sweets!', monkeyGrab: (n) => `The monkey stole ${n} sweets!`, monkeyGrabS: 'Oh no, the monkey ran off!', monkeyGone: 'The monkey gave up! +25 sweets', monkeyGoneS: 'Ha! The monkey gave up!',
     revT: 'Continue?', revAd: '▶ Watch ad & continue', revPay: (n) => `Continue for ${n} sweets`, revNo: 'No thanks', revived: 'Back in the race!', adNo: 'No ad right now',
+    btnWard: '👕 Wardrobe', msSet: 'Mission set', msMult: 'Score multiplier', msNext: 'Set reward', bdT: 'Badges', bdNote: 'Each new badge gives +100 sweets.',
+    daily7: 'Collect all 7 days to unlock the Sweet Sparkle Trail!', wHead: 'Turban', wBody: 'Clothes', wFeet: 'Shoes', wExtra: 'Extra',
+    wWorn: 'Wearing', wWear: 'Wear', wSet: (n) => `Set ${n}`, wDaily7: '7-day reward', wTry: 'Trying it on! Finish missions or buy it to keep it.', wNote: 'Tap to wear. Locked items: try them on!',
+    unTitle: 'NEW OUTFIT UNLOCKED!', unWear: 'Wear it now!', unLater: 'Later', hs: (c) => `🚀 Start flying (${c} sweets)`, hsOn: (c) => `🚀 Start flying: ON (${c})`,
+    badgeNew: 'New badge!',
     sMusic: 'Music', sVoice: 'Voice', sVib: 'Vibration', sGfx: 'Graphics', g_low: 'Low', g_auto: 'Auto', g_high: 'High', sLang: 'Language',
   },
   hi: { // हिंदी + बीच-बीच में मैथिली (मिथिलाक बोली)
@@ -47,9 +53,15 @@ const S = {
     lbEmpty: 'एखन कियो नहि — पहिल बनू!', lbErr: 'नेटवर्क नहि भेटल, फेर कोशिश करू।', lbMyRank: 'अहाँक रैंक', lbJoin: '🏆 नाम लिखू आ लीडरबोर्ड पर आउ',
     btnMs: '🎯 मिशन', btnUp: '⬆️ अपग्रेड', btnSet: '⚙️ सेटिंग्स', msT: 'मिशन', upT: 'अपग्रेड', setT: 'सेटिंग्स',
     daily: 'रोज़क इनाम', day: 'दिन', claim: 'लिअ', dailyDone: 'काल्हि फेर आउ — इनाम बढ़ैत जाएत!', dailySub: 'रोज़ खेलू, इनाम बढ़ैत जाएत!',
-    msDone: 'मिशन पूरा भेल!', msReward: 'इनाम', msNote: 'मिशनक इनाम दौड़ ख़त्म भेला पर भेटत।', msGain: (n) => `🎯 मिशन इनाम: +${n} मिठाइ`,
+    msDone: 'मिशन पूरा भेल!', msReward: 'इनाम', msNote: 'इनाम दौड़ ख़त्म भेला पर भेटत। तीनू पूरा = सेट पूरा: नव कपड़ा वा मिठाइ + स्कोर गुणक +1!', msGain: (n) => `🎯 मिशन इनाम: +${n} मिठाइ`,
     upNote: 'मिठाइ खर्च करू — बूस्टर बेसी देर चलत।', sec: 'सेकेंड', max: 'पूरा', noSweets: 'मिठाइ कम अछि', upDone: 'अपग्रेड भ गेल!',
+    monkey: 'बंदर! मिठाइ बचाउ!', monkeyGrab: (n) => `बंदर ${n} मिठाइ ल’ क’ भागल!`, monkeyGrabS: 'हाय रे, बंदर ल’ क’ भागल!', monkeyGone: 'बंदर हारि गेल! +25 मिठाइ', monkeyGoneS: 'हा हा, बंदर हारि गेल!',
     revT: 'आगू खेलब?', revAd: '▶ विज्ञापन देखि आगू खेलू', revPay: (n) => `${n} मिठाइ दय आगू खेलू`, revNo: 'नहि, बस', revived: 'फेर दौड़ू!', adNo: 'एखन विज्ञापन नहि अछि',
+    btnWard: '👕 अलमारी', msSet: 'मिशन सेट', msMult: 'स्कोर गुणक', msNext: 'सेटक इनाम', bdT: 'बैज', bdNote: 'हर नव बैज पर +100 मिठाइ।',
+    daily7: 'पूरा 7 दिन लिअ — मिठाइक चमक खुलत!', wHead: 'पगड़ी', wBody: 'कपड़ा', wFeet: 'जूता', wExtra: 'आर',
+    wWorn: 'पहिरल', wWear: 'पहिरू', wSet: (n) => `सेट ${n}`, wDaily7: '7 दिनक इनाम', wTry: 'पहिरि क’ देखि रहल छी! रखबाक लेल मिशन पूरा करू वा किनू।', wNote: 'छूबि क’ पहिरू। बंद चीज़ सेहो पहिरि क’ देखू!',
+    unTitle: 'नव कपड़ा खुलल!', unWear: 'एखने पहिरू!', unLater: 'बाद मे', hs: (c) => `🚀 उड़ान सँ शुरू (${c} मिठाइ)`, hsOn: (c) => `🚀 उड़ान सँ शुरू: चालू (${c})`,
+    badgeNew: 'नव बैज!',
     sMusic: 'संगीत', sVoice: 'बोली', sVib: 'कंपन', sGfx: 'ग्राफ़िक्स', g_low: 'कम', g_auto: 'ऑटो', g_high: 'बेसी', sLang: 'भाषा',
   },
 };
@@ -57,8 +69,7 @@ const S = {
 function detect() {
   const saved = store('lang');
   if (saved === 'hi' || saved === 'en') return saved;
-  const l = (navigator.language || 'en').toLowerCase();
-  return l.startsWith('hi') || l.startsWith('mai') || l.startsWith('bh') ? 'hi' : 'en';
+  return 'hi'; // अपनी वेबसाइट पर हमेशा मैथिली (फ़ोन English में हो तब भी); पोर्टल पर main.js पहले ही भाषा तय कर देता है
 }
 export let LANG = detect();
 export function T(k, ...a) {

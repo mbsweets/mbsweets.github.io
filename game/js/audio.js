@@ -186,6 +186,15 @@ export class Sound {
     for (let i = 0; i < 10; i++) this.hiss(t + 1.5 + i * 0.16, 0.07, { vol: i % 2 ? 0.07 : 0.11, fq: 900 });
   }
   // सुनहरा छल्ला — घंटी जैसी चमक
+  // बंदर की चिचियाहट: "ऊ-ऊ-आ-आ"
+  monkey(laugh = false) {
+    if (!this.ok()) return;
+    const t = this.now(), n = laugh ? 7 : 5;
+    for (let i = 0; i < n; i++) {
+      const up = i % 2 === 0, base = laugh ? 900 + i * 40 : 700 + (i % 3) * 120;
+      this.tone(base * (up ? 0.8 : 1.15), t + i * (laugh ? 0.09 : 0.12), 0.1, { vol: 0.12, to: base * (up ? 1.35 : 0.75), type: 'sawtooth' });
+    }
+  }
   ring() { if (!this.ok()) return; const t = this.now(); [0, 7, 12, 19].forEach((n, k) => this.tone(f(n, 783.99), t + k * 0.05, 0.4, { vol: 0.09, type: 'sine' })); this.hiss(t, 0.25, { vol: 0.08, fq: 5000, to: 9000 }); }
   // लेवल बढ़ा — ढोलक + ऊपर चढ़ती धुन
   levelUp() {
