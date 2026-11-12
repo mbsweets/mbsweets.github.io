@@ -14,7 +14,7 @@ export const C = {
 export const TEX = {};
 const loader = new THREE.TextureLoader();
 export function loadTextures(onProgress) {
-  const names = ['walls', 'props', 'road', 'band', 'sign', 'gate', 'flex', 'skyline', 'logo'];
+  const names = ['walls', 'props', 'road', 'band', 'sign', 'gate', 'flex', 'skyline', 'logo', 'mithai'];
   let n = 0;
   return Promise.all(names.map((nm) => new Promise((res, rej) => {
     loader.load('img/' + nm + '.webp', (t) => {

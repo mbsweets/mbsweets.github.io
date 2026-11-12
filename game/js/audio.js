@@ -165,6 +165,14 @@ export class Sound {
     const mel = [[7, 2], [9, 1], [11, 1], [12, 2], [11, 1], [9, 1], [7, 2], [4, 2], [7, 2], [9, 2], [7, 4]];
     mel.reduce((tt, [n, d]) => { this.tone(f(n, 440), tt, d * bt * 0.95, { type: 'sawtooth', vol: 0.065, att: 0.02, vib: 3 }); return tt + d * bt; }, t0 + 0.32);
   }
+  // रेलगाड़ी की सीटी + छुक-छुक
+  train() {
+    if (!this.ok()) return;
+    const t = this.now();
+    this.tone(660, t, 0.55, { type: 'square', vol: 0.06, att: 0.03, vib: 1 }); this.tone(830, t, 0.55, { type: 'square', vol: 0.05, att: 0.03 });
+    this.tone(660, t + 0.65, 0.8, { type: 'square', vol: 0.06, att: 0.03, vib: 1 }); this.tone(830, t + 0.65, 0.8, { type: 'square', vol: 0.05, att: 0.03 });
+    for (let i = 0; i < 10; i++) this.hiss(t + 1.5 + i * 0.16, 0.07, { vol: i % 2 ? 0.07 : 0.11, fq: 900 });
+  }
   // सुनहरा छल्ला — घंटी जैसी चमक
   ring() { if (!this.ok()) return; const t = this.now(); [0, 7, 12, 19].forEach((n, k) => this.tone(f(n, 783.99), t + k * 0.05, 0.4, { vol: 0.09, type: 'sine' })); this.hiss(t, 0.25, { vol: 0.08, fq: 5000, to: 9000 }); }
   // लेवल बढ़ा — ढोलक + ऊपर चढ़ती धुन

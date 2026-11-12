@@ -4,6 +4,7 @@ import { TEX, C, GRAD, tile, repeatTex, toon, basic, addOutline, outlineMat, mat
 import { RT } from './real.js';
 import { makeVillager, HAAT_OBST } from './haat.js';
 import { EVENT_OBST } from './events.js';
+import { RAIL_OBST } from './rail.js';
 import { rand, pick, chance } from './util.js';
 
 const PI = Math.PI;
@@ -240,7 +241,18 @@ function bumpy(g, amt = 0.02, f = 9) {
   return g;
 }
 // हर मिठाई के हिस्से: g ज्योमेट्री, c रंग, r खुरदुरापन (कम = चाशनी वाली चमक), m धातु, nm उभार
+// दुकान की असली फोटो से कटी मिठाइयाँ (img/mithai.webp) — [x, y, w, h] (0–1, ऊपर-बाएँ से)
+export const PHOTO = {"rasgulla": [0.00391, 0.02051, 0.24219, 0.20801], "gulabjamun": [0.25684, 0.00391, 0.23535, 0.24219], "balushahi": [0.50391, 0.01465, 0.24121, 0.2207], "chamcham": [0.82129, 0.00391, 0.10742, 0.24219], "rasmalai": [0.00391, 0.27148, 0.24219, 0.20605], "laddoo": [0.26367, 0.25391, 0.22266, 0.24219], "peda": [0.50391, 0.27637, 0.24219, 0.19727], "kalakand": [0.75391, 0.25781, 0.24219, 0.23438], "milkcake": [0.06445, 0.50391, 0.12012, 0.24219]};
+const PH_H = { rasgulla: 0.6, gulabjamun: 0.6, balushahi: 0.62, chamcham: 0.72, rasmalai: 0.66, laddoo: 0.62, peda: 0.5, kalakand: 0.56, milkcake: 0.7 };
+function photoPart(type) {
+  const [x, y, w, h] = PHOTO[type], H = PH_H[type], W = H * w / h;
+  const g = new THREE.PlaneGeometry(W, H);
+  const uv = g.attributes.uv;
+  for (let i = 0; i < uv.count; i++) uv.setXY(i, x + uv.getX(i) * w, 1 - (y + (1 - uv.getY(i)) * h));
+  return [{ g, photo: true }];
+}
 export function sweetParts(type) {
+  if (PHOTO[type]) return photoPart(type); // असली फोटो वाली मिठाई (नीचे 3D वाले पुराने आकार अब सिर्फ़ जलेबी के लिए)
   if (type === 'rasgulla') {
     // छेने का नरम गोला, चाशनी से भीगा — हल्की चमक, स्पंज जैसे छेद
     const g = bumpy(G.sph(0.3, 28, 20), 0.012, 11); g.scale(1, 0.94, 1);
@@ -581,7 +593,7 @@ export const OBST = {
 
 // ======================= मकान / किनारे की चीज़ें =======================
 // side: -1 बायाँ, +1 दायाँ. सड़क का किनारा x=±4.3, फ़ुटपाथ 4.3–7.8, मकान 8.0 से
-Object.assign(OBST, HAAT_OBST, EVENT_OBST);
+Object.assign(OBST, HAAT_OBST, EVENT_OBST, RAIL_OBST);
 export const ROAD_HALF = 4.3, FACADE_X = 8.0, CHUNK = 20;
 
 function facadeMats(texture, wallColor, side) {

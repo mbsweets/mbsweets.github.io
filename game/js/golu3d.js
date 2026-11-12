@@ -163,7 +163,7 @@ export class Golu {
     b.scale.setScalar(C.sq);
     this.scale = k(this.scale, o.big ? 1.45 : 1, 6);
     this.root.scale.setScalar(this.scale);
-    const hy = o.y || 0;
+    const hy = (o.y || 0) - (o.gy || 0); // परछाईं ज़मीन/छत पर
     this.shadow.scale.setScalar(Math.max(0.35, 1 - hy * 0.18));
     this.shadow.position.y = 0.02 - hy / this.scale;
     this.aura.visible = !!o.shield;

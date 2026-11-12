@@ -4,10 +4,11 @@ import {
   OBST, makePowerup, makeHouse, makeAdWall, makeFlex, makePond, makeTemple, makeStalls, makeShop, makeGate,
   sweetParts, SWEETS, SKY_SWEETS, CHUNK, ROAD_HALF,
 } from './models.js';
-import { toon, outlineMat, basic, dotTexture, repeatTex, C, OUTLINES } from './art.js';
+import { toon, outlineMat, basic, dotTexture, repeatTex, C, OUTLINES, TEX } from './art.js';
 import { RT, shadows } from './real.js';
 import { makeHaat, makeHaatGate } from './haat.js';
 import { makeMela, makeMelaGate } from './events.js';
+import { makeTrack, makeStation, ROOF, RAMP_L, COACH, GAP } from './rail.js';
 import { rand, randi, pick, chance, weighted, clamp, lerp } from './util.js';
 
 export const LANE_W = 2.5;
@@ -20,7 +21,8 @@ const SHOP_EVERY = 430; // इतनी दूरी पर फिर दुक�
 class SweetSet {
   constructor(scene, cap = 90) {
     this.cap = cap;
-    this.meshes = {};
+    this.meshes = {}; this.photo = {}; this.camQ = null;
+    this.qz = new THREE.Quaternion(); this.zAxis = new THREE.Vector3(0, 0, 1);
     this.free = {};
     this.items = [];
     this.m = new THREE.Matrix4();
@@ -41,6 +43,12 @@ class SweetSet {
           scene.add(im);
           arr.push(im);
         };
+        if (p.photo) { // असली फोटो — हमेशा कैमरे की ओर (billboard), मुलायम किनारे
+          if (!this.photoMat) this.photoMat = new THREE.MeshBasicMaterial({ map: TEX.mithai, alphaTest: 0.4, alphaToCoverage: true, toneMapped: false, side: THREE.DoubleSide, color: 0xf4f4f4 });
+          this.photo[t] = true;
+          add(this.photoMat);
+          continue;
+        }
         // चाशनी वाली मिठाई: ऊपर गीली चमक (clearcoat)
         const m = p.cc ? new THREE.MeshPhysicalMaterial({ color: p.c, map: p.map || null, roughness: p.r, metalness: p.m || 0, normalMap: p.nm || null, normalScale: new THREE.Vector2(p.ns || 1, p.ns || 1), clearcoat: p.cc, clearcoatRoughness: p.ccr || 0.2 })
           : toon(p.c, { r: p.r, m: p.m, nm: p.nm, ns: p.ns, vc: p.vc, map: p.map });
@@ -52,8 +60,14 @@ class SweetSet {
       for (let i = cap - 1; i >= 0; i--) this.free[t].push(i);
     }
     this.zero = zero;
+    // ज़मीन पर हल्की परछाईं (फोटो वाली मिठाई ज़मीन से जुड़ी लगे) — 1 ड्रॉ
+    const sg = new THREE.PlaneGeometry(0.62, 0.62); sg.rotateX(-Math.PI / 2);
+    this.shIM = new THREE.InstancedMesh(sg, new THREE.MeshBasicMaterial({ color: 0x000000, map: dotTexture(), transparent: true, opacity: 0.3, depthWrite: false }), 160);
+    this.shIM.frustumCulled = false; this.shIM.count = 0; this.shIM.renderOrder = 1;
+    scene.add(this.shIM);
     this.t = 0;
   }
+  setTint(f) { if (this.photoMat) this.photoMat.color.setScalar(0.96 * f); }
   spawn(type, x, y, z) {
     const fr = this.free[type];
     if (fr.dirty) { fr.sort((a, b) => b - a); fr.dirty = false; }
@@ -107,14 +121,25 @@ class SweetSet {
       }
       keep.push(it);
       const bob = it.col > 0 ? 0 : Math.sin(this.t * 3 + it.ph) * 0.08;
-      this.e.set(0.25, this.t * 2.2 + it.ph, 0);
-      this.q.setFromEuler(this.e);
+      if (this.photo[it.type] && this.camQ) { this.q.copy(this.camQ); this.qz.setFromAxisAngle(this.zAxis, Math.sin(this.t * 2.4 + it.ph) * 0.12); this.q.multiply(this.qz); }
+      else { this.e.set(0.25, this.t * 2.2 + it.ph, 0); this.q.setFromEuler(this.e); }
       this.v.set(it.x, it.y + bob, it.z);
       this.s.setScalar(sc * (it.type === 'rasmalai' ? 1.15 : SWEETS[it.type].sky ? 1.45 : 1));
       this.m.compose(this.v, this.q, this.s);
       for (const im of this.meshes[it.type]) im.setMatrixAt(it.slot, this.m);
     }
     this.items = keep;
+    // परछाईं: पास वाली ज़मीनी मिठाइयों की
+    let n = 0;
+    for (const it of keep) {
+      if (n >= 160 || it.col > 0 || it.z < -70 || it.y > 2.6) continue;
+      const gy = this.groundAt ? this.groundAt(it.x, it.z) : 0;
+      if (it.y - gy > 2.4) continue;
+      const k = Math.max(0.35, 1 - (it.y - gy) * 0.3);
+      this.m.makeScale(k, 1, k); this.m.setPosition(it.x, gy + 0.025, it.z);
+      this.shIM.setMatrixAt(n++, this.m);
+    }
+    this.shIM.count = n; this.shIM.instanceMatrix.needsUpdate = true;
     this.flush();
   }
 }
@@ -236,11 +261,14 @@ export class World {
       mk('shop' + s, () => makeShop(s), 2);
       mk('haat' + s, (i) => makeHaat(s, i), 7);
       mk('mela' + s, (i) => makeMela(s, i), 4);
+      if (s < 0) mk('station' + s, (i) => makeStation(s, i), 3);
     }
     mk('gate', () => makeGate(), 2);
     mk('flex', (i) => makeFlex(i), 4);
     mk('haatgate', () => makeHaatGate(), 1);
     mk('melagate', () => makeMelaGate(), 1);
+    this.tPool = []; this.tracks = [];
+    for (let i = 0; i < 17; i++) { const t = makeTrack(); t.visible = false; this.scene.add(t); this.tPool.push(t); }
     // पावर-अप और रुकावटें पहले से (पहली बार अटके नहीं)
     for (const k of ['magnet', 'shoes', 'shield', 'samosa', 'thali']) { this.pPool[k] = [this.newPu(k)]; }
     for (const t of Object.keys(OBST)) { this.oPool[t] = []; for (let i = 0; i < 3; i++) { const o = this.newObs(t); o.visible = false; this.oPool[t].push(o); } }
@@ -257,6 +285,8 @@ export class World {
     this.flexes = []; this.toFlex = 120;
     this.toHaat = rand(600, 760); this.haatN = { '-1': 0, '1': 0 }; this.haatObs = 0; this.events = [];
     this.toMela = rand(1700, 2000); this.melaN = { '-1': 0, '1': 0 }; this.melaObs = 0; this.toBaraat = rand(1250, 1450); this.baraatQ = false;
+    for (const t of this.tracks || []) { t.visible = false; this.tPool.push(t); }
+    this.tracks = []; this.toRail = rand(950, 1150); this.railObs = 0; this.stationN = 0;
     for (const s of ['-1', '1']) { for (const c of this.chunks[s]) this.relChunk(c); this.chunks[s] = []; }
     this.obs = []; this.pups = []; this.gates = [];
     this.sweets.clear(); this.parts.clear();
@@ -291,6 +321,9 @@ export class World {
       this.shopSide = -side;
       const g = this.getChunk('gate');
       if (g) { g.position.set(0, 0, zc + CHUNK / 2 - 1); this.gates.push(g); }
+    } else if (side < 0 && this.stationN > 0 && this.cPool['station' + side] && this.cPool['station' + side].length) {
+      type = 'station';
+      this.stationN--;
     } else if (this.melaN[side] > 0 && this.cPool['mela' + side].length) {
       type = 'mela';
       this.melaN[side]--;
@@ -388,6 +421,7 @@ export class World {
       if (chance(0.3)) this.sweets.spawn('rasmalai', LANES[randi(0, 2)], 0.9, z - 6);
       return 0.1;
     }
+    if (this.railObs > 0) return this.railRow(z);
     if (this.baraatQ) { // बारात सामने से आती — एक लेन खुली
       this.baraatQ = false;
       const vz = 2.2, sc = (zz) => zz * (this.speed + vz) / this.speed;
@@ -495,6 +529,53 @@ export class World {
     return extra;
   }
 
+  // ज़मीन की ऊँचाई (डिब्बे की छत / ढलान) — खिलाड़ी और परछाईं के लिए
+  groundAt(x, z = 0) {
+    let h = 0;
+    for (const e of this.obs) {
+      if (e.dead || (e.kind !== 'train' && e.kind !== 'ramp') || e.vz) continue;
+      if (Math.abs(e.x - x) > e.halfW * 0.85) continue;
+      const dz = z - e.z;
+      if (Math.abs(dz) > e.halfL) continue;
+      h = Math.max(h, e.kind === 'train' ? ROOF : ROOF * (0.5 - dz / RAMP_L));
+    }
+    return h;
+  }
+  // रेल ज़ोन की एक पंक्ति — हमेशा एक रास्ता: खुली लेन या ढलान से छत पर
+  railRow(z) {
+    const sp = Math.max(this.speed, 12), lanes = [0, 1, 2];
+    const tl = (n) => n * COACH + (n - 1) * GAP;
+    const kind = weighted([['climb', 3], ['dodge', 2], ['oncoming', this.diff > 0.25 ? 1.6 : 0.6]]);
+    const train = (lane, n, front, extra = {}) => { const L = tl(n); this.addObs(n === 1 && extra.vz ? 'engine1' : 'train' + n, lane, front - L / 2, extra); return L; };
+    const ramp = (lane, low) => { this.addObs('ramp', lane, low - RAMP_L / 2); for (let i = 0; i < 4; i++) { const zz = low - 1.5 - i * 2.2; this.sweets.spawn(this.sweetType(), LANES[lane], ROOF * (0.5 - (zz - (low - RAMP_L / 2)) / RAMP_L) + 0.75, zz); } };
+    const roofLine = (lane, front, L) => { for (let zz = front - 1.5, k = 0; zz > front - L + 1 && k < 14; zz -= 2.3, k++) this.sweets.spawn(k % 6 === 5 ? 'chamcham' : this.sweetType(), LANES[lane], ROOF + 0.75, zz); };
+    if (kind === 'climb') {
+      const a = randi(0, 2), oth = lanes.filter((l) => l !== a), b = pick(oth), c = oth.find((l) => l !== b);
+      const n = pick([2, 3]);
+      ramp(a, z);
+      const L = train(a, n, z - RAMP_L);
+      roofLine(a, z - RAMP_L, L);
+      const L2 = train(b, pick([1, 2]), z - rand(2, 10));
+      this.line(c, z + 3, 6);
+      if (chance(0.5)) this.sweets.spawn('rasmalai', LANES[a], ROOF + 1.1, z - RAMP_L - L + 2);
+      return (RAMP_L + Math.max(L, L2) + 18) / sp;
+    }
+    if (kind === 'dodge') {
+      const free = randi(0, 2), oth = lanes.filter((l) => l !== free);
+      const L1 = train(oth[0], pick([1, 2]), z), L2 = train(oth[1], pick([1, 2]), z - rand(3, 12));
+      this.line(free, z + 4, 9);
+      return (Math.max(L1, L2) + 18) / sp;
+    }
+    // सामने से आता इंजन — उस लेन से हटो; बगल में ढलान वाली गाड़ी
+    const a = randi(0, 2), oth = lanes.filter((l) => l !== a), b = pick(oth), c = oth.find((l) => l !== b);
+    const vz = rand(6, 9);
+    const Le = tl(1), front = z * (sp + vz) / sp;
+    this.addObs('engine1', a, front - Le / 2, { vz });
+    ramp(b, z); const L = train(b, 1, z - RAMP_L); roofLine(b, z - RAMP_L, L);
+    this.line(c, z + 3, 7);
+    return (RAMP_L + L + 18) / sp;
+  }
+
   // उड़ते समय आसमान में ख़ास मिठाइयों के डिज़ाइन (सिर्फ़ ऊपर वाली: जलेबी, लड्डू, पेड़ा, कलाकंद, मिल्क केक)
   // लौटाता है: सुनहरे छल्लों की जगहें [{lane, z}]
   skyTrail(sec, speed, y, lane = 1) {
@@ -582,6 +663,17 @@ export class World {
       this.toMela = rand(2200, 2800);
     }
     this.melaObs = Math.max(0, this.melaObs - dz);
+    // मधुबनी रेलगाड़ी ज़ोन
+    this.toRail -= dz;
+    if (this.toRail <= 0 && this.haatObs <= 0 && this.melaObs <= 0 && !this.baraatQ && this.shopDist > 40 && this.shopDist < SHOP_EVERY - 120 && this.tPool.length > 15) {
+      const len = 250;
+      this.railObs = len; this.stationN = 3;
+      for (let z = SPAWN_Z + 12; z > SPAWN_Z - len - 80; z -= 20) { const t = this.tPool.pop(); if (!t) break; t.visible = true; t.position.set(0, 0, z); this.tracks.push(t); }
+      this.toRail = rand(1700, 2300);
+      this.events.push('rail');
+    }
+    this.railObs = Math.max(0, this.railObs - dz);
+    for (let i = this.tracks.length - 1; i >= 0; i--) { const t = this.tracks[i]; t.position.z += dz; if (t.position.z > DESPAWN_Z + 12) { t.visible = false; this.tPool.push(t); this.tracks.splice(i, 1); } }
     // बारात
     this.toBaraat -= dz;
     if (this.toBaraat <= 0 && this.haatObs <= 0 && this.melaObs <= 0) { this.baraatQ = true; this.toBaraat = rand(1500, 2000); }

@@ -44,9 +44,12 @@ function baseSpeed(d) {
   }
   return Math.min(38.5, 37.5 + (d - 9000) / 3000);
 }
+// शाबाशी: बड़ा अंग्रेज़ी शब्द (सब समझें) + हिंदी मोड में नीचे छोटा मैथिली
 const CHEER = {
-  hi: ['गज़ब!', 'की बात!', 'बड़ नीक!', 'जबरदस्त!', 'बाह रे गोलू!', 'धुआँधार!', 'जय मिथिला!', 'एकदम फर्स्ट क्लास!'],
-  en: ['Gazab!', 'Ki baat!', 'Badd neek!', 'Zabardast!', 'Wah re Golu!', 'Dhuandhaar!', 'Jai Mithila!'],
+  near: [['Nice!', 'बाह!'], ['Wow!', 'गज़ब!'], ['Close one!', 'बाल-बाल बचलहुँ!'], ['Smart!', 'की बात!']],
+  combo: [['Good!', 'नीक!'], ['Great!', 'बड़ नीक!'], ['Excellent!', 'गज़ब!'], ['Awesome!', 'जबरदस्त!'], ['Superb!', 'धुआँधार!'], ['Unstoppable!', 'जय मिथिला!']],
+  level: [['Well Done!', 'बाह रे गोलू!'], ['Fantastic!', 'की बात!'], ['Brilliant!', 'जय मिथिला!']],
+  ring: [['Perfect!', 'सोनाक छल्ला!']],
 };
 const SW_COL = { rasgulla: 0xffffff, gulabjamun: 0x9a3b1c, balushahi: 0xf2b84b, chamcham: 0xff8fb1, rasmalai: 0xffd24d, jalebi: 0xf39a1e, laddoo: 0xf7a21b, peda: 0xd9b07a, kalakand: 0xf3e2b0, milkcake: 0xc58a3e };
 const SKY_NAME = { hi: { jalebi: 'जलेबी', laddoo: 'लड्डू', peda: 'पेड़ा', kalakand: 'कलाकंद', milkcake: 'मिल्क केक' }, en: { jalebi: 'Jalebi', laddoo: 'Laddoo', peda: 'Peda', kalakand: 'Kalakand', milkcake: 'Milk Cake' } };
@@ -112,6 +115,7 @@ class Game {
     sc.add(dl); sc.add(dl.target);
     sc.add(makeSkyline());
     this.world = new World(sc);
+    this.world.sweets.camQ = this.cam.quaternion;
     this.golu = this.has3d ? new Golu3D() : new GoluCode();
     shadows(this.golu.root, true, false);
     this.golu.shadow.material = this.golu.shadow.material.clone();
@@ -312,7 +316,7 @@ class Game {
     this.comboT = 1.1;
     if (this.rushT <= 0) this.meter = Math.min(1, this.meter + s.meter);
     this.score += s.pts * 10 * mul * (this.rushT > 0 ? 2 : 1);
-    if (this.combo > 0 && this.combo % 15 === 0) this.cheer(1000);
+    if (this.combo > 0 && this.combo % 15 === 0) this.cheer('combo', 1000, this.combo / 15 - 1);
     this.golu.eat();
     this.sound.collect(this.combo - 1, it.type);
     this.world.parts.burst(it.x, it.y, it.z, SW_COL[it.type], it.type === 'rasmalai' ? 18 : 6, 2.5, 2, 0.5);
@@ -349,9 +353,14 @@ class Game {
     this.world.clearNear(-34, 4);
   }
 
-  cheer(ms = 900) {
-    const L = CHEER[LANG] || CHEER.en;
-    this.toast(L[Math.floor(Math.random() * L.length)], ms, 'cheer');
+  cheer(kind = 'near', ms = 900, tier = -1) {
+    const L = CHEER[kind] || CHEER.near;
+    const [en, mai] = tier >= 0 ? L[Math.min(tier, L.length - 1)] : L[Math.floor(Math.random() * L.length)];
+    const t = $('#toast');
+    t.innerHTML = en + (LANG === 'hi' ? `<small>${mai}</small>` : '');
+    t.className = 'show cheer';
+    clearTimeout(this.toastT);
+    this.toastT = setTimeout(() => { t.className = ''; }, ms);
   }
 
   levelUp(n) {
@@ -361,7 +370,7 @@ class Game {
     el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
     this.sound.levelUp();
     vibrate(40);
-    setTimeout(() => { if (this.state === 'play') this.cheer(900); }, 1300);
+    setTimeout(() => { if (this.state === 'play') this.cheer('level', 1000); }, 1300);
   }
 
   startRush() {
@@ -474,6 +483,7 @@ class Game {
     tri(TOD.sky, eve, night, this.hemi.color); tri(TOD.gnd, eve, night, this.hemi.groundColor); this.hemi.intensity = trin(TOD.hemiI, eve, night);
     this.renderer.toneMappingExposure = trin(TOD.exp, eve, night);
     this.scene.environment = this.envs[night > 0.5 ? 2 : eve > 0.5 ? 1 : 0];
+    this.world.sweets.setTint(1 - 0.12 * eve * (1 - night) - 0.42 * night);
   }
 
   update(rdt) {
@@ -533,18 +543,27 @@ class Game {
     // खिलाड़ी
     p.laneT += dt;
     p.x = damp(p.x, p.tx, 16, dt);
+    const gy = this.world.groundAt(p.x, 0); // डिब्बे की छत / ढलान
+    p.gy = gy;
     if (p.fly > 0) {
       p.fly -= dt;
       p.y = damp(p.y, FLY_Y, 2.6, dt);
       p.air = 0;
       if (Math.random() < 0.3) this.world.parts.burst(p.x + rand(-0.4, 0.4), p.y - 0.2, 1.6, Math.random() < 0.5 ? 0xffe08a : 0xff9a3d, 1, 0.5, 0.5, 0.45, 0);
       if (p.fly <= 0) this.endFly();
-    } else if (!p.ground) {
+    } else if (p.ground && gy < p.y - 0.06) { // छत ख़त्म — नीचे गिरो
+      p.ground = false; p.vy = 0;
+    } else if (p.ground) {
+      if (gy - p.y < 0.45) p.y = gy; // ढलान पर चढ़ो / छत पर दौड़ो (बगल से दीवार पर नहीं चढ़ना)
+    }
+    if (p.fly <= 0 && !p.ground) {
+      const prevY = p.y;
       p.vy += GRAV * dt;
       p.y += p.vy * dt;
       p.air += dt;
-      if (p.y <= 0) {
-        p.y = 0; p.vy = 0; p.ground = true; p.air = 0;
+      const floor = prevY >= gy - 0.3 ? gy : 0; // ऊपर से आए तो छत, बगल से तो ज़मीन
+      if (p.y <= floor && p.vy <= 0) {
+        p.y = floor; p.vy = 0; p.ground = true; p.air = 0;
         if (p.rollQ) { p.roll = ROLL_T; p.rollQ = false; this.sound.roll(); }
       }
     }
@@ -561,7 +580,7 @@ class Game {
     this.comboT -= dt;
     // दुनिया
     this.world.update(dt, dz, this.speed, this.ctx());
-    while (this.world.events.length) { const ev = this.world.events.shift(); if (ev === 'haat') { this.toast(T('haat'), 1500, 'cheer'); this.sound.levelUp(); } else if (ev === 'mela') { this.toast(T('mela'), 1800, 'cheer'); this.sound.levelUp(); } else if (ev === 'baraat') { this.toast(T('baraat'), 1600, 'cheer'); this.sound.baraat(); } }
+    while (this.world.events.length) { const ev = this.world.events.shift(); if (ev === 'haat') { this.toast(T('haat'), 1500, 'cheer'); this.sound.levelUp(); } else if (ev === 'mela') { this.toast(T('mela'), 1800, 'cheer'); this.sound.levelUp(); } else if (ev === 'baraat') { this.toast(T('baraat'), 1600, 'cheer'); this.sound.baraat(); } else if (ev === 'rail') { this.toast(T('rail'), 1600, 'cheer'); this.sound.train(); } }
     this.collide();
     this.score += dz * (this.rushT > 0 ? 2 : 1);
     // गोलू
@@ -571,7 +590,7 @@ class Game {
     if (p.roll > 0) mode = 'roll';
     if (p.stumT > 0 && p.ground && p.roll <= 0) mode = 'stumble';
     const flip = !p.ground && p.big ? clamp(p.air / (2 * SHOE_V / -GRAV), 0, 1) : null;
-    g.update(dt, mode, { speed: this.speed, y: p.y, big: this.rushT > 0, shield: this.pu.shield, flip });
+    g.update(dt, mode, { speed: this.speed, y: p.y, gy, big: this.rushT > 0, shield: this.pu.shield, flip });
     g.root.position.set(p.x, p.y, 0);
     g.root.rotation.z = (p.tx - p.x) * -0.06;
     // उड़ान का अंदाज़: उठते समय पूरी कलाबाज़ी, बीच-बीच में घूमकर मुस्कान दिखाए
@@ -587,7 +606,7 @@ class Game {
       this.score += 100 * hits; this.got += 3 * hits;
       this.sound.ring(); vibrate(20);
       this.world.parts.burst(p.x, p.y + 1, -0.5, 0xffd24d, 26, 5, 4, 0.8, 0);
-      this.toast((LANG === 'hi' ? 'सोनाक छल्ला! +' : 'Golden ring! +') + 100 * hits, 800, 'gold');
+      this.cheer('ring', 800);
     }
     // उड़न समोसा गोलू के नीचे
     const sm = this.samosa;
@@ -621,6 +640,7 @@ class Game {
       if (e.dead) continue;
       const ox = Math.abs(e.x - p.x) < e.halfW + HALF_W;
       const oz = Math.abs(e.z) < e.halfL + 0.35;
+      if (e.kind === 'ramp') { e.px = ox; e.pz = oz; continue; }
       if (e.kind === 'mud') {
         if (ox && oz && p.y < 0.25 && !e.used) {
           e.used = true; p.slowT = 0.9;
@@ -628,7 +648,7 @@ class Game {
           this.world.parts.burst(p.x, 0.3, 0.2, 0x6b4a2b, 14, 3, 3, 0.6);
         }
       } else {
-        const oy = p.y < e.yMax && p.y + ph > e.yMin;
+        const oy = (e.kind === 'train' ? p.y < e.yMax - 0.35 : p.y < e.yMax) && p.y + ph > e.yMin;
         if (ox && oz && oy) {
           const side = e.pz && !e.px;
           this.hit(e, side);
@@ -637,7 +657,7 @@ class Game {
           e.nm = true;
           this.slowmo = 0.3;
           this.sound.near();
-          if (Math.random() < 0.6) this.cheer(800); else this.toast(T('near'), 800);
+          this.cheer('near', 800);
           this.score += 25;
         }
       }
