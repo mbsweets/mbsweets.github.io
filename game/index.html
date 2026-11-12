@@ -18,7 +18,7 @@
   --disp:"Baloo 2","Mukta",system-ui,sans-serif;--body:Mukta,system-ui,sans-serif}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none!important}
-html,body{height:100%;overflow:hidden;color:var(--ink);font-family:var(--body);
+html,body{height:100%;overflow:hidden;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;color:var(--ink);font-family:var(--body);
   background:url(img/sky.webp) center top/cover no-repeat,#FFE3A6}
 @media (max-aspect-ratio: 1/1){html,body{background:url(img/sky.webp) 50% 0/auto 52% repeat-x,linear-gradient(#A9DCF0 0,#FFE3A6 52%,#FFE3A6 100%)}}
 #app{position:fixed;inset:0;touch-action:none;user-select:none;-webkit-user-select:none;overflow:hidden}
@@ -134,7 +134,54 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
 @keyframes pop{0%{transform:scale(.4)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
 @keyframes pulse{from{filter:brightness(1)}to{filter:brightness(1.18)}}
 @keyframes slide{to{background-position:28px 0}}
+.revn{width:86px;height:86px;border-radius:50%;display:grid;place-items:center;font:800 46px/1 var(--disp);color:#fff;background:var(--sindoor);border:4px solid var(--ink);box-shadow:inset 0 0 0 4px var(--haldi),0 5px 0 var(--ink)}
+.revn.tick{animation:pop .5s ease-out}
+.revpay{display:flex;align-items:center;justify-content:center;gap:6px;background:var(--haldi)}
+.revpay .rg{width:18px;height:18px;border-width:2px}
+#revAd{font-size:clamp(20px,5.6vw,26px)}
+.metacard{gap:10px;height:min(92vh,660px)}
+#metaClose{flex:none;margin-top:2px}
+.mhead{align-self:stretch;display:flex;gap:8px;align-items:center}
+.mhead .seg{flex:1}
+#metaWallet{margin:0}
+#metaBody{align-self:stretch;overflow:auto;flex:1;min-height:160px;display:flex;flex-direction:column;gap:8px;text-align:left;padding:2px}
+#metaBody h3{font:800 19px var(--disp);color:var(--maroon);text-align:center;margin-top:4px}
+.ms{background:#fff;border:2.5px solid var(--ink);border-radius:14px;padding:8px 10px 6px}
+.ms.done{background:#E9F8E4}
+.mst{font:700 16px/1.25 var(--body)}
+.msb{height:12px;border:2px solid var(--ink);border-radius:99px;background:#f3e6c8;overflow:hidden;margin:6px 0 4px}
+.msb i{display:block;height:100%;background:linear-gradient(90deg,var(--haldi),var(--sindoor))}
+.ms.done .msb i{background:var(--leaf)}
+.msr{display:flex;justify-content:space-between;align-items:center;font:700 13px var(--body);color:#6b4a3a}
+.msr em{font:800 14px var(--disp);font-style:normal;color:var(--maroon);display:flex;align-items:center;gap:4px}
+.msr .rg,.upb .rg,#dailyGet .rg{width:16px;height:16px;border-width:2px;vertical-align:-2px}
+.days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;align-self:stretch}
+.day{background:#fff;border:2px solid var(--ink);border-radius:10px;text-align:center;padding:3px 0 1px}
+.day small{display:block;font:700 10px var(--body);color:#7a6152;white-space:nowrap}
+.day b{font:800 14px var(--disp);color:var(--maroon)}
+.day.got{background:#E9F8E4}.day.got b{color:var(--leaf)}
+.day.now{background:var(--haldi);animation:pulse .6s ease-in-out infinite alternate}
+.big.mini{font-size:22px;padding:7px 14px 4px}
+.up{display:flex;align-items:center;gap:10px;background:#fff;border:2.5px solid var(--ink);border-radius:14px;padding:8px 10px}
+.upi{font-size:26px;width:38px;text-align:center}
+.upm{flex:1;min-width:0}
+.upn{font:800 17px var(--disp)}
+.upm small{font:700 13px var(--body);color:#6b4a3a}
+.pips{display:flex;gap:3px;margin:2px 0}
+.pips i{width:18px;height:8px;border-radius:4px;background:#e8dcc0;border:1.5px solid var(--ink)}
+.pips i.on{background:var(--sindoor)}
+.upb{font:800 16px var(--disp);background:var(--haldi);border:2.5px solid var(--ink);border-radius:12px;padding:7px 10px 4px;box-shadow:0 3px 0 var(--ink);display:flex;align-items:center;gap:4px;white-space:nowrap}
+.upb.poor{opacity:.55}
+.upb.max{background:var(--leaf);color:#fff}
+.st{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;border:2.5px solid var(--ink);border-radius:14px;padding:8px 10px;font:700 16px var(--body)}
+.st.col{flex-direction:column;align-items:stretch}
+.tg{min-width:74px;font:800 15px var(--disp);border:2.5px solid var(--ink);border-radius:99px;padding:5px 12px 2px;background:#e8dcc0}
+.tg.on{background:var(--leaf);color:#fff}
+.msgain{font:800 17px var(--disp);color:var(--leaf);background:#E9F8E4;border:2.5px solid var(--leaf);border-radius:12px;padding:4px 12px 2px}
+#metaS,#dailyS{z-index:5}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+@media (max-height: 520px){.card{padding:14px 16px 12px;gap:8px}.card h2{font-size:22px}.big-score{font-size:44px}.big{font-size:24px;padding:7px 14px 4px}
+  .stats b{font-size:20px}.revn{width:64px;height:64px;font-size:34px}.days{gap:3px}.lbcard{max-height:96vh}}
 @media (min-aspect-ratio: 4/3){.titlewrap{margin-top:4px}.ttl{font-size:clamp(44px,8vw,84px)}
   #menu{align-items:flex-start}
   #menu .brand,#menu .titlewrap{align-self:flex-start;margin-left:2vw}
@@ -179,7 +226,8 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
         <div><small data-t="best"></small><b id="bestV">0</b></div>
         <div><small data-t="sweets"></small><b id="totalV">0</b></div>
       </div>
-      <div class="row"><button id="btnLang" class="sm"></button><button id="btnSound" class="sm"></button></div>
+      <div class="row"><button id="btnMs" class="sm" data-t="btnMs"></button><button id="btnUp" class="sm" data-t="btnUp"></button></div>
+      <div class="row"><button id="btnSet" class="sm" data-t="btnSet"></button><button id="btnLang" class="sm"></button></div>
       <button id="btnLb" class="sm lbbtn wide" data-t="lb" hidden></button>
       <p id="keysTip" class="tiny" data-t="keys"></p>
       <p class="tiny local" data-t="soon"></p>
@@ -190,7 +238,7 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
     <div class="card">
       <h2 data-t="paused"></h2>
       <button id="btnResume" class="big" data-t="resume"></button>
-      <div class="row"><button id="btnHome2" class="sm" data-t="home"></button></div>
+      <div class="row"><button id="btnHome2" class="sm" data-t="home"></button><button id="btnSet2" class="sm" data-t="btnSet"></button></div>
     </div>
   </section>
 
@@ -203,6 +251,7 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
         <div><small data-t="sweets"></small><b id="overSweets">0</b></div>
         <div><small data-t="best"></small><b id="overBest">0</b></div>
       </div>
+      <div id="overMs" class="msgain" hidden></div>
       <div id="overLb" hidden></div>
       <button id="btnAgain" class="big" data-t="again"></button>
       <div class="row"><button id="btnHome" class="sm" data-t="home"></button><button id="btnShare" class="sm local" data-t="share"></button><button id="btnLb2" class="sm lbbtn" data-t="lbShort" hidden></button></div>
@@ -211,6 +260,16 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
       <img src="img/logo.webp" alt="MB Sweets" width="62" height="57">
       <span><b data-t="shopT"></b><small data-t="shopS"></small><em data-t="order"></em></span>
     </a>
+  </section>
+
+  <section id="reviveS" class="screen dim" hidden>
+    <div class="card">
+      <h2 data-t="revT"></h2>
+      <div id="revN" class="revn">6</div>
+      <button id="revAd" class="big" data-t="revAd"></button>
+      <button id="revPay" class="sm wide revpay"></button>
+      <button id="revNo" class="sm wide" data-t="revNo"></button>
+    </div>
   </section>
 
   <section id="lbS" class="screen dim" hidden>
@@ -230,12 +289,30 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
     </div>
   </section>
 
+  <section id="metaS" class="screen dim" hidden>
+    <div class="card lbcard metacard">
+      <div class="mhead"><div id="metaTabs" class="seg"><button data-m="ms" data-t="msT"></button><button data-m="up" data-t="upT"></button><button data-m="set" data-t="setT"></button></div>
+        <div id="metaWallet" class="sw"></div></div>
+      <div id="metaBody"></div>
+      <button id="metaClose" class="sm wide" data-t="lbClose"></button>
+    </div>
+  </section>
+
+  <section id="dailyS" class="screen dim" hidden>
+    <div class="card">
+      <h2 data-t="daily"></h2>
+      <p class="lbnote" data-t="dailySub"></p>
+      <div id="dailyDays" class="days"></div>
+      <button id="dailyGet" class="big"></button>
+    </div>
+  </section>
+
   <div id="loading" class="screen">
     <img src="img/logo.webp" alt="MB Sweets" width="120" height="110">
     <div id="loadbar"><i></i></div>
     <p id="loadmsg" data-t="loading">Loading…</p>
   </div>
 </div>
-<script type="module" src="js/game.js"></script>
+<script type="module" src="js/main.js"></script>
 </body>
 </html>

@@ -20,7 +20,7 @@ export class Voice {
   // text: बोलने वाली लाइन; prio: true = ज़रूरी (लेवल/ज़ोन), छोटी शाबाशी को दबा दे
   say(text, lang, prio = false) {
     const s = this.sound;
-    if (!s || s.muted || !text) return;
+    if (!s || s.silent || !text) return;
     const now = performance.now() / 1000;
     if (!prio && now - this.last < 1.4) return;
     this.last = now;

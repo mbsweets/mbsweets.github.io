@@ -20,6 +20,12 @@ const S = {
     lbYourName: 'Your name', lbCityL: 'Your city', lbSave: 'Save', lbEdit: 'Change name', lbClose: 'Close',
     lbPrivacy: 'Only your name and city are shown. No phone number.', lbNameErr: 'Name: 2–16 letters, no phone numbers.',
     lbEmpty: 'Nobody yet — be the first!', lbErr: 'Could not connect. Try again.', lbMyRank: 'Your rank', lbJoin: '🏆 Add your name to join the leaderboard',
+    btnMs: '🎯 Missions', btnUp: '⬆️ Upgrades', btnSet: '⚙️ Settings', msT: 'Missions', upT: 'Upgrades', setT: 'Settings',
+    daily: 'Daily reward', day: 'Day', claim: 'Collect', dailyDone: 'Come back tomorrow — the reward grows!', dailySub: 'Play every day, the reward grows!',
+    msDone: 'Mission complete!', msReward: 'Reward', msNote: 'Mission rewards are added when the run ends.', msGain: (n) => `🎯 Missions: +${n} sweets`,
+    upNote: 'Spend sweets to make power-ups last longer.', sec: 'sec', max: 'MAX', noSweets: 'Not enough sweets', upDone: 'Upgraded!',
+    revT: 'Continue?', revAd: '▶ Watch ad & continue', revPay: (n) => `Continue for ${n} sweets`, revNo: 'No thanks', revived: 'Back in the race!', adNo: 'No ad right now',
+    sMusic: 'Music', sVoice: 'Voice', sVib: 'Vibration', sGfx: 'Graphics', g_low: 'Low', g_auto: 'Auto', g_high: 'High', sLang: 'Language',
   },
   hi: { // हिंदी + बीच-बीच में मैथिली (मिथिलाक बोली)
     title: 'रसगुल्ला रन', sub: 'मिथिलाक मीठ दौड़', play: 'खेलू', best: 'सबसँ नीक', sweets: 'मिठाइ', score: 'स्कोर',
@@ -39,6 +45,12 @@ const S = {
     lbYourName: 'अहाँक नाम', lbCityL: 'अहाँक शहर', lbSave: 'सेव करू', lbEdit: 'नाम बदलू', lbClose: 'बंद करू',
     lbPrivacy: 'सिर्फ़ नाम आ शहर देखाओल जाएत — फ़ोन नंबर नहि।', lbNameErr: 'नाम: 2–16 अक्षर, फ़ोन नंबर नहि।',
     lbEmpty: 'एखन कियो नहि — पहिल बनू!', lbErr: 'नेटवर्क नहि भेटल, फेर कोशिश करू।', lbMyRank: 'अहाँक रैंक', lbJoin: '🏆 नाम लिखू आ लीडरबोर्ड पर आउ',
+    btnMs: '🎯 मिशन', btnUp: '⬆️ अपग्रेड', btnSet: '⚙️ सेटिंग्स', msT: 'मिशन', upT: 'अपग्रेड', setT: 'सेटिंग्स',
+    daily: 'रोज़क इनाम', day: 'दिन', claim: 'लिअ', dailyDone: 'काल्हि फेर आउ — इनाम बढ़ैत जाएत!', dailySub: 'रोज़ खेलू, इनाम बढ़ैत जाएत!',
+    msDone: 'मिशन पूरा भेल!', msReward: 'इनाम', msNote: 'मिशनक इनाम दौड़ ख़त्म भेला पर भेटत।', msGain: (n) => `🎯 मिशन इनाम: +${n} मिठाइ`,
+    upNote: 'मिठाइ खर्च करू — बूस्टर बेसी देर चलत।', sec: 'सेकेंड', max: 'पूरा', noSweets: 'मिठाइ कम अछि', upDone: 'अपग्रेड भ गेल!',
+    revT: 'आगू खेलब?', revAd: '▶ विज्ञापन देखि आगू खेलू', revPay: (n) => `${n} मिठाइ दय आगू खेलू`, revNo: 'नहि, बस', revived: 'फेर दौड़ू!', adNo: 'एखन विज्ञापन नहि अछि',
+    sMusic: 'संगीत', sVoice: 'बोली', sVib: 'कंपन', sGfx: 'ग्राफ़िक्स', g_low: 'कम', g_auto: 'ऑटो', g_high: 'बेसी', sLang: 'भाषा',
   },
 };
 

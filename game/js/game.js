@@ -11,15 +11,18 @@ import { Leaderboard } from './lb.js';
 import { Voice } from './voice.js';
 import { Sound } from './audio.js';
 import { T, LANG, setLang, applyLang } from './i18n.js';
-import { clamp, lerp, damp, rand, store, storeNum, vibrate } from './util.js';
+import { clamp, lerp, damp, rand, store, storeNum, vibrate, VIB } from './util.js';
+import { SETTINGS, loadSettings, Missions, wallet, upTime } from './meta.js';
+import { P, PORTAL } from './platform.js';
+import { MetaUI } from './metaui.js';
 
 const $ = (s) => document.querySelector(s);
 const GRAV = -36, JUMP_V = 11.6, SHOE_V = 16.2, ROLL_T = 0.62, H_STAND = 1.75, H_ROLL = 0.9, HALF_W = 0.38;
-const LOCAL = /mbsweets\.github\.io$|^127\.0\.0\.1$|^localhost$/.test(location.hostname) || /[?&]shop=1/.test(location.search);
+const REVIVE_COST = 300; // मिठाइ दय आगू खेलू
+const LOCAL = !PORTAL && /mbsweets\.github\.io$|^127\.0\.0\.1$|^localhost$/.test(location.hostname) || /[?&]shop=1/.test(location.search);
 const GAME_URL = 'https://mbsweets.github.io/game/';
 const ORDER_URL = 'https://mbsweets.github.io/mb-sweets/order/';
-const PU_TIME = { magnet: 10, shoes: 10, thali: 15 };
-const FLY_T = 8.5, FLY_Y = 10.5;
+const FLY_Y = 10.5; // बूस्टर का समय अब meta.js (अपग्रेड) से
 // लेवल — दूरी (मीटर) से; रफ़्तार हर लेवल में बढ़े
 const LEVELS = [0, 350, 1100, 2200, 3600];
 const SPEED_PTS = [[0, 13.5], [350, 16.5], [1100, 21.5], [2200, 26.5], [3600, 31], [6000, 35], [9000, 37.5]];
@@ -63,10 +66,31 @@ class Game {
     this.best = storeNum('best');
     this.total = storeNum('total');
     this.tutDone = store('tut') === '1';
+    this.ms = new Missions();
+    this.flyT = upTime('samosa');
+    this.runs = 0;
+    loadSettings();
+    this.applySettings();
+    P.watchMute((m) => this.sound.setBlock('portal', m));
+  }
+  applySettings() { this.sound.setMusic(SETTINGS.music); VIB.on = SETTINGS.vib; if (!SETTINGS.voice && this.voice) this.voice.stop(); }
+  // ग्राफ़िक्स: कम = हल्का (परछाईं बंद), ऑटो = फ़ोन देखकर, बेसी = पूरा
+  applyGfx() {
+    const q = SETTINGS.gfx, r = this.renderer; if (!r) return;
+    this.pr = q === 'low' ? 1 : Math.min(window.devicePixelRatio || 1, 2);
+    r.setPixelRatio(this.pr); this.resize();
+    const sh = q !== 'low';
+    if (r.shadowMap.enabled !== sh) {
+      r.shadowMap.enabled = sh; this.sun.castShadow = sh;
+      this.golu.shadow.material.opacity = sh ? 0.16 : 0.28;
+      this.scene.traverse((o) => { if (o.material) for (const m of [].concat(o.material)) m.needsUpdate = true; });
+    }
+    this.perf = { t: 0, n: 0, sum: 0, done: q !== 'auto' };
   }
 
   async boot() {
     applyLang();
+    P.loadingStart();
     const bar = $('#loadbar i');
     try {
       await Promise.all([loadTextures((p) => { bar.style.width = (p * 80) + '%'; }), document.fonts ? document.fonts.ready : null,
@@ -80,6 +104,7 @@ class Game {
     bar.style.width = '100%';
     this.toMenu();
     $('#loading').hidden = true;
+    P.loadingStop();
     this.clock = new THREE.Clock();
     this.frame();
   }
@@ -137,6 +162,7 @@ class Game {
     this.bindUI();
     this.camX = 0; this.shake = 0;
     this.world.reset(false);
+    this.applyGfx();
     // पहला फ़्रेम पहले से (shader compile) — शुरू में अटके नहीं
     r.compile(sc, this.cam);
   }
@@ -157,6 +183,7 @@ class Game {
     let sx = 0, sy = 0, st = 0, used = false, id = null;
     c.addEventListener('pointerdown', (e) => {
       if (e.target.closest('button,a')) return;
+      if (this.sound.ctx && this.sound.ctx.state === 'suspended' && this.state === 'play') this.sound.ctx.resume(); // iOS: आवाज़ छूने पर ही
       id = e.pointerId; sx = e.clientX; sy = e.clientY; st = performance.now(); used = false;
     });
     c.addEventListener('pointermove', (e) => {
@@ -181,7 +208,7 @@ class Game {
       else return;
       e.preventDefault();
     });
-    document.addEventListener('visibilitychange', () => { if (document.hidden && this.state === 'play') this.pause(); });
+    document.addEventListener('visibilitychange', () => { if (document.hidden && this.state === 'play') this.pause(true); });
   }
 
   act(a) {
@@ -198,9 +225,10 @@ class Game {
       if (p.ground) {
         const big = this.pu.shoes > 0;
         p.vy = big ? SHOE_V : JUMP_V; p.ground = false; p.roll = 0; p.big = big;
-        this.sound.jump(big);
+        this.sound.jump(big); this.msBump('jumps');
       } else if (p.roll > 0) p.roll = 0;
     } else if (a === 'down') {
+      this.msBump('rolls');
       if (p.ground) { p.roll = ROLL_T; this.sound.roll(); }
       else { p.vy = Math.min(p.vy, -24); p.rollQ = true; }
     } else if (a === 'rush') this.startRush();
@@ -214,39 +242,49 @@ class Game {
 
   // ------------------------------------------------ UI
   bindUI() {
-    const click = (sel, fn) => $(sel).addEventListener('click', (e) => { e.preventDefault(); this.sound.init(); this.sound.click(); fn(); });
+    const click = (sel, fn) => { const el = $(sel); if (el) el.addEventListener('click', (e) => { e.preventDefault(); this.sound.init(); this.sound.click(); fn(); }); };
     click('#btnPlay', () => this.start());
-    click('#btnAgain', () => this.start());
-    click('#btnHome', () => this.toMenu());
+    click('#btnAgain', () => this.afterAd(() => this.start()));
+    click('#btnHome', () => this.afterAd(() => this.toMenu()));
+    click('#revAd', () => this.reviveAd());
+    click('#revPay', () => this.revivePay());
+    click('#revNo', () => this.reviveNo());
     click('#btnHome2', () => this.toMenu());
     click('#btnPause', () => this.pause());
     click('#btnResume', () => this.resume());
     click('#btnRush', () => this.startRush());
     click('#btnLang', () => { setLang(LANG === 'hi' ? 'en' : 'hi'); this.refreshMenu(); });
-    click('#btnSound', () => { this.sound.setMuted(!this.sound.muted); this.refreshMenu(); });
+    this.meta = new MetaUI(this);
+    click('#btnMs', () => this.meta.open('ms'));
+    click('#btnUp', () => this.meta.open('up'));
+    click('#btnSet', () => this.meta.open('set'));
+    click('#btnSet2', () => this.meta.open('set'));
     click('#btnShare', () => this.share());
     this.lb = new Leaderboard();
+    if (PORTAL) this.lb.on = false; // पोर्टल पर अपना लीडरबोर्ड नहीं (उनके नियम)
     this.lb.bind(() => {});
     click('#btnLb', () => this.lb.open());
     click('#btnLb2', () => this.lb.open());
     $('#overLb').addEventListener('click', () => this.lb.open());
     for (const el of document.querySelectorAll('.local')) el.hidden = !LOCAL;
-    $('#orderLink').href = ORDER_URL;
+    const ol = $('#orderLink'); if (ol) ol.href = ORDER_URL;
   }
   refreshMenu() {
     $('#ttl').dataset.text = T('title');
     $('#bestV').textContent = Math.floor(this.best).toLocaleString('en-IN');
-    $('#totalV').textContent = Math.floor(this.total).toLocaleString('en-IN');
-    $('#btnSound').textContent = '🔊 ' + T('sound') + ': ' + (this.sound.muted ? T('off') : T('on'));
+    $('#totalV').textContent = Math.floor(wallet.v).toLocaleString('en-IN');
     $('#btnLang').textContent = '🌐 ' + T('lang');
-    $('#keysTip').hidden = matchMedia('(pointer: coarse)').matches;
+    const desk = P.isDesktop();
+    $('#keysTip').hidden = desk === null ? matchMedia('(pointer: coarse)').matches : !desk;
   }
   show(id) {
-    for (const s of ['#menu', '#over', '#pauseS', '#hud']) $(s).hidden = true;
+    for (const s of ['#menu', '#over', '#pauseS', '#hud', '#reviveS']) $(s).hidden = true;
     for (const s of id) $(s).hidden = false;
   }
 
   toMenu() {
+    if (this.state === 'paused') this.ms.settle(); // बीच में छोड़ा — पूरे मिशन का इनाम फिर भी
+    P.gameplayStop();
     this.state = 'menu';
     this.show(['#menu']);
     this.refreshMenu();
@@ -258,9 +296,13 @@ class Game {
     this.sound.bees(false);
     this.beeC.set(0, 2, 18);
     if (this.sound.ctx && !this.sound.playing) this.sound.startMusic();
+    if (!PORTAL || this.runs > 0) this.meta.maybeDaily(); // पोर्टल पर पहली बार सीधे खेल (एक क्लिक)
   }
 
   start() {
+    $('#metaS').hidden = true; $('#dailyS').hidden = true;
+    this.ms.startRun(); this.flyT = upTime('samosa');
+    this.revived = false; this.runs++;
     this.sound.init();
     if (!this.sound.playing) this.sound.startMusic();
     this.world.reset(!this.tutDone);
@@ -269,7 +311,7 @@ class Game {
     this.level = 0; this.samosa.visible = false; this.skyShow.reset();
     this.rushT = 0; this.meter = 0;
     this.score = 0; this.got = 0; this.combo = 0; this.comboT = 0; this.timeScale = 1; this.slowmo = 0;
-    this.speed = 14; this.runT = 0; this.perf = { t: 0, n: 0, sum: 0 };
+    this.speed = 14; this.runT = 0; this.perf = { t: 0, n: 0, sum: 0, done: SETTINGS.gfx !== 'auto' };
     this.golu.root.rotation.y = 0;
     this.golu.setGlow(0);
     this.show(['#hud']);
@@ -278,11 +320,13 @@ class Game {
     this.state = 'play';
     this.toast(T('gotIt'), 700);
     this.say(T('gotIt'), true);
+    P.gameplayStart();
   }
 
-  pause() {
+  pause(auto = false) {
     this.voice.stop();
     if (this.state !== 'play') return;
+    if (!auto) P.gameplayStop(); // टैब बदलना पोर्टल ख़ुद संभालता है
     this.state = 'paused';
     this.show(['#pauseS', '#hud']);
     this.sound.bees(false);
@@ -294,6 +338,77 @@ class Game {
     this.show(['#hud']);
     this.state = 'play';
     this.clock.getDelta();
+    P.gameplayStart();
+  }
+
+  // ---------- विज्ञापन (सिर्फ़ पोर्टल पर) ----------
+  // खेल ख़त्म होने के बाद "फेर खेलू"/"घर" पर — पोर्टल ख़ुद तय करता है कब (लगभग 3 मिनट में एक)
+  afterAd(fn) {
+    if (!P.ads || this.runT < 8) { fn(); return; }
+    if (this.adBusy) return;
+    this.adBusy = true;
+    P.ad('midgame', () => { this.sound.setBlock('ad', true); this.voice.stop(); }).then(() => {
+      this.sound.setBlock('ad', false); this.adBusy = false; fn();
+    });
+  }
+  // मरने के बाद: एक बार "आगू खेलब?" — विज्ञापन देखकर या मिठाई देकर
+  afterDeath() {
+    const canAd = P.ads, canPay = wallet.v >= REVIVE_COST;
+    if (this.revived || this.god || this.world.dist < 150 || (!canAd && !canPay)) { this.gameOver(); return; }
+    this.state = 'revive';
+    P.gameplayStop();
+    this.show(['#reviveS', '#hud']);
+    $('#revAd').hidden = !canAd;
+    $('#revPay').hidden = !canPay;
+    $('#revPay').innerHTML = `<i class="rg"></i> ${T('revPay', REVIVE_COST)}`;
+    this.say(T('revT'), true);
+    this.revCount(6);
+  }
+  revCount(n) {
+    clearInterval(this.revTimer);
+    const el = $('#revN'); el.textContent = n;
+    el.classList.remove('tick'); void el.offsetWidth; el.classList.add('tick');
+    this.revTimer = setInterval(() => {
+      if (this.state !== 'revive') { clearInterval(this.revTimer); return; }
+      n--; el.textContent = Math.max(0, n);
+      el.classList.remove('tick'); void el.offsetWidth; el.classList.add('tick');
+      if (n <= 0) { clearInterval(this.revTimer); this.gameOver(); }
+    }, 1000);
+  }
+  reviveAd() {
+    if (this.state !== 'revive' || this.adBusy) return;
+    clearInterval(this.revTimer);
+    this.adBusy = true;
+    P.ad('rewarded', () => { this.sound.setBlock('ad', true); this.voice.stop(); }).then((ok) => {
+      this.sound.setBlock('ad', false); this.adBusy = false;
+      if (this.state !== 'revive') return;
+      if (ok) { this.revive(); return; }
+      this.toast(T('adNo'), 1400, 'warn');
+      $('#revAd').hidden = true;
+      if ($('#revPay').hidden) this.gameOver(); else this.revCount(5);
+    });
+  }
+  revivePay() {
+    if (this.state !== 'revive' || wallet.v < REVIVE_COST) return;
+    clearInterval(this.revTimer);
+    wallet.add(-REVIVE_COST);
+    this.revive();
+  }
+  reviveNo() { if (this.state === 'revive') { clearInterval(this.revTimer); this.gameOver(); } }
+  revive() {
+    const p = this.p;
+    this.revived = true;
+    this.world.clearNear(-45, 25);
+    p.y = this.world.groundAt(p.x, 0); p.vy = 0; p.ground = true; p.roll = 0; p.rollQ = false; p.fly = 0;
+    p.beesT = 0; p.stumT = 0; p.slowT = 0; p.invT = 3;
+    this.sound.bees(false);
+    this.state = 'play';
+    this.show(['#hud']);
+    this.clock.getDelta();
+    this.toast(T('revived'), 1100, 'gold');
+    this.say(T('revived'), true);
+    vibrate([30, 30, 30]);
+    P.gameplayStart();
   }
 
   toast(txt, ms = 900, cls = '') {
@@ -305,6 +420,7 @@ class Game {
   }
 
   share() {
+    if (!LOCAL) return;
     const s = Math.floor(this.score).toLocaleString('en-IN');
     const text = T('shareText', s);
     if (navigator.share) { navigator.share({ title: T('title'), text, url: GAME_URL }).catch(() => {}); return; }
@@ -322,6 +438,8 @@ class Game {
     this.score += s.pts * 10 * mul * (this.rushT > 0 ? 2 : 1);
     if (this.combo > 0 && this.combo % 15 === 0) this.cheer('combo', 1000, this.combo / 15 - 1);
     this.golu.eat();
+    this.msBump('sweets', this.got, true);
+    if (it.type === 'rasmalai') this.msBump('rasmalai');
     this.sound.collect(this.combo - 1, it.type);
     this.world.parts.burst(it.x, it.y, it.z, SW_COL[it.type], it.type === 'rasmalai' ? 18 : 6, 2.5, 2, 0.5);
     if (it.type === 'rasmalai') this.toast('+10 ' + (LANG === 'hi' ? 'रसमलाई!' : 'Rasmalai!'), 700, 'gold');
@@ -334,21 +452,22 @@ class Game {
     vibrate(25);
     this.world.parts.burst(p.x, p.y, p.z, 0xffd24d, 22, 3.5, 3, 0.7);
     if (p.kind === 'samosa') { this.startFly(); return; }
-    if (p.kind === 'shield') this.pu.shield = true; else this.pu[p.kind] = PU_TIME[p.kind];
+    if (p.kind === 'shield') this.pu.shield = true; else this.pu[p.kind] = upTime(p.kind);
     this.toast(T(p.kind), 900, 'gold');
   }
 
   // उड़न समोसा: 8 सेकंड आसमान में, ऊपर मिठाइयाँ; उतरते समय कवच
   startFly() {
     const p = this.p;
-    p.fly = FLY_T; p.ground = false; p.vy = 0; p.roll = 0; p.rollQ = false; p.big = false;
+    p.fly = this.flyT; p.ground = false; p.vy = 0; p.roll = 0; p.rollQ = false; p.big = false;
     this.samosa.visible = true;
     this.sound.fly(true);
     vibrate([30, 40, 60]);
     this.toast(T('samosa'), 1400, 'rush');
     this.say(T('samosa'), true);
     this.shake = 0.2;
-    this.skyShow.start(FLY_Y, this.world.skyTrail(FLY_T, this.speed, FLY_Y, p.lane));
+    this.skyShow.start(FLY_Y, this.world.skyTrail(this.flyT, this.speed, FLY_Y, p.lane));
+    this.msBump('samosa');
   }
   endFly() {
     const p = this.p;
@@ -371,7 +490,23 @@ class Game {
   }
 
   // बोलो — हिंदी मोड में मैथिली, English मोड में अंग्रेज़ी
-  say(text, prio = false) { if (this.voice) this.voice.say(text, LANG === 'hi' ? 'hi' : 'en', prio); }
+  say(text, prio = false) { if (this.voice && SETTINGS.voice) this.voice.say(text, LANG === 'hi' ? 'hi' : 'en', prio); }
+
+  // मिशन — कुछ हुआ तो गिनो; पूरा हुआ तो खुशी
+  msBump(id, v = 1, abs = false) {
+    if (this.state !== 'play') return;
+    for (const m of this.ms.bump(id, v, abs)) {
+      setTimeout(() => {
+        if (this.state !== 'play') return;
+        const t = $('#toast');
+        t.innerHTML = `🎯 ${T('msDone')}<small>${this.ms.text(m)}</small>`;
+        t.className = 'show gold';
+        clearTimeout(this.toastT); this.toastT = setTimeout(() => { t.className = ''; }, 1600);
+        this.sound.power(); vibrate(30);
+        this.say(T('msDone'), true);
+      }, 250);
+    }
+  }
 
   levelUp(n) {
     this.level = n;
@@ -457,12 +592,19 @@ class Game {
 
   gameOver() {
     this.state = 'over';
+    clearInterval(this.revTimer);
+    P.gameplayStop();
     this.sound.bees(false);
     const sc = Math.floor(this.score);
     const nb = sc > this.best;
+    if (nb && this.best > 0) P.happytime(); // पुराना रिकॉर्ड टूटा — पोर्टल पर जश्न
     if (nb) { this.best = sc; store('best', sc); }
     this.total += this.got;
     store('total', this.total);
+    wallet.add(this.got);
+    const ms = this.ms.settle();
+    $('#overMs').hidden = !ms.gain;
+    if (ms.gain) $('#overMs').textContent = T('msGain', ms.gain);
     store('plays', storeNum('plays') + 1);
     $('#overTitle').textContent = this.cause === 'caught' ? T('caught') : T('crashed');
     $('#overScore').textContent = sc.toLocaleString('en-IN');
@@ -513,8 +655,8 @@ class Game {
       return;
     }
     if (this.state !== 'play' && this.state !== 'paused') this.skyShow.update(rdt, 0, 0, 0, this.cam.position);
-    if (this.state === 'paused' || this.state === 'over') {
-      if (this.state === 'over') g.update(rdt, 'dead', {});
+    if (this.state === 'paused' || this.state === 'over' || this.state === 'revive') {
+      if (this.state !== 'paused') g.update(rdt, 'dead', {});
       this.updateBees(rdt);
       return;
     }
@@ -526,7 +668,7 @@ class Game {
       this.world.update(rdt, 0, 0, this.ctx());
       this.updateBees(rdt);
       this.updateCam(rdt);
-      if (this.deathT > 1.5) this.gameOver();
+      if (this.deathT > 1.5) this.afterDeath();
       return;
     }
     // ---------- खेल चालू ----------
@@ -592,9 +734,11 @@ class Game {
     this.comboT -= dt;
     // दुनिया
     this.world.update(dt, dz, this.speed, this.ctx());
-    while (this.world.events.length) { const ev = this.world.events.shift(); if (ev === 'haat') { this.toast(T('haat'), 1500, 'cheer'); this.sound.levelUp(); } else if (ev === 'mela') { this.toast(T('mela'), 1800, 'cheer'); this.sound.levelUp(); } else if (ev === 'baraat') { this.toast(T('baraat'), 1600, 'cheer'); this.sound.baraat(); } else if (ev === 'rail') { this.toast(T('rail'), 1600, 'cheer'); this.sound.train(); } this.say(T(ev), true); }
+    while (this.world.events.length) { const ev = this.world.events.shift(); if (ev === 'haat') { this.toast(T('haat'), 1500, 'cheer'); this.sound.levelUp(); } else if (ev === 'mela') { this.toast(T('mela'), 1800, 'cheer'); this.sound.levelUp(); } else if (ev === 'baraat') { this.toast(T('baraat'), 1600, 'cheer'); this.sound.baraat(); } else if (ev === 'rail') { this.toast(T('rail'), 1600, 'cheer'); this.sound.train(); } if (ev === 'haat') this.msBump('haat'); this.say(T(ev), true); }
     this.collide();
     this.score += dz * (this.rushT > 0 ? 2 : 1);
+    this.msBump('dist', Math.floor(this.world.dist), true);
+    if (p.ground && gy > 1) this.msBump('roof', dz);
     // गोलू
     let mode = 'run';
     if (p.fly > 0) mode = 'fly';
@@ -608,7 +752,7 @@ class Game {
     // उड़ान का अंदाज़: उठते समय पूरी कलाबाज़ी, बीच-बीच में घूमकर मुस्कान दिखाए
     let roll = 0, twirl = 0;
     if (p.fly > 0) {
-      const ft = FLY_T - p.fly, e = (x) => 1 - Math.pow(1 - clamp(x, 0, 1), 3);
+      const ft = this.flyT - p.fly, e = (x) => 1 - Math.pow(1 - clamp(x, 0, 1), 3);
       roll = ft < 1.1 ? e(ft / 1.1) * Math.PI * 2 : 0;
       for (const t0 of [3.3, 6.2]) if (ft > t0 && ft < t0 + 0.8) twirl = e((ft - t0) / 0.8) * Math.PI * 2;
     }
@@ -619,6 +763,7 @@ class Game {
       this.sound.ring(); vibrate(20);
       this.world.parts.burst(p.x, p.y + 1, -0.5, 0xffd24d, 26, 5, 4, 0.8, 0);
       this.cheer('ring', 800);
+      this.msBump('rings', hits); this.msBump('sweets', this.got, true);
     }
     // उड़न समोसा गोलू के नीचे
     const sm = this.samosa;
@@ -652,7 +797,14 @@ class Game {
       if (e.dead) continue;
       const ox = Math.abs(e.x - p.x) < e.halfW + HALF_W;
       const oz = Math.abs(e.z) < e.halfL + 0.35;
-      if (e.kind === 'ramp') { e.px = ox; e.pz = oz; continue; }
+      if (e.kind === 'ramp') {
+        // ढलान के बगल से घुसे (ऊँचाई पर) — दीवार जैसा झटका, अंदर से निकलकर डिब्बे से टकराना नहीं
+        if (ox && oz && e.pz && !e.px && p.invT <= 0 && this.rushT <= 0 && this.world.groundAt(p.x, 0) - p.y > 0.45) {
+          p.lane = p.prevLane; p.tx = LANES[p.lane]; p.laneT = 9; this.stumble();
+          if (this.state !== 'play') return;
+        }
+        e.px = ox; e.pz = oz; continue;
+      }
       if (e.kind === 'mud') {
         if (ox && oz && p.y < 0.25 && !e.used) {
           e.used = true; p.slowT = 0.9;
@@ -670,6 +822,7 @@ class Game {
           this.slowmo = 0.3;
           this.sound.near();
           this.cheer('near', 800);
+          this.msBump('near');
           this.score += 25;
         }
       }
@@ -709,11 +862,11 @@ class Game {
   updateBees(dt) {
     const p = this.p || { x: 0, y: 0, beesT: 0 };
     let tx = p.x, ty = 2.2, tz = 18;
-    if (this.state === 'dying' || this.state === 'over') { ty = 1.7; tz = 0.4; }
+    if (this.state === 'dying' || this.state === 'over' || this.state === 'revive') { ty = 1.7; tz = 0.4; }
     else if (p.beesT > 0) { ty = p.y + 1.7; tz = 2.4; }
     this.beeC.x = damp(this.beeC.x, tx, 6, dt); this.beeC.y = damp(this.beeC.y, ty, 6, dt); this.beeC.z = damp(this.beeC.z, tz, 4, dt);
     const t = performance.now() / 1000;
-    const close = this.state === 'dying' || this.state === 'over';
+    const close = this.state === 'dying' || this.state === 'over' || this.state === 'revive';
     this.bees.forEach((b, i) => {
       const a = t * b.sp + b.ph;
       const r = close ? b.r * 0.9 : b.r * 1.3;

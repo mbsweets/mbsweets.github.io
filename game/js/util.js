@@ -7,10 +7,13 @@ export const randi = (a, b) => Math.floor(rand(a, b + 1));
 export const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 export const chance = (p) => Math.random() < p;
 
+// सेव: अपनी वेबसाइट पर फ़ोन का localStorage; पोर्टल पर उनका data module (वही getItem/setItem)
+export const STORE = { b: null };
 export function store(key, val) {
   try {
-    if (val === undefined) return localStorage.getItem('rr-' + key);
-    localStorage.setItem('rr-' + key, String(val));
+    const b = STORE.b || localStorage;
+    if (val === undefined) return b.getItem('rr-' + key);
+    b.setItem('rr-' + key, String(val));
   } catch (e) { /* प्राइवेट विंडो वगैरह — बिना सेव के चलो */ }
   return null;
 }
@@ -28,6 +31,8 @@ export function weighted(list) {
   return list[list.length - 1][0];
 }
 
+export const VIB = { on: true };
 export function vibrate(ms) {
+  if (!VIB.on) return;
   try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) { /* ठीक है */ }
 }

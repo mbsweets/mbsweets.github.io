@@ -24,8 +24,8 @@ export class Sound {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
     const ctx = this.ctx = new AC();
-    this.master = ctx.createGain(); this.master.gain.value = this.muted ? 0 : 0.85; this.master.connect(ctx.destination);
-    this.mus = ctx.createGain(); this.mus.gain.value = 0.5; this.mus.connect(this.master);
+    this.master = ctx.createGain(); this.master.gain.value = this.silent ? 0 : 0.85; this.master.connect(ctx.destination);
+    this.mus = ctx.createGain(); this.mus.gain.value = this.musOn === false ? 0 : 0.5; this.mus.connect(this.master);
     this.fx = ctx.createGain(); this.fx.gain.value = 0.75; this.fx.connect(this.master);
     const len = ctx.sampleRate;
     const b = ctx.createBuffer(1, len, ctx.sampleRate), d = b.getChannelData(0);
@@ -36,11 +36,23 @@ export class Sound {
       if (document.hidden) this.ctx.suspend(); else if (this.playing || this.wantResume) this.ctx.resume();
     });
   }
+  setMusic(on) {
+    this.musOn = on;
+    if (this.mus) this.mus.gain.setTargetAtTime(on ? 0.5 : 0, this.ctx.currentTime, 0.05);
+  }
   setMuted(m) {
     this.muted = m;
     store('mute', m ? 1 : 0);
-    if (this.master) this.master.gain.setTargetAtTime(m ? 0 : 0.85, this.ctx.currentTime, 0.05);
+    this.applyGain();
   }
+  // बाहर से चुप (विज्ञापन चल रहा है / पोर्टल ने आवाज़ बंद की) — खिलाड़ी की सेटिंग से ऊपर
+  setBlock(name, on) {
+    if (!this.blocks) this.blocks = new Set();
+    if (on) this.blocks.add(name); else this.blocks.delete(name);
+    this.applyGain();
+  }
+  get silent() { return this.muted || !!(this.blocks && this.blocks.size); }
+  applyGain() { if (this.master) this.master.gain.setTargetAtTime(this.silent ? 0 : 0.85, this.ctx.currentTime, 0.05); }
   // ---------- बुनियादी आवाज़ें ----------
   tone(freq, t, dur, { type = 'sine', vol = 0.3, att = 0.005, to = null, dest = this.fx, vib = 0 } = {}) {
     const c = this.ctx, o = c.createOscillator(), g = c.createGain();
@@ -122,7 +134,7 @@ export class Sound {
   }
   // ---------- खेल की आवाज़ें ----------
   now() { return this.ctx ? this.ctx.currentTime : 0; }
-  ok() { return this.ctx && !this.muted; }
+  ok() { return this.ctx && !this.silent; }
   collect(combo, type) {
     if (!this.ok()) return;
     const t = this.now(), i = Math.min(combo, BHUP.length - 1);
