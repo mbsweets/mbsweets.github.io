@@ -44,7 +44,7 @@ class SweetSet {
           arr.push(im);
         };
         if (p.photo) { // असली फोटो — हमेशा कैमरे की ओर (billboard), मुलायम किनारे
-          if (!this.photoMat) this.photoMat = new THREE.MeshBasicMaterial({ map: TEX.mithai, alphaTest: 0.4, alphaToCoverage: true, toneMapped: false, side: THREE.DoubleSide, color: 0xf4f4f4 });
+          if (!this.photoMat) this.photoMat = new THREE.MeshBasicMaterial({ map: TEX.mithai, alphaTest: 0.4, alphaToCoverage: true, toneMapped: false, side: THREE.DoubleSide, color: 0xffffff });
           this.photo[t] = true;
           add(this.photoMat);
           continue;
@@ -67,7 +67,7 @@ class SweetSet {
     scene.add(this.shIM);
     this.t = 0;
   }
-  setTint(f) { if (this.photoMat) this.photoMat.color.setScalar(0.96 * f); }
+  setTint(f) { if (this.photoMat) this.photoMat.color.setScalar(f); }
   spawn(type, x, y, z) {
     const fr = this.free[type];
     if (fr.dirty) { fr.sort((a, b) => b - a); fr.dirty = false; }

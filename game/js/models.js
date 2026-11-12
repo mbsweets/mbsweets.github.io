@@ -242,10 +242,10 @@ function bumpy(g, amt = 0.02, f = 9) {
 }
 // हर मिठाई के हिस्से: g ज्योमेट्री, c रंग, r खुरदुरापन (कम = चाशनी वाली चमक), m धातु, nm उभार
 // दुकान की असली फोटो से कटी मिठाइयाँ (img/mithai.webp) — [x, y, w, h] (0–1, ऊपर-बाएँ से)
-export const PHOTO = {"rasgulla": [0.00391, 0.02051, 0.24219, 0.20801], "gulabjamun": [0.25684, 0.00391, 0.23535, 0.24219], "balushahi": [0.50391, 0.01465, 0.24121, 0.2207], "chamcham": [0.82129, 0.00391, 0.10742, 0.24219], "rasmalai": [0.00391, 0.27148, 0.24219, 0.20605], "laddoo": [0.26367, 0.25391, 0.22266, 0.24219], "peda": [0.50391, 0.27637, 0.24219, 0.19727], "kalakand": [0.75391, 0.25781, 0.24219, 0.23438], "milkcake": [0.06445, 0.50391, 0.12012, 0.24219]};
-const PH_H = { rasgulla: 0.6, gulabjamun: 0.6, balushahi: 0.62, chamcham: 0.72, rasmalai: 0.66, laddoo: 0.62, peda: 0.5, kalakand: 0.56, milkcake: 0.7 };
+export const PHOTO = {"rasgulla": [0.00635, 0.03223, 0.18262, 0.32617], "gulabjamun": [0.2041, 0.0127, 0.17773, 0.36523], "balushahi": [0.39697, 0.02832, 0.18262, 0.33301], "chamcham": [0.6416, 0.0127, 0.0835, 0.36523], "rasmalai": [0.7876, 0.04004, 0.18262, 0.31055], "laddoo": [0.01318, 0.40332, 0.16846, 0.36523], "peda": [0.20166, 0.44727, 0.18213, 0.27637], "kalakand": [0.39697, 0.40918, 0.18262, 0.35352], "milkcake": [0.60449, 0.40332, 0.1582, 0.36523]};
+const PH_H = { rasgulla: 0.66, gulabjamun: 0.62, balushahi: 0.64, chamcham: 0.74, rasmalai: 0.68, laddoo: 0.64, peda: 0.52, kalakand: 0.6, milkcake: 0.66 };
 function photoPart(type) {
-  const [x, y, w, h] = PHOTO[type], H = PH_H[type], W = H * w / h;
+  const [x, y, w, h] = PHOTO[type], H = PH_H[type], W = H * (w * 2048) / (h * 1024); // atlas 2048×1024
   const g = new THREE.PlaneGeometry(W, H);
   const uv = g.attributes.uv;
   for (let i = 0; i < uv.count; i++) uv.setXY(i, x + uv.getX(i) * w, 1 - (y + (1 - uv.getY(i)) * h));

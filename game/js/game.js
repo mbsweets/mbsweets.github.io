@@ -8,6 +8,7 @@ import { Golu as Golu3D, loadGolu } from './golu3d.js';
 import { World, LANES } from './world.js';
 import { SkyShow } from './skyshow.js';
 import { Leaderboard } from './lb.js';
+import { Voice } from './voice.js';
 import { Sound } from './audio.js';
 import { T, LANG, setLang, applyLang } from './i18n.js';
 import { clamp, lerp, damp, rand, store, storeNum, vibrate } from './util.js';
@@ -57,6 +58,7 @@ const SKY_NAME = { hi: { jalebi: 'जलेबी', laddoo: 'लड्डू', p
 class Game {
   constructor() {
     this.sound = new Sound();
+    this.voice = new Voice(this.sound);
     this.state = 'loading';
     this.best = storeNum('best');
     this.total = storeNum('total');
@@ -275,9 +277,11 @@ class Game {
     this.hud = {};
     this.state = 'play';
     this.toast(T('gotIt'), 700);
+    this.say(T('gotIt'), true);
   }
 
   pause() {
+    this.voice.stop();
     if (this.state !== 'play') return;
     this.state = 'paused';
     this.show(['#pauseS', '#hud']);
@@ -342,6 +346,7 @@ class Game {
     this.sound.fly(true);
     vibrate([30, 40, 60]);
     this.toast(T('samosa'), 1400, 'rush');
+    this.say(T('samosa'), true);
     this.shake = 0.2;
     this.skyShow.start(FLY_Y, this.world.skyTrail(FLY_T, this.speed, FLY_Y, p.lane));
   }
@@ -357,14 +362,20 @@ class Game {
     const L = CHEER[kind] || CHEER.near;
     const [en, mai] = tier >= 0 ? L[Math.min(tier, L.length - 1)] : L[Math.floor(Math.random() * L.length)];
     const t = $('#toast');
-    t.innerHTML = en + (LANG === 'hi' ? `<small>${mai}</small>` : '');
+    const hi = LANG === 'hi';
+    t.innerHTML = hi ? `${mai}<small>${en}</small>` : `${en}<small>${mai}</small>`;
     t.className = 'show cheer';
+    this.say(hi ? mai : en, kind === 'level');
     clearTimeout(this.toastT);
     this.toastT = setTimeout(() => { t.className = ''; }, ms);
   }
 
+  // बोलो — हिंदी मोड में मैथिली, English मोड में अंग्रेज़ी
+  say(text, prio = false) { if (this.voice) this.voice.say(text, LANG === 'hi' ? 'hi' : 'en', prio); }
+
   levelUp(n) {
     this.level = n;
+    this.say(`${T('level')} ${n + 1}, ${T('lv' + (n + 1))}`, true);
     const el = $('#lvl');
     el.innerHTML = `<small>${T('level')} ${n + 1}</small><b>${T('lv' + (n + 1))}</b>`;
     el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
@@ -458,6 +469,7 @@ class Game {
     $('#overSweets').textContent = this.got.toLocaleString('en-IN');
     $('#overBest').textContent = Math.floor(this.best).toLocaleString('en-IN');
     $('#newBest').hidden = !nb;
+    if (nb) this.say(T('newBest'), true);
     $('#overLb').hidden = true;
     this.show(['#over']);
     this.lb.afterGame(sc, this.world.dist, this.runT);
@@ -580,7 +592,7 @@ class Game {
     this.comboT -= dt;
     // दुनिया
     this.world.update(dt, dz, this.speed, this.ctx());
-    while (this.world.events.length) { const ev = this.world.events.shift(); if (ev === 'haat') { this.toast(T('haat'), 1500, 'cheer'); this.sound.levelUp(); } else if (ev === 'mela') { this.toast(T('mela'), 1800, 'cheer'); this.sound.levelUp(); } else if (ev === 'baraat') { this.toast(T('baraat'), 1600, 'cheer'); this.sound.baraat(); } else if (ev === 'rail') { this.toast(T('rail'), 1600, 'cheer'); this.sound.train(); } }
+    while (this.world.events.length) { const ev = this.world.events.shift(); if (ev === 'haat') { this.toast(T('haat'), 1500, 'cheer'); this.sound.levelUp(); } else if (ev === 'mela') { this.toast(T('mela'), 1800, 'cheer'); this.sound.levelUp(); } else if (ev === 'baraat') { this.toast(T('baraat'), 1600, 'cheer'); this.sound.baraat(); } else if (ev === 'rail') { this.toast(T('rail'), 1600, 'cheer'); this.sound.train(); } this.say(T(ev), true); }
     this.collide();
     this.score += dz * (this.rushT > 0 ? 2 : 1);
     // गोलू
