@@ -449,3 +449,17 @@ section{padding:44px 0}
 .clear ul{margin:0;padding:0 0 0 2px;list-style:none}
 .clear li{padding:2px 0}
 .clear li b{color:#1F6B3A}
+
+/* ---- गेम कार्ड (होम) ---- */
+.gamesec{padding:6px 0 26px}
+.gamecard{display:grid;grid-template-columns:1fr;gap:0;text-decoration:none;color:#FBEBD2;background:linear-gradient(160deg,var(--maroon2),var(--wine));border-radius:22px;overflow:hidden;box-shadow:inset 0 0 0 3px rgba(242,169,27,.7),0 14px 30px -14px rgba(74,13,23,.75)}
+.gamecard .gpic{display:block;position:relative;line-height:0}
+.gamecard .gpic img{width:100%;height:auto;aspect-ratio:4/3;object-fit:cover}
+.gamecard .gtext{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:16px 18px 20px}
+.gbadge{display:inline-block;font:700 13.5px/1.2 'Mukta',sans-serif;background:var(--haldi);color:var(--wine);border-radius:999px;padding:5px 11px 4px}
+.gtitle{font-family:var(--hd);font-weight:800;font-size:clamp(24px,6.4vw,34px);line-height:1.12;color:#FFE7B3}
+.gline{font-size:16.5px;line-height:1.45;color:#F7DFC0}
+.gsoon{font-weight:700;font-size:16px;color:#FFD36B;margin-top:2px}
+.gplay{margin-top:8px;font-size:18px;box-shadow:inset 0 0 0 2px rgba(242,169,27,.85),0 6px 0 rgba(0,0,0,.18);background:linear-gradient(180deg,#E0352A,var(--sindoor))}
+.gamecard:hover .gplay,.gamecard:focus-visible .gplay{filter:brightness(1.08)}
+@media (min-width:760px){.gamecard{grid-template-columns:1.05fr 1fr;align-items:center}.gamecard .gtext{padding:22px 26px}}

@@ -107,7 +107,7 @@ def icon(name):
     return f'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{paths[name]}</svg>'
 
 
-NAV = [('/', 'होम', 'Home'), ('/sweets/', 'मिठाइयाँ', 'Sweets'), ('/cakes/', 'केक', 'Cakes'),
+NAV = [('/', 'होम', 'Home'), ('/sweets/', 'मिठाइयाँ', 'Sweets'), ('/game/', '🎮 गेम', '🎮 Game'), ('/cakes/', 'केक', 'Cakes'),
        ('/products/', 'दूध-दही व सामान', 'Dairy & more'), ('/bulk-dairy/', 'थोक दूध-दही', 'Bulk dairy'),
        ('/wedding/', 'शादी व गिफ्ट', 'Weddings & gifts'),
        ('/contact/', 'संपर्क', 'Contact')]
@@ -422,6 +422,22 @@ def home():
    {pic("shop-front-43", "माँ भगवती मिष्ठान भंडार — ननौरा में हमारी दुकान", "(min-width:900px) 520px, 92vw", lazy=False)}
    <figcaption>{T("📍 हमारी असली दुकान · NH किनारे", "📍 Our real shop · on the NH")}</figcaption>
   </figure>
+ </div>
+</section>
+
+<section class="gamesec" id="game">
+ <div class="wrap">
+  <a class="gamecard" href="/game/">
+   <span class="gpic">{pic("game-golu", "रसगुल्ला रन — गोलू मिठाइयों के साथ दरभंगा की गली में दौड़ता हुआ", "(min-width:900px) 460px, 92vw")}</span>
+   <span class="gtext">
+    <span class="gbadge">🎮 {T("नया · मुफ़्त गेम", "New · free game")}</span>
+    <b class="gtitle">{T("रसगुल्ला रन — गेम खेलिए!", "Rasgulla Run — play the game!")}</b>
+    <span class="gline">{T("माँ भगवती मिष्ठान भंडार की ओर से मुफ़्त गेम 🍬", "A free game from Maa Bhagwati Misthan Bhandar 🍬")}</span>
+    <span class="gline">{T("गोलू के साथ दरभंगा की गलियों में दौड़िए, मिठाइयाँ लूटिए!", "Run through the lanes of Darbhanga with Golu and grab the sweets!")}</span>
+    <span class="gsoon">✨ {T("जल्द ही: खेलिए और दुकान पर इनाम जीतिए!", "Coming soon: play and win treats at our shop!")}</span>
+    <span class="btn btn-main gplay">▶ {T("अभी खेलें", "Play now")}</span>
+   </span>
+  </a>
  </div>
 </section>
 
@@ -1096,7 +1112,7 @@ def main():
         h = add_wa_english(h.replace('CSSV', cssv).replace('JSV', jsv))
         os.makedirs(os.path.dirname(os.path.join(OUT, p)) or OUT, exist_ok=True)
         open(os.path.join(OUT, p), 'w', encoding='utf-8').write(h)
-    urls = ['/', '/sweets/', '/cakes/', '/products/', '/bulk-dairy/', '/wedding/', '/contact/']
+    urls = ['/', '/sweets/', '/cakes/', '/products/', '/bulk-dairy/', '/wedding/', '/contact/', '/game/']
     sm = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + ''.join(
         f'  <url><loc>{SITE}{u}</loc><lastmod>{TODAY}</lastmod></url>\n' for u in urls) + '</urlset>\n'
     open(OUT + '/sitemap.xml', 'w').write(sm)
