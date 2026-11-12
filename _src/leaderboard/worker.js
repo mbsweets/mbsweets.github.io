@@ -2,12 +2,16 @@
 // POST /submit  {pid, name, city, score, dist, secs}
 // GET  /top?scope=city|india|world&city=darbhanga&period=week|all&pid=...
 // POST /admin/remove {key, pid}   (सिर्फ़ मालिक — ADMIN_KEY से)
+// POST /ping  {src, ev:'open'|'game', nd:0|1, nf:0|1}  — कुल खिलाड़ी गिनती (कोई पहचान नहीं, सिर्फ़ गिनती)
+// GET  /count                     — कुल खिलाड़ी (सबके लिए, जैसे मेन्यू में दिखाने को)
+// GET  /stats?key=ADMIN_KEY       — मालिक के लिए पूरा हिसाब (हिंदी पन्ना; &json=1 से JSON)
 const ORIGINS = ['https://mbsweets.github.io', 'http://127.0.0.1:8766', 'http://localhost:8766'];
 const CITIES = ['darbhanga', 'madhubani', 'samastipur', 'sitamarhi', 'muzaffarpur', 'saharsa', 'supaul', 'patna', 'bihar', 'india', 'abroad'];
 const BAD = ['madarchod', 'bhenchod', 'behenchod', 'chutiya', 'bhosdi', 'gandu', 'randi', 'fuck', 'shit', 'bitch', 'मादर', 'बहनचो', 'भेनचो', 'चुतिया', 'भोसड़', 'गांडू', 'रंडी'];
 
 function cors(req) {
   const o = req.headers.get('Origin') || '';
+  if (new URL(req.url).pathname === '/count') return { 'Access-Control-Allow-Origin': '*', 'Vary': 'Origin' }; // कुल गिनती: कहीं से भी पढ़ सकें
   return { 'Access-Control-Allow-Origin': ORIGINS.includes(o) ? o : ORIGINS[0], 'Access-Control-Allow-Methods': 'GET,POST,OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Vary': 'Origin' };
 }
 const json = (req, data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json; charset=utf-8', ...cors(req) } });
@@ -21,6 +25,37 @@ function weekKey(now = Date.now()) {
   const w = Math.ceil(((t - Date.UTC(t.getUTCFullYear(), 0, 1)) / 864e5 + 1) / 7);
   return t.getUTCFullYear() + '-W' + String(w).padStart(2, '0');
 }
+const SRCS = ['web', 'crazygames', 'playstore', 'poki', 'other'];
+const SRC_HI = { web: 'अपनी वेबसाइट', crazygames: 'CrazyGames', playstore: 'Play Store', poki: 'Poki', other: 'दूसरी जगह' };
+const istDay = (now = Date.now()) => new Date(now + 5.5 * 3600e3).toISOString().slice(0, 10);
+
+// मालिक का हिसाब: आज / 7 दिन / 30 दिन / अब तक — कहाँ से, किस देश से
+async function stats(req, env, asJson) {
+  const today = istDay(), d7 = istDay(Date.now() - 6 * 864e5), d30 = istDay(Date.now() - 29 * 864e5);
+  const sum = (where, args) => env.DB.prepare(`SELECT COALESCE(SUM(users),0) AS users, COALESCE(SUM(newp),0) AS newp, COALESCE(SUM(games),0) AS games FROM daily WHERE ${where}`).bind(...args).first();
+  const out = {
+    today: await sum('day=?', [today]), last7: await sum('day>=?', [d7]), last30: await sum('day>=?', [d30]), all: await sum('1=1', []),
+    bySrc: (await env.DB.prepare('SELECT src, SUM(newp) AS players, SUM(games) AS games, SUM(CASE WHEN day>=? THEN users ELSE 0 END) AS users7 FROM daily GROUP BY src ORDER BY players DESC').bind(d7).all()).results,
+    byCountry: (await env.DB.prepare('SELECT country, SUM(users) AS users FROM daily WHERE day>=? GROUP BY country ORDER BY users DESC LIMIT 12').bind(d30).all()).results,
+    days: (await env.DB.prepare('SELECT day, SUM(users) AS users, SUM(newp) AS newp, SUM(games) AS games FROM daily WHERE day>=? GROUP BY day ORDER BY day DESC').bind(istDay(Date.now() - 13 * 864e5)).all()).results,
+  };
+  if (asJson) return json(req, { ok: true, ...out });
+  const n = (v) => Number(v || 0).toLocaleString('en-IN');
+  const row = (a) => `<tr>${a.map((x) => `<td>${x}</td>`).join('')}</tr>`;
+  const card = (t, o) => `<div class="c"><small>${t}</small><b>${n(o.users)}</b><span>खिलाड़ी (उस दौरान)</span><em>${n(o.newp)} नए · ${n(o.games)} गेम</em></div>`;
+  const html = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>रसगुल्ला रन — हिसाब</title>
+<style>body{font:16px system-ui,sans-serif;margin:0;padding:16px;background:#fff6e3;color:#2a1511}h1{font-size:22px;color:#7a111a;margin:0 0 4px}p{margin:0 0 14px;color:#6b4a3a}
+.g{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.c{background:#fff;border:2px solid #2a1511;border-radius:14px;padding:10px}.c small{display:block;font-weight:700;color:#7a111a}
+.c b{display:block;font-size:28px}.c span{font-size:13px}.c em{display:block;font-style:normal;font-size:13px;color:#2e7b47;font-weight:700}
+table{width:100%;border-collapse:collapse;background:#fff;border:2px solid #2a1511;border-radius:12px;margin-top:14px}td,th{padding:7px 8px;border-bottom:1px solid #eee;text-align:left}th{background:#7a111a;color:#fff}</style>
+<h1>🍬 रसगुल्ला रन — खिलाड़ी हिसाब</h1><p>सब जगह मिलाकर (वेबसाइट + गेम पोर्टल + आगे ऐप)। आज: ${today} (भारत समय)</p>
+<div class="g">${card('आज', out.today)}${card('पिछले 7 दिन', out.last7)}${card('पिछले 30 दिन', out.last30)}<div class="c"><small>अब तक कुल</small><b>${n(out.all.newp)}</b><span>अलग-अलग खिलाड़ी</span><em>${n(out.all.games)} गेम खेले गए</em></div></div>
+<table><tr><th>कहाँ से</th><th>कुल खिलाड़ी</th><th>7 दिन में</th><th>गेम</th></tr>${out.bySrc.map((r) => row([SRC_HI[r.src] || r.src, n(r.players), n(r.users7), n(r.games)])).join('')}</table>
+<table><tr><th>देश (30 दिन)</th><th>खिलाड़ी</th></tr>${out.byCountry.map((r) => row([r.country === 'IN' ? '🇮🇳 भारत' : (r.country || '?'), n(r.users)])).join('')}</table>
+<table><tr><th>दिन</th><th>खिलाड़ी</th><th>नए</th><th>गेम</th></tr>${out.days.map((r) => row([r.day, n(r.users), n(r.newp), n(r.games)])).join('')}</table>`;
+  return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
+}
+
 function cleanName(n) {
   n = String(n || '').normalize('NFC').replace(/[<>"'`\\\u0000-\u001f]/g, '').replace(/\s+/g, ' ').trim().slice(0, 16);
   const low = n.toLowerCase().replace(/\s/g, '');
@@ -68,6 +103,31 @@ export default {
           if (mine) { const r = await env.DB.prepare(`SELECT COUNT(*) AS n FROM best WHERE ${where} AND score>?`).bind(...args, mine.score).first(); me = { rank: r.n + 1, score: mine.score }; }
         }
         return json(req, { ok: true, period, rows: rows.map((r) => ({ name: r.name, city: r.city, country: r.country, score: r.score, me: r.pid === pid })), me });
+      }
+      if (url.pathname === '/ping' && req.method === 'POST') { // sendBeacon: text/plain
+        const txt = (await req.text()).slice(0, 300);
+        let b = {}; try { b = JSON.parse(txt); } catch (e) { return json(req, { ok: false }, 400); }
+        const src = SRCS.includes(b.src) ? b.src : 'web';
+        const country = String((req.cf && req.cf.country) || '').slice(0, 2);
+        const day = istDay();
+        const open = b.ev === 'open', game = b.ev === 'game';
+        if (!open && !game) return json(req, { ok: false }, 400);
+        const users = open && b.nd ? 1 : 0, newp = open && b.nf ? 1 : 0, games = game ? 1 : 0;
+        if (users || newp || games) {
+          await env.DB.prepare('INSERT INTO daily (day,src,country,users,newp,games) VALUES (?,?,?,?,?,?) ON CONFLICT(day,src,country) DO UPDATE SET users=users+excluded.users, newp=newp+excluded.newp, games=games+excluded.games')
+            .bind(day, src, country, users, newp, games).run();
+        }
+        return json(req, { ok: true });
+      }
+      if (url.pathname === '/count' && req.method === 'GET') {
+        const r = await env.DB.prepare('SELECT COALESCE(SUM(newp),0) AS players, COALESCE(SUM(games),0) AS games FROM daily').first();
+        const res = json(req, { ok: true, players: r.players, games: r.games });
+        res.headers.set('Cache-Control', 'public, max-age=300');
+        return res;
+      }
+      if (url.pathname === '/stats' && req.method === 'GET') {
+        if (!env.ADMIN_KEY || url.searchParams.get('key') !== env.ADMIN_KEY) return json(req, { ok: false }, 403);
+        return stats(req, env, url.searchParams.get('json') === '1');
       }
       if (url.pathname === '/admin/remove' && req.method === 'POST') {
         const b = await req.json();

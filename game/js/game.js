@@ -15,6 +15,7 @@ import { clamp, lerp, damp, rand, store, storeNum, vibrate, VIB } from './util.j
 import { SETTINGS, loadSettings, Missions, wallet, upTime } from './meta.js';
 import { P, PORTAL } from './platform.js';
 import { MetaUI } from './metaui.js';
+import { countOpen, countGame } from './count.js';
 
 const $ = (s) => document.querySelector(s);
 const GRAV = -36, JUMP_V = 11.6, SHOE_V = 16.2, ROLL_T = 0.62, H_STAND = 1.75, H_ROLL = 0.9, HALF_W = 0.38;
@@ -105,6 +106,7 @@ class Game {
     this.toMenu();
     $('#loading').hidden = true;
     P.loadingStop();
+    countOpen();
     this.clock = new THREE.Clock();
     this.frame();
   }
@@ -606,6 +608,7 @@ class Game {
     $('#overMs').hidden = !ms.gain;
     if (ms.gain) $('#overMs').textContent = T('msGain', ms.gain);
     store('plays', storeNum('plays') + 1);
+    countGame();
     $('#overTitle').textContent = this.cause === 'caught' ? T('caught') : T('crashed');
     $('#overScore').textContent = sc.toLocaleString('en-IN');
     $('#overSweets').textContent = this.got.toLocaleString('en-IN');
