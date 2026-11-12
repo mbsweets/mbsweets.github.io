@@ -38,7 +38,7 @@ export function signMat(map, o = {}) {
   signMats[k] = m;
   return m;
 }
-export const SIGN_EDGE = 0xd3121f; // बैनर की लाल किनारी
+export const SIGN_EDGE = 0xe8b21e; // बैनर की सुनहरी किनारी (रंग B — चटक लाल + सुनहरा)
 
 const tiles = {};
 // atlas का एक हिस्सा (cols×rows में i-वाँ, ऊपर-बाएँ से)
