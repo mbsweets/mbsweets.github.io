@@ -3,7 +3,7 @@
 import { T, LANG } from './i18n.js';
 import { store } from './util.js';
 
-export const LB_URL = ''; // मालिक का Cloudflare Worker पता यहाँ (जैसे https://rasgulla-lb.xxxx.workers.dev)
+export const LB_URL = 'https://rasgulla-lb.pankajgupta800201.workers.dev'; // मालिक का Cloudflare Worker (14 नवंबर 2026, repo mbsweets/rasgulla-lb से अपने-आप deploy)
 
 export const CITIES = [
   ['darbhanga', 'दरभंगा', 'Darbhanga'], ['madhubani', 'मधुबनी', 'Madhubani'], ['samastipur', 'समस्तीपुर', 'Samastipur'],
