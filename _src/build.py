@@ -382,6 +382,19 @@ def home():
     fav = ''.join(sweet_card(SW[k], '(min-width:900px) 220px, 72vw') for k in ['gulabjamun', 'chamcham', 'rasmalai', 'peda', 'laddoo'])
     airport_msg = 'नमस्ते MB Sweets 🙏 मैं दरभंगा एयरपोर्ट जा रहा/रही हूँ। मुझे मिठाई पैक करवानी है:\n• \nमैं लगभग ___ बजे दुकान पर पहुँचूँगा/पहुँचूँगी।'
     body = f'''
+<section class="chhath" data-until="2026-11-16" aria-label="छठ महापर्व की शुभकामनाएँ / Chhath Puja greetings">
+ <div class="wrap chin">
+  <svg class="chsun" viewBox="0 0 120 80" aria-hidden="true"><defs><radialGradient id="chs" cx="50%" cy="60%" r="50%"><stop offset="0" stop-color="#FFE9A0"/><stop offset=".55" stop-color="#FFB52E"/><stop offset="1" stop-color="#E8641C"/></radialGradient></defs><g stroke="#FFD27A" stroke-width="2.4" stroke-linecap="round" opacity=".85"><path d="M60 8v10M30 18l6 8M90 18l-6 8M14 40h10M96 40h10"/></g><path d="M28 56a32 32 0 0 1 64 0z" fill="url(#chs)"/><g stroke="#FFE2A6" stroke-width="2.2" stroke-linecap="round" opacity=".9"><path d="M12 62h96M24 70h72M38 77h44"/></g></svg>
+  <div class="chtext">
+   <small>{T("🌅 छठ महापर्व · 13–16 नवंबर", "🌅 Chhath Mahaparv · 13–16 Nov")}</small>
+   <b>{T("छठ महापर्व की हार्दिक शुभकामनाएँ 🙏", "Warm wishes for Chhath Puja 🙏")}</b>
+   <p>{T("छठी मैया और सूर्य देव की कृपा से आपके घर-परिवार में सुख, समृद्धि और खुशहाली बनी रहे।", "May Chhathi Maiya and Surya Dev bless your family with happiness, health and prosperity.")}</p>
+   <ul class="chdays"><li>{T("नहाय-खाय 13", "Nahay-Khay 13")}</li><li>{T("खरना 14", "Kharna 14")}</li><li>{T("संध्या अर्घ्य 15", "Evening arghya 15")}</li><li>{T("उषा अर्घ्य 16", "Morning arghya 16")}</li></ul>
+   <a class="chgame" href="/game/"><span>🎮</span><span>{T("त्योहार की खुशी में — <b>रसगुल्ला रन</b> खेलिए, रोज़ स्टैम्प भरिए और दुकान पर <b>रसगुल्ला मुफ़्त</b> पाइए!", "Celebrate with <b>Rasgulla Run</b> — play daily, fill stamps and get a <b>free rasgulla</b> at our shop!")}</span><em>▶ {T("खेलें", "Play")}</em></a>
+   <span class="chsign">— {T("माँ भगवती मिष्ठान भंडार परिवार, ननौरा", "Maa Bhagwati Misthan Bhandar family, Nanaura")}</span>
+  </div>
+ </div>
+</section>
 <section class="hero" style="--lotus:url('/assets/img/lotus.svg')">
  <div class="wrap grid">
   <div>

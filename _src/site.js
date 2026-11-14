@@ -215,8 +215,14 @@ function showCurrentPill(){
   var strip=$('.pills'),on=strip&&strip.querySelector('[aria-current=page]');
   if(on&&strip.scrollWidth>strip.clientWidth)strip.scrollLeft=Math.max(0,on.offsetLeft-strip.clientWidth/2+on.offsetWidth/2);
 }
+/* त्योहार वाले हिस्से: data-until (IST तारीख़) के बाद अपने-आप छिपें */
+function applyUntil(){
+  var d=istNow(),k=d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
+  $all('[data-until]').forEach(function(el){if(k>el.getAttribute('data-until'))el.hidden=true;});
+}
 function start(){
   var y=$('#yr');if(y)y.textContent=new Date().getFullYear();
+  applyUntil();
   applyCatalog();applyLang();setupForm();setupDairy();showCurrentPill();
   setInterval(status,60000);
 }
