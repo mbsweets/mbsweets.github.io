@@ -611,7 +611,9 @@ function roofSloped(mg, side, cx, w, h, len, col) {
   mg.add(geo, mat4(cx, h, 0), col);
   for (let z = -len / 2; z <= len / 2; z += 0.9) mg.add(G.box(0.08, 0.06, 0.08), mat4(cx, h + 1.92, z), 0x7a2f1a);
 }
+export const GLOW = { list: null }; // बनाते समय: खंभे/दीये की जगह (रात की चमक के लिए)
 function propLamp(mg, x, z) {
+  if (GLOW.list) GLOW.list.push([x - 0.75 * Math.sign(x), 3.3, z, 0.9]);
   mg.add(G.cyl(0.07, 0.09, 3.6, 8), mat4(x, 1.8, z), 0x3d3d3d);
   mg.add(G.box(0.9, 0.08, 0.08), mat4(x - 0.35 * Math.sign(x), 3.55, z), 0x3d3d3d);
   mg.add(G.cyl(0.18, 0.12, 0.35, 8), mat4(x - 0.75 * Math.sign(x), 3.35, z), C.haldi);

@@ -8,6 +8,7 @@ import { Golu as Golu3D, loadGolu } from './golu3d.js';
 import { World, LANES } from './world.js';
 import { SkyShow } from './skyshow.js';
 import { makeMonkey, animMonkey } from './extra.js';
+import { NightFX } from './jungle.js';
 import { pickCheer } from './cheers.js';
 import { loadWardrobe } from './wardrobe.js';
 import { Leaderboard } from './lb.js';
@@ -45,19 +46,22 @@ const GAME_URL = 'https://mbsweets.github.io/game/';
 const ORDER_URL = 'https://mbsweets.github.io/mb-sweets/order/';
 const FLY_Y = 10.5; // बूस्टर का समय अब meta.js (अपग्रेड) से
 // लेवल — दूरी (मीटर) से; रफ़्तार हर लेवल में बढ़े
-const LEVELS = [0, 300, 800, 1500, 2400];
+const LEVELS = [0, 300, 800, 1500, 2400, 3300, 4700, 6200, 8000];
 const SPEED_PTS = [[0, 13.5], [300, 17], [800, 22.5], [1500, 27.5], [2400, 32], [4000, 36], [6500, 39.5], [9000, 42]];
-// दिन → शाम → रात → भोर (दूरी से, 7600 मीटर का चक्र)
+// दिन → शाम (1400) → रात (2000–2500, लेवल 5 से पहले पूरी) → जंगल रात में → भोर (3900) → दिन (खेत/गाँव) → फिर शाम… हर 6000 मी.
 function timeOfDay(d) {
-  const x = d % 7600, r = (a, b) => clamp((x - a) / (b - a), 0, 1);
-  if (x < 6600) return { eve: r(2400, 3000), night: r(3600, 4200) };
-  const k = 1 - r(6600, 7600); return { eve: k, night: k };
+  const r = (x, a, b) => clamp((x - a) / (b - a), 0, 1);
+  if (d < 3900) return { eve: r(d, 1400, 2000), night: r(d, 2000, 2500) };
+  const x = (d - 3900) % 6000;
+  if (x < 600) { const k = 1 - x / 600; return { eve: k, night: k }; } // भोर
+  if (x < 2900) return { eve: 0, night: 0 };
+  return { eve: r(x, 2900, 3500), night: r(x, 3500, 4000) };
 }
 const TOD = {
   hor: [new THREE.Color(0.93, 0.82, 0.66), new THREE.Color(0.82, 0.48, 0.26), new THREE.Color(0.13, 0.1, 0.2)],
-  sun: [new THREE.Color(0xfff0d8), new THREE.Color(0xffad6a), new THREE.Color(0x8fa6ff)], sunI: [3.0, 2.2, 0.7],
-  sky: [new THREE.Color(0xcfe3ff), new THREE.Color(0xffc9a0), new THREE.Color(0x6a7ac0)], gnd: [new THREE.Color(0x9a7a5a), new THREE.Color(0x8a5a40), new THREE.Color(0x30283a)], hemiI: [0.6, 0.42, 0.7],
-  exp: [1.45, 1.22, 1.5],
+  sun: [new THREE.Color(0xfff0d8), new THREE.Color(0xffad6a), new THREE.Color(0x8fa6ff)], sunI: [3.0, 2.2, 0.5],
+  sky: [new THREE.Color(0xcfe3ff), new THREE.Color(0xffc9a0), new THREE.Color(0x6a7ac0)], gnd: [new THREE.Color(0x9a7a5a), new THREE.Color(0x8a5a40), new THREE.Color(0x30283a)], hemiI: [0.6, 0.42, 0.55],
+  exp: [1.45, 1.22, 1.38],
 };
 const tri = (arr, e, n, out) => out.copy(arr[0]).lerp(arr[1], e).lerp(arr[2], n);
 const trin = (arr, e, n) => (arr[0] + (arr[1] - arr[0]) * e) * (1 - n) + arr[2] * n;
@@ -100,7 +104,9 @@ class Game {
     this.tier = n;
     this.pr = T0.pr;
     r.setPixelRatio(this.pr); this.resize();
+    this.fogBase = T0.fog; this.tod = null; // कोहरा applyTod में (रात में थोड़ा पास)
     this.scene.fog.near = T0.fog[0]; this.scene.fog.far = T0.fog[1];
+    if (this.lamp) this.lamp.visible = n <= 2;
     this.world.viewZ = T0.view;
     if (r.shadowMap.enabled !== T0.sh) {
       r.shadowMap.enabled = T0.sh; this.sun.castShadow = T0.sh;
@@ -180,6 +186,10 @@ class Game {
     sc.add(this.beeGroup);
     this.beeC = new THREE.Vector3(0, 2, 18);
     this.monkey = makeMonkey(); this.monkey.visible = false; sc.add(this.monkey);
+    // रात: लालटेन/खंभों की चमक + जुगनू; गोलू के आगे गरम रोशनी (भारी दर्जों में बंद)
+    this.nfx = new NightFX(sc);
+    this.lamp = new THREE.PointLight(0xffc27a, 0, 22, 1.3); this.lamp.position.set(0, 3.2, -3); sc.add(this.lamp);
+    this.wild = 0;
     this.mk = { st: 'off', t: 0, x: 0, y: 0, z: 4 };
     this.resize();
     window.addEventListener('resize', () => this.resize());
@@ -353,7 +363,7 @@ class Game {
     // जहाँ से आए थे वहाँ (हमारे जोड़े कदम के पीछे); पीछे कुछ न हो (सीधे लिंक से खुला) तो दुकान की वेबसाइट
     const here = location.href;
     try { history.go(-back); } catch (e) { /* */ }
-    setTimeout(() => { if (location.href === here && document.visibilityState === 'visible') location.href = 'https://mbsweets.github.io/'; }, 600);
+    setTimeout(() => { if (location.href === here && document.visibilityState === 'visible') location.href = '../'; }, 600); // /game/ से दुकान की वेबसाइट
   }
   // खेलते समय पूरी स्क्रीन — फ़ोन की नीचे वाली पट्टी (बैक/होम) छिपे, गलती से न दबे. सिर्फ़ अपनी वेबसाइट + टच वाले फ़ोन पर
   goFull() {
@@ -411,6 +421,7 @@ class Game {
     this.samosa.visible = false;
     this.sound.bees(false);
     this.beeC.set(0, 2, 18);
+    this.nightSaid = false; this.wild = 0; this.nfx.update(0, 0, 0, 0, this.world.chunks, this.cam.quaternion);
     if (this.mk) { this.mk.st = 'off'; this.monkey.visible = false; }
     if (this.sound.ctx && !this.sound.playing) this.sound.startMusic();
     if (!PORTAL && store('lang3') == null) $('#langS').hidden = false; // पहली बार: भाषा चुनो (फिर रोज़ का इनाम)
@@ -438,6 +449,7 @@ class Game {
     this.p = { lane: 1, prevLane: 1, x: 0, tx: 0, y: 0, vy: 0, ground: true, roll: 0, rollQ: false, laneT: 9, big: false, stumT: 0, beesT: 0, invT: 0, slowT: 0, air: 0, fly: 0 };
     this.pu = { magnet: 0, shoes: 0, shield: false, thali: 0 };
     this.level = 0; this.samosa.visible = false; this.skyShow.reset();
+    this.nightSaid = false; this.wild = 0; this.nfx.update(0, 0, 0, 0, this.world.chunks, this.cam.quaternion);
     this.rushT = 0; this.meter = 0;
     this.score = 0; this.got = 0; this.combo = 0; this.comboT = 0; this.timeScale = 1; this.slowmo = 0;
     this.speed = 14; this.runT = 0; this.perf = { t: 0, n: 0, sum: 0, done: SETTINGS.gfx !== 'auto' || this.tier >= TIERS.length - 1, prev: 0, miss: 0 };
@@ -650,6 +662,13 @@ class Game {
     }
   }
 
+  // इलाक़ा / रात-भोर का बड़ा बैनर (लेवल वाले की जगह पर)
+  zoneBanner(icon, text) {
+    const el = $('#lvl');
+    el.innerHTML = `<small>${icon}</small><b>${text}</b>`;
+    el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+    this.sound.levelUp(); vibrate(30);
+  }
   levelUp(n) {
     this.level = n;
     this.msBump('level', n + 1, true);
@@ -812,7 +831,7 @@ class Game {
     const ms = this.ms.settle();
     const rs = this.rs || {};
     stats.merge({ runs: 1, dist: Math.floor(this.world.dist), bestDist: Math.floor(this.world.dist), sweets: this.got, bestScore: sc,
-      roof: Math.floor(rs.roof || 0), haat: rs.haat || 0, samosa: rs.samosa || 0, near: rs.near || 0, monkeyEsc: rs.monkeyEsc || 0, rings: rs.rings || 0 });
+      roof: Math.floor(rs.roof || 0), haat: rs.haat || 0, samosa: rs.samosa || 0, near: rs.near || 0, monkeyEsc: rs.monkeyEsc || 0, rings: rs.rings || 0, jungle: Math.floor(rs.jungle || 0) });
     const bd = checkBadges();
     const parts = [];
     if (ms.setDone) parts.push(`🎉 ${T('msSet')} ${ms.setDone.set} ✔ → ×${this.ms.mult}`);
@@ -892,6 +911,9 @@ class Game {
     tri(TOD.sun, eve, night, this.sun.color); this.sun.intensity = trin(TOD.sunI, eve, night);
     tri(TOD.sky, eve, night, this.hemi.color); tri(TOD.gnd, eve, night, this.hemi.groundColor); this.hemi.intensity = trin(TOD.hemiI, eve, night);
     this.renderer.toneMappingExposure = trin(TOD.exp, eve, night);
+    const fb = this.fogBase || [70, 155];
+    this.scene.fog.near = fb[0] * (1 - 0.3 * night); this.scene.fog.far = fb[1] * (1 - 0.18 * night);
+    if (this.lamp) this.lamp.intensity = 22 * night;
     this.scene.environment = this.envs[night > 0.5 ? 2 : eve > 0.5 ? 1 : 0];
     this.world.sweets.setTint(1 - 0.12 * eve * (1 - night) - 0.42 * night);
   }
@@ -998,7 +1020,16 @@ class Game {
     this.comboT -= dt;
     // दुनिया
     this.world.update(dt, dz, this.speed, this.ctx());
-    while (this.world.events.length) { const ev = this.world.events.shift(); if (ev === 'haat' || ev === 'mela') this.sound.levelUp(); else if (ev === 'baraat') this.sound.baraat(); else if (ev === 'rail') this.sound.train(); this.cheer(ev, 1800, -1, true); if (ev === 'haat') this.msBump('haat'); }
+    {
+      const td = this.tod || { eve: 0, night: 0 }, zn = this.world.zone;
+      this.wild = damp(this.wild, zn === 'jungle' ? 1 : zn === 'fields' ? 0.7 : 0, 1.5, dt);
+      this.nfx.update(rdt, dz, td.night, this.wild, this.world.chunks, this.cam.quaternion);
+      this.lamp.position.set(this.p.x, 3.2 + this.p.y, -3);
+      if (td.night > 0.6 && !this.nightSaid) { this.nightSaid = true; this.zoneBanner('🌙', T('zNight')); this.cheer('night', 1700, -1, true); }
+      else if (td.night < 0.2 && this.nightSaid) { this.nightSaid = false; this.zoneBanner('🌅', T('zDawn')); this.cheer('dawn', 1700, -1, true); }
+      if (zn === 'jungle') this.msBump('jungle', dz);
+    }
+    while (this.world.events.length) { const ev = this.world.events.shift(); if (ev === 'haat' || ev === 'mela') this.sound.levelUp(); else if (ev === 'baraat') this.sound.baraat(); else if (ev === 'rail') this.sound.train(); this.cheer(ev, 1800, -1, true); if (ev === 'haat') this.msBump('haat'); const ZB = { jungle: ['🌳', 'zJungle'], fields: ['🌼', 'zFields'], village: ['🏡', 'zVillage'] }; if (ZB[ev]) this.zoneBanner(ZB[ev][0], T(ZB[ev][1])); }
     this.collide();
     this.updateGold(dz);
     this.score += dz * (this.rushT > 0 ? 2 : 1) * this.mult;

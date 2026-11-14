@@ -2,14 +2,26 @@
 import * as THREE from './three.module.min.js';
 import {
   OBST, makePowerup, makeHouse, makeAdWall, makeFlex, makePond, makeTemple, makeStalls, makeShop, makeGate,
-  sweetParts, SWEETS, SKY_SWEETS, CHUNK, ROAD_HALF,
+  sweetParts, SWEETS, SKY_SWEETS, CHUNK, ROAD_HALF, GLOW,
 } from './models.js';
+import { makeJungle, makeFields, JUNGLE_OBST, ZONE_SUB } from './jungle.js';
 import { toon, outlineMat, basic, dotTexture, repeatTex, C, OUTLINES, TEX } from './art.js';
 import { RT, shadows } from './real.js';
 import { makeHaat, makeHaatGate } from './haat.js';
 import { makeMela, makeMelaGate } from './events.js';
 import { makeTrack, makeStation, ROOF, RAMP_L, COACH, GAP } from './rail.js';
 import { rand, randi, pick, chance, weighted, clamp, lerp } from './util.js';
+Object.assign(OBST, JUNGLE_OBST);
+
+// इलाक़ा दूरी से: 2700 तक गाँव; फिर जंगल (1200 मी.) → गाँव → खेत (1100 मी.) → गाँव … हर 6000 मी. का चक्कर, दूसरे चक्कर में क्रम उल्टा
+export function zoneAt(d) {
+  if (d < 2700) return 'village';
+  const x = (d - 2700) % 6000, k = Math.floor((d - 2700) / 6000) % 2;
+  if (x < 1200) return k ? 'fields' : 'jungle';
+  if (x < 1800) return 'village';
+  if (x < 2900) return k ? 'jungle' : 'fields';
+  return 'village';
+}
 
 export const LANE_W = 2.5;
 export const LANES = [-LANE_W, 0, LANE_W];
@@ -251,7 +263,13 @@ export class World {
   prebuild() {
     const mk = (key, fn, n) => {
       this.cPool[key] = [];
-      for (let i = 0; i < n; i++) { const o = fn(i); o.visible = false; o.userData.key = key; if (!o.userData.noShadow) shadows(o, true, true); this.scene.add(o); this.cPool[key].push(o); }
+      for (let i = 0; i < n; i++) {
+        GLOW.list = [];
+        const o = fn(i);
+        if (GLOW.list.length) o.userData.glows = (o.userData.glows || []).concat(GLOW.list);
+        GLOW.list = null;
+        o.visible = false; o.userData.key = key; if (!o.userData.noShadow) shadows(o, true, true); this.scene.add(o); this.cPool[key].push(o);
+      }
     };
     for (const s of [-1, 1]) {
       mk('house' + s, (i) => makeHouse(s, i), 14);
@@ -263,6 +281,8 @@ export class World {
       mk('haat' + s, (i) => makeHaat(s, i), 7);
       mk('mela' + s, (i) => makeMela(s, i), 4);
       if (s < 0) mk('station' + s, (i) => makeStation(s, i), 3);
+      mk('jungle' + s, (i) => makeJungle(s, i), 12);
+      mk('fields' + s, (i) => makeFields(s, i), 12);
     }
     mk('gate', () => makeGate(), 2);
     mk('flex', (i) => makeFlex(i), 4);
@@ -291,7 +311,7 @@ export class World {
     for (const s of ['-1', '1']) { for (const c of this.chunks[s]) this.relChunk(c); this.chunks[s] = []; }
     this.obs = []; this.pups = []; this.gates = [];
     this.sweets.clear(); this.parts.clear();
-    this.dist = 0; this.diff = 0; this.speed = 14;
+    this.dist = 0; this.diff = 0; this.speed = 14; this.zone = 'village';
     this.toNext = 60;
     this.toPu = rand(260, 380);
     this.toSam = rand(800, 1100);
@@ -315,8 +335,13 @@ export class World {
   relChunk(o) { o.visible = false; this.cPool[o.userData.key].push(o); }
   spawnChunk(side) {
     const zc = this.farZ[side] - CHUNK / 2;
+    const zone = zoneAt(this.dist - zc);
     let type;
-    if (side === this.shopSide && this.shopDist >= SHOP_EVERY && this.cPool['shop' + side].length) {
+    if (zone === 'jungle' && this.cPool['jungle' + side].length) {
+      type = 'jungle';
+    } else if (zone === 'fields' && !(side === this.shopSide && this.shopDist >= SHOP_EVERY) && this.cPool['fields' + side].length) {
+      type = this.lastType[side] !== 'pond' && this.cPool['pond' + side].length && chance(0.14) ? 'pond' : 'fields'; // बीच-बीच में मखाना पोखर
+    } else if (side === this.shopSide && this.shopDist >= SHOP_EVERY && this.cPool['shop' + side].length) {
       type = 'shop';
       this.shopDist = 0;
       this.shopSide = -side;
@@ -353,6 +378,8 @@ export class World {
   }
   relObs(e) { e.obj.visible = false; this.oPool[e.type].push(e.obj); }
   addObs(t, lane, z, extra = {}) {
+    const sub = ZONE_SUB[zoneAt(this.dist - z)];
+    if (sub && sub[t] && !extra.vz && !extra.shift && !extra.need) t = sub[t];
     const obj = this.getObs(t);
     const u = obj.userData;
     const e = { obj, type: t, kind: u.kind, lane, x: LANES[lane], z, vz: 0, halfW: u.halfW, halfL: u.halfL, yMin: u.yMin, yMax: u.yMax, px: false, pz: false, dead: false, ...extra };
@@ -361,6 +388,7 @@ export class World {
     if (t === 'thela' || t === 'cans' || t === 'bricks' || t === 'tokri') obj.rotation.y = chance(0.5) ? Math.PI : 0;
     if (t === 'bail') obj.rotation.y = e.vz > 0 ? Math.PI : (chance(0.5) ? Math.PI : 0);
     if (t === 'bhains') obj.rotation.y = chance(0.5) ? 0 : Math.PI;
+    if (t === 'boulder' || t === 'haybale' || t === 'log') obj.rotation.y = chance(0.5) ? 0 : Math.PI;
     if (t === 'band' || t === 'ghodi') obj.rotation.y = Math.PI;
     if (t === 'cow') { obj.rotation.y = e.cross ? 0 : (chance(0.5) ? 0 : Math.PI); }
     obj.position.set(e.x, 0, z);
@@ -633,6 +661,8 @@ export class World {
   update(dt, dz, speed, ctx) {
     this.speed = Math.max(8, speed);
     this.dist += dz;
+    const zn = zoneAt(this.dist);
+    if (zn !== this.zone) { this.zone = zn; this.events.push(zn); } // जंगल / खेत / गाँव — घोषणा
     this.diff = clamp(this.dist / 2400, 0, 1);
     this.shopDist += dz;
     this.toPu -= dz;
@@ -660,7 +690,8 @@ export class World {
     // सड़क के ऊपर बैनर
     // मिथिला हाट (हर ~1.1–1.5 किमी)
     this.toHaat -= dz;
-    if (this.toHaat <= 0 && this.cPool.haatgate.length && this.shopDist > 60 && this.shopDist < SHOP_EVERY - 150) {
+    const vill = this.zone === 'village' && zoneAt(this.dist + 175) === 'village'; // हाट/मेला/रेल/बारात सिर्फ़ गाँव में
+    if (this.toHaat <= 0 && vill && this.cPool.haatgate.length && this.shopDist > 60 && this.shopDist < SHOP_EVERY - 150) {
       this.haatN = { '-1': 6, '1': 6 };
       this.haatObs = 6 * CHUNK + 170;
       const hg = this.getChunk('haatgate');
@@ -672,7 +703,7 @@ export class World {
     this.haatObs = Math.max(0, this.haatObs - dz);
     // मेला (बोनस: रुकावट नहीं, मिठाई ही मिठाई)
     this.toMela -= dz;
-    if (this.toMela <= 0 && this.haatObs <= 0 && this.cPool.melagate.length && this.shopDist > 60 && this.shopDist < SHOP_EVERY - 130) {
+    if (this.toMela <= 0 && vill && this.haatObs <= 0 && this.cPool.melagate.length && this.shopDist > 60 && this.shopDist < SHOP_EVERY - 130) {
       this.melaN = { '-1': 4, '1': 4 };
       this.melaObs = 4 * CHUNK + 150;
       const mgate = this.getChunk('melagate');
@@ -684,7 +715,7 @@ export class World {
     this.melaObs = Math.max(0, this.melaObs - dz);
     // मधुबनी रेलगाड़ी ज़ोन
     this.toRail -= dz;
-    if (this.toRail <= 0 && this.haatObs <= 0 && this.melaObs <= 0 && !this.baraatQ && this.shopDist > 40 && this.shopDist < SHOP_EVERY - 120 && this.tPool.length > 15) {
+    if (this.toRail <= 0 && vill && this.haatObs <= 0 && this.melaObs <= 0 && !this.baraatQ && this.shopDist > 40 && this.shopDist < SHOP_EVERY - 120 && this.tPool.length > 15) {
       const len = 250;
       this.railObs = len; this.stationN = 3;
       for (let z = SPAWN_Z + 12; z > SPAWN_Z - len - 80; z -= 20) { const t = this.tPool.pop(); if (!t) break; t.visible = true; t.position.set(0, 0, z); this.tracks.push(t); }
@@ -695,13 +726,13 @@ export class World {
     for (let i = this.tracks.length - 1; i >= 0; i--) { const t = this.tracks[i]; t.position.z += dz; if (t.position.z > DESPAWN_Z + 12) { t.visible = false; this.tPool.push(t); this.tracks.splice(i, 1); } }
     // बारात
     this.toBaraat -= dz;
-    if (this.toBaraat <= 0 && this.haatObs <= 0 && this.melaObs <= 0) { this.baraatQ = true; this.toBaraat = rand(1500, 2000); }
+    if (this.toBaraat <= 0 && vill && this.haatObs <= 0 && this.melaObs <= 0) { this.baraatQ = true; this.toBaraat = rand(1500, 2000); }
     this.time = (this.time || 0) + dt;
     this.toFlex -= dz;
     if (this.toFlex <= 0) {
       const z = SPAWN_Z - 6;
       const nearGate = this.gates.some((g) => Math.abs(g.position.z - z) < 45);
-      if (!nearGate && this.cPool.flex.length) {
+      if (!nearGate && this.cPool.flex.length && zoneAt(this.dist - z) !== 'jungle') { // जंगल में सड़क पर बैनर नहीं
         const pool = this.cPool.flex, f = pool.splice(randi(0, pool.length - 1), 1)[0];
         f.visible = true; f.position.set(0, 0, z); this.flexes.push(f);
         this.toFlex = rand(170, 260);

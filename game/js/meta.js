@@ -87,6 +87,7 @@ const MT = [
   { id: 'monkeyEsc', min: 3, f: (s) => 1 + s / 8, hi: 'बंदर सँ {n} बेर बचू', en: 'Escape the monkey {n} times' },
   { id: 'samosa', min: 4, f: (s) => 1 + s / 5, hi: 'उड़न समोसा {n} बेर पकड़ू', en: 'Grab {n} flying samosas' },
   { id: 'rings', min: 5, f: (s) => 2 + s / 2, hi: '{n} सोनाक छल्ला पार करू', en: 'Fly through {n} golden rings' },
+  { id: 'jungle', min: 8, f: (s) => Math.min(1100, 300 + 40 * s), hi: 'जंगल मे {n} मीटर दौड़ू', en: 'Run {n} m in the jungle' },
   { id: 'roof', min: 6, f: (s) => 60 + 30 * s, hi: 'रेलगाड़ीक छत पर {n} मीटर दौड़ू', en: 'Run {n} m on train roofs' },
 ];
 // सेट पूरा होने का इनाम: कपड़ा (id) या मिठाई (संख्या)
@@ -162,6 +163,7 @@ export const BADGES = [
   { id: 'near', icon: '😅', hi: 'बाल-बाल 100', en: '100 close calls', t: (s) => s.near >= 100 },
   { id: 'monkey', icon: '🐒', hi: 'बंदर-बाज़', en: 'Monkey Dodger (10 escapes)', t: (s) => s.monkeyEsc >= 10 },
   { id: 'rings', icon: '💍', hi: 'सोनाक छल्ला', en: 'Ring Ace (50 rings)', t: (s) => s.rings >= 50 },
+  { id: 'jungle', icon: '🌳', hi: 'जंगलक राजा', en: 'Jungle King (2 km in the jungle)', t: (s) => s.jungle >= 2000 },
   { id: 'star', icon: '⭐', hi: 'सुपर स्टार', en: 'Superstar (50,000 score)', t: (s) => s.bestScore >= 50000 },
 ];
 export function checkBadges() {

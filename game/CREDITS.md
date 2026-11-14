@@ -10,4 +10,5 @@
 - **Golu character (main)**: 3D model created by the shop owner (`models/golu.bin`, `img/golu.webp`, converted from the owner's `sample.glb`). Made on Hugging Face from the owner's own ChatGPT-generated image; the file name and 1024 px texture match the Microsoft TRELLIS image-to-3D app (model licence: MIT). Bones/skin weights and all animation added in code (`js/golu3d.js`).
 - **Golu fallback**: modelled in code (`js/golu.js`) from a reference image the owner generated for the shop.
 - **Haat, baraat, mela, railway, sky scene, jalebi, samosa** (`js/haat.js`, `js/events.js`, `js/rail.js`, `js/skyshow.js`, `js/models.js`): modelled in code, original. Station board style is generic; no railway logos used.
+- **Jungle and fields zones, night lanterns and fireflies** (`js/jungle.js`): modelled in code, original.
 - **Music and sound effects**: synthesized in code (`js/audio.js`), original.
