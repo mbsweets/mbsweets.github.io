@@ -64,11 +64,27 @@ function cleanName(n) {
   return n;
 }
 
+// पहली बार चलते ही टेबल अपने-आप बनती हैं (schema.sql जैसी) — "Deploy to Cloudflare" बटन से लगाने पर अलग से SQL नहीं चलाना पड़ता
+const SCHEMA = [
+  `CREATE TABLE IF NOT EXISTS best ( pid TEXT NOT NULL, period TEXT NOT NULL, name TEXT NOT NULL, city TEXT NOT NULL, country TEXT NOT NULL DEFAULT '', score INTEGER NOT NULL, dist INTEGER NOT NULL DEFAULT 0, ts INTEGER NOT NULL, PRIMARY KEY (pid, period) )`,
+  `CREATE INDEX IF NOT EXISTS best_period_score ON best (period, score DESC)`,
+  `CREATE INDEX IF NOT EXISTS best_city ON best (period, city, score DESC)`,
+  `CREATE INDEX IF NOT EXISTS best_country ON best (period, country, score DESC)`,
+  `CREATE TABLE IF NOT EXISTS daily ( day TEXT NOT NULL, src TEXT NOT NULL, country TEXT NOT NULL DEFAULT '', users INTEGER NOT NULL DEFAULT 0, newp INTEGER NOT NULL DEFAULT 0, games INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (day, src, country) )`
+];
+let ready = null;
+function ensureSchema(env) {
+  if (!ready) ready = env.DB.batch(SCHEMA.map((s) => env.DB.prepare(s))).catch((e) => { ready = null; throw e; });
+  return ready;
+}
+const adminOk = (env, k) => !!env.ADMIN_KEY && String(env.ADMIN_KEY).length >= 8 && k === env.ADMIN_KEY;
+
 export default {
   async fetch(req, env) {
     if (req.method === 'OPTIONS') return new Response(null, { headers: cors(req) });
     const url = new URL(req.url);
     try {
+      await ensureSchema(env);
       if (url.pathname === '/submit' && req.method === 'POST') {
         const b = await req.json();
         const pid = String(b.pid || '');
@@ -127,12 +143,12 @@ export default {
         return res;
       }
       if (url.pathname === '/stats' && req.method === 'GET') {
-        if (!env.ADMIN_KEY || url.searchParams.get('key') !== env.ADMIN_KEY) return json(req, { ok: false }, 403);
+        if (!adminOk(env, url.searchParams.get('key'))) return json(req, { ok: false }, 403);
         return stats(req, env, url.searchParams.get('json') === '1');
       }
       if (url.pathname === '/admin/remove' && req.method === 'POST') {
         const b = await req.json();
-        if (!env.ADMIN_KEY || b.key !== env.ADMIN_KEY) return json(req, { ok: false }, 403);
+        if (!adminOk(env, b.key)) return json(req, { ok: false }, 403);
         await env.DB.prepare('DELETE FROM best WHERE pid=?').bind(String(b.pid || '')).run();
         return json(req, { ok: true });
       }

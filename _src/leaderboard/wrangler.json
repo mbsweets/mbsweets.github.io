@@ -1,0 +1,14 @@
+{
+  "name": "rasgulla-lb",
+  "main": "worker.js",
+  "compatibility_date": "2025-10-08",
+  "workers_dev": true,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "rasgulla_lb",
+      "database_id": "ccc6ff81-e299-46ba-8aee-4229020bfd4d"
+    }
+  ],
+  "observability": { "enabled": true }
+}
