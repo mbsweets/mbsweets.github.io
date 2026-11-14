@@ -11,6 +11,7 @@ import { makeMonkey, animMonkey } from './extra.js';
 import { pickCheer } from './cheers.js';
 import { loadWardrobe } from './wardrobe.js';
 import { Leaderboard } from './lb.js';
+import { Rewards } from './rewards.js';
 import { Voice } from './voice.js';
 import { Sound } from './audio.js';
 import { T, LANG, setLang, applyLang } from './i18n.js';
@@ -268,6 +269,8 @@ class Game {
     click('#btnLb', () => this.lb.open());
     click('#btnLb2', () => this.lb.open());
     $('#overLb').addEventListener('click', () => this.lb.open());
+    this.rw = new Rewards(this.lb, LOCAL && !PORTAL && this.lb.on); // 🎫 दुकान के इनाम — सिर्फ़ अपनी वेबसाइट पर
+    this.rw.bind();
     for (const el of document.querySelectorAll('.local')) el.hidden = !LOCAL;
     const ol = $('#orderLink'); if (ol) ol.href = ORDER_URL;
   }
@@ -338,6 +341,8 @@ class Game {
     this.cheer('go', 900, -1, true);
     this.clean = 0; this.sweetMark = 100;
     this.mult = this.ms.mult; this.rs = {}; this.hsT = 0;
+    this.runGold = false; this.runMission = false; this.goldObj = null; if (this.goldMesh) this.goldMesh.visible = false;
+    this.goldAt = this.rw && this.rw.goldWanted() ? rand(320, 620) : Infinity; // आज का सोनाक रसगुल्ला (एक दिन में एक बार)
     if (this.headstart) { // उड़न समोसे से शुरुआत
       this.headstart = false;
       if (buyHeadstart()) this.hsT = 0.8;
@@ -526,6 +531,7 @@ class Game {
     if (this.state !== 'play') return;
     if (!abs && this.rs) this.rs[id] = (this.rs[id] || 0) + v; // इस दौड़ के आँकड़े (बैज के लिए)
     for (const m of this.ms.bump(id, v, abs)) {
+      this.runMission = true; // 🎫 आज का "मिशन" स्टैम्प
       setTimeout(() => {
         if (this.state !== 'play') return;
         this.cheer('mission', 1700, -1, true, 'gold', '🎯 ' + this.ms.text(m));
@@ -714,9 +720,47 @@ class Game {
     $('#newBest').hidden = !nb;
     const ln = pickCheer(nb ? 'newBest' : 'over');
     setTimeout(() => { if (this.state === 'over') this.sayPair(ln[0], ln[1], true); }, 500);
-    $('#overLb').hidden = true;
+    $('#overLb').hidden = true; $('#overRw').hidden = true;
+    if (this.goldMesh) this.goldMesh.visible = false; this.goldObj = null;
     this.show(['#over']);
     this.lb.afterGame(sc, this.world.dist, this.runT, this.mult);
+    if (this.rw) this.rw.afterGame({ gold: this.runGold, mission: this.runMission, distM: this.world.dist, score: sc, secs: this.runT, mult: this.mult });
+  }
+
+  // ✨ सोनाक रसगुल्ला — दिन में एक बार, पकड़ने पर दुकान वाले कार्ड पर 1 स्टैम्प (दौड़ ख़त्म होने पर सर्वर को)
+  makeGold() {
+    const grp = new THREE.Group();
+    grp.add(new THREE.Mesh(new THREE.SphereGeometry(0.36, 28, 18), new THREE.MeshStandardMaterial({ color: 0xffd34d, emissive: 0xb07800, emissiveIntensity: 0.7, metalness: 0.8, roughness: 0.22 })));
+    const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d');
+    const gr = x.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(255,232,150,0.95)'); gr.addColorStop(1, 'rgba(255,200,60,0)');
+    x.fillStyle = gr; x.fillRect(0, 0, 64, 64);
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+    sp.scale.set(2.0, 2.0, 1); grp.add(sp);
+    grp.visible = false; this.scene.add(grp);
+    return grp;
+  }
+  updateGold(dz) {
+    if (!this.rw || !this.rw.on || this.state !== 'play') return;
+    const p = this.p;
+    if (!this.goldObj && !this.runGold && this.world.dist >= this.goldAt && p.fly <= 0) {
+      this.goldObj = { x: LANES[Math.floor(Math.random() * 3)], z: -75 };
+      if (!this.goldMesh) this.goldMesh = this.makeGold();
+      this.goldMesh.visible = true;
+    }
+    const g = this.goldObj; if (!g) return;
+    g.z += dz;
+    const t = performance.now() / 1000, gy = this.world.groundAt(g.x, g.z) + 0.85;
+    this.goldMesh.position.set(g.x, gy + Math.sin(t * 3) * 0.12, g.z);
+    this.goldMesh.rotation.y = t * 2.5;
+    const ph = p.roll > 0 ? H_ROLL : H_STAND;
+    if (Math.abs(g.x - p.x) < 0.95 && Math.abs(g.z) < 0.95 && gy > p.y - 0.4 && gy < p.y + ph + 0.4) {
+      this.runGold = true; this.goldObj = null; this.goldMesh.visible = false;
+      this.world.parts.burst(g.x, gy, 0, 0xffd24d, 28, 3.5, 3, 0.8);
+      this.sound.power(); vibrate(40);
+      this.toast(T('rwGoldT'), 1600, 'gold');
+    } else if (g.z > 3) { // छूट गया — थोड़ी देर बाद फिर
+      this.goldObj = null; this.goldMesh.visible = false; this.goldAt = this.world.dist + rand(300, 520);
+    }
   }
 
   // ------------------------------------------------ हर फ़्रेम
@@ -846,6 +890,7 @@ class Game {
     this.world.update(dt, dz, this.speed, this.ctx());
     while (this.world.events.length) { const ev = this.world.events.shift(); if (ev === 'haat' || ev === 'mela') this.sound.levelUp(); else if (ev === 'baraat') this.sound.baraat(); else if (ev === 'rail') this.sound.train(); this.cheer(ev, 1800, -1, true); if (ev === 'haat') this.msBump('haat'); }
     this.collide();
+    this.updateGold(dz);
     this.score += dz * (this.rushT > 0 ? 2 : 1) * this.mult;
     this.msBump('score', Math.floor(this.score), true);
     // बिना टकराए लंबी दौड़ / हर 100 मिठाई पर शाबाशी

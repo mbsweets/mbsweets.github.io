@@ -25,3 +25,26 @@ CREATE TABLE IF NOT EXISTS daily (
   games INTEGER NOT NULL DEFAULT 0,   -- कुल दौड़ (गेम)
   PRIMARY KEY (day, src, country)
 );
+
+-- दुकान के इनाम (14 नवंबर 2026) — स्टैम्प कार्ड + कूपन (Worker ख़ुद भी बना लेता है)
+CREATE TABLE IF NOT EXISTS card (
+  pid TEXT PRIMARY KEY,
+  n INTEGER NOT NULL DEFAULT 0,       -- अभी कार्ड पर कितने स्टैम्प (0–10)
+  day TEXT NOT NULL DEFAULT '',       -- आज (IST)
+  flags INTEGER NOT NULL DEFAULT 0,   -- आज के काम: 1 सुनहरा रसगुल्ला, 2 मिशन, 4 1000 मी.
+  created INTEGER NOT NULL,
+  ts INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS coupon (
+  code TEXT PRIMARY KEY,              -- 'ABC-123'
+  pid TEXT NOT NULL,
+  kind TEXT NOT NULL,                 -- ras / off / top3
+  week TEXT NOT NULL,
+  created INTEGER NOT NULL,
+  expires INTEGER NOT NULL,
+  used INTEGER NOT NULL DEFAULT 0,    -- दुकान पर दिया गया (समय)
+  used_day TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS coupon_pid ON coupon (pid, kind, week);
+CREATE INDEX IF NOT EXISTS coupon_used ON coupon (used_day, kind);
+CREATE TABLE IF NOT EXISTS cfg ( k TEXT PRIMARY KEY, v TEXT NOT NULL );

@@ -5,6 +5,11 @@
 // POST /ping  {src, ev:'open'|'game', nd:0|1, nf:0|1}  — कुल खिलाड़ी गिनती (कोई पहचान नहीं, सिर्फ़ गिनती)
 // GET  /count                     — कुल खिलाड़ी (सबके लिए, जैसे मेन्यू में दिखाने को)
 // GET  /stats?key=ADMIN_KEY       — मालिक के लिए पूरा हिसाब (हिंदी पन्ना; &json=1 से JSON)
+// ---- दुकान के इनाम (सिर्फ़ अपनी वेबसाइट वाला गेम; 14 नवंबर 2026, मालिक: "नुकसान नहीं, कस्टमर का भी फ़ायदा") ----
+// POST /mine   {pid}                         — स्टैम्प कार्ड + कूपन (पहली बार: 2 स्टैम्प मुफ़्त; पिछले हफ़्ते दरभंगा टॉप 3 → 250g कूपन)
+// POST /stamp  {pid, why:'gold'|'mission'|'dist', score, dist, secs}  — दिन में हर काम का 1 स्टैम्प (कुल 3); 10 = 1 रसगुल्ला मुफ़्त (हफ़्ते में 2 तक)
+// POST /reward {pid, score, dist, secs, mult} — एक दौड़ में 20,000+ → ₹200+ मिठाई/नमकीन पर ₹20 छूट (हफ़्ते में 1)
+// POST /coupon/check {key, code} · /coupon/use {key, code} · /coupon/undo {key, code} · /admin/config {key, cap}  — सिर्फ़ बिलिंग ऐप (ADMIN_KEY)
 const ORIGINS = ['https://mbsweets.github.io', 'http://127.0.0.1:8766', 'http://localhost:8766'];
 const CITIES = ['darbhanga', 'madhubani', 'samastipur', 'sitamarhi', 'muzaffarpur', 'saharsa', 'supaul', 'patna', 'bihar', 'india', 'abroad'];
 const BAD = ['madarchod', 'bhenchod', 'behenchod', 'chutiya', 'bhosdi', 'gandu', 'randi', 'fuck', 'shit', 'bitch', 'मादर', 'बहनचो', 'भेनचो', 'चुतिया', 'भोसड़', 'गांडू', 'रंडी'];
@@ -38,6 +43,10 @@ async function stats(req, env, asJson) {
     bySrc: (await env.DB.prepare('SELECT src, SUM(newp) AS players, SUM(games) AS games, SUM(CASE WHEN day>=? THEN users ELSE 0 END) AS users7 FROM daily GROUP BY src ORDER BY players DESC').bind(d7).all()).results,
     byCountry: (await env.DB.prepare('SELECT country, SUM(users) AS users FROM daily WHERE day>=? GROUP BY country ORDER BY users DESC LIMIT 12').bind(d30).all()).results,
     days: (await env.DB.prepare('SELECT day, SUM(users) AS users, SUM(newp) AS newp, SUM(games) AS games FROM daily WHERE day>=? GROUP BY day ORDER BY day DESC').bind(istDay(Date.now() - 13 * 864e5)).all()).results,
+    coupons: (await env.DB.prepare('SELECT kind, COUNT(*) AS made, SUM(CASE WHEN used>0 THEN 1 ELSE 0 END) AS used FROM coupon WHERE week=? GROUP BY kind').bind(weekKey()).all()).results,
+    rasToday: (await env.DB.prepare("SELECT COUNT(*) AS n FROM coupon WHERE kind='ras' AND used_day=?").bind(today).first()).n,
+    cap: await getCap(env),
+    cards: (await env.DB.prepare('SELECT COUNT(*) AS n FROM card').first()).n,
   };
   if (asJson) return json(req, { ok: true, ...out });
   const n = (v) => Number(v || 0).toLocaleString('en-IN');
@@ -52,7 +61,9 @@ table{width:100%;border-collapse:collapse;background:#fff;border:2px solid #2a15
 <div class="g">${card('आज', out.today)}${card('पिछले 7 दिन', out.last7)}${card('पिछले 30 दिन', out.last30)}<div class="c"><small>अब तक कुल</small><b>${n(out.all.newp)}</b><span>अलग-अलग खिलाड़ी</span><em>${n(out.all.games)} गेम खेले गए</em></div></div>
 <table><tr><th>कहाँ से</th><th>कुल खिलाड़ी</th><th>7 दिन में</th><th>गेम</th></tr>${out.bySrc.map((r) => row([SRC_HI[r.src] || r.src, n(r.players), n(r.users7), n(r.games)])).join('')}</table>
 <table><tr><th>देश (30 दिन)</th><th>खिलाड़ी</th></tr>${out.byCountry.map((r) => row([r.country === 'IN' ? '🇮🇳 भारत' : (r.country || '?'), n(r.users)])).join('')}</table>
-<table><tr><th>दिन</th><th>खिलाड़ी</th><th>नए</th><th>गेम</th></tr>${out.days.map((r) => row([r.day, n(r.users), n(r.newp), n(r.games)])).join('')}</table>`;
+<table><tr><th>दिन</th><th>खिलाड़ी</th><th>नए</th><th>गेम</th></tr>${out.days.map((r) => row([r.day, n(r.users), n(r.newp), n(r.games)])).join('')}</table>
+<table><tr><th>🎮 दुकान इनाम (इस हफ़्ते)</th><th>बने</th><th>दुकान पर दिए</th></tr>${['ras', 'off', 'top3'].map((k) => { const r = out.coupons.find((x) => x.kind === k) || {}; return row([KIND_HI[k], n(r.made), n(r.used)]); }).join('')}
+<tr><td>आज दिए मुफ़्त रसगुल्ले</td><td colspan="2"><b>${n(out.rasToday)}</b> / ${n(out.cap)} (रोज़ की सीमा)</td></tr><tr><td>स्टैम्प कार्ड वाले खिलाड़ी</td><td colspan="2">${n(out.cards)}</td></tr></table>`;
   return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
 }
 
@@ -70,7 +81,12 @@ const SCHEMA = [
   `CREATE INDEX IF NOT EXISTS best_period_score ON best (period, score DESC)`,
   `CREATE INDEX IF NOT EXISTS best_city ON best (period, city, score DESC)`,
   `CREATE INDEX IF NOT EXISTS best_country ON best (period, country, score DESC)`,
-  `CREATE TABLE IF NOT EXISTS daily ( day TEXT NOT NULL, src TEXT NOT NULL, country TEXT NOT NULL DEFAULT '', users INTEGER NOT NULL DEFAULT 0, newp INTEGER NOT NULL DEFAULT 0, games INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (day, src, country) )`
+  `CREATE TABLE IF NOT EXISTS daily ( day TEXT NOT NULL, src TEXT NOT NULL, country TEXT NOT NULL DEFAULT '', users INTEGER NOT NULL DEFAULT 0, newp INTEGER NOT NULL DEFAULT 0, games INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (day, src, country) )`,
+  `CREATE TABLE IF NOT EXISTS card ( pid TEXT PRIMARY KEY, n INTEGER NOT NULL DEFAULT 0, day TEXT NOT NULL DEFAULT '', flags INTEGER NOT NULL DEFAULT 0, created INTEGER NOT NULL, ts INTEGER NOT NULL DEFAULT 0 )`,
+  `CREATE TABLE IF NOT EXISTS coupon ( code TEXT PRIMARY KEY, pid TEXT NOT NULL, kind TEXT NOT NULL, week TEXT NOT NULL, created INTEGER NOT NULL, expires INTEGER NOT NULL, used INTEGER NOT NULL DEFAULT 0, used_day TEXT NOT NULL DEFAULT '' )`,
+  `CREATE INDEX IF NOT EXISTS coupon_pid ON coupon (pid, kind, week)`,
+  `CREATE INDEX IF NOT EXISTS coupon_used ON coupon (used_day, kind)`,
+  `CREATE TABLE IF NOT EXISTS cfg ( k TEXT PRIMARY KEY, v TEXT NOT NULL )`
 ];
 let ready = null;
 function ensureSchema(env) {
@@ -78,6 +94,83 @@ function ensureSchema(env) {
   return ready;
 }
 const adminOk = (env, k) => !!env.ADMIN_KEY && String(env.ADMIN_KEY).length >= 8 && k === env.ADMIN_KEY;
+
+// ---------------- दुकान के इनाम ----------------
+const RW = {
+  need: 10, bonus: 2, perDay: 3,          // 10 स्टैम्प = 1 रसगुल्ला; शुरू में 2 मुफ़्त; दिन में 3 तक (सुनहरा रसगुल्ला + मिशन + 1000 मी.)
+  rasWeek: 2,                              // एक मोबाइल को हफ़्ते में ज़्यादा से ज़्यादा 2 मुफ़्त रसगुल्ले (मालिक)
+  capDefault: 20,                          // पूरी दुकान से दिन में ज़्यादा से ज़्यादा (बिलिंग ऐप से बदलें)
+  offScore: 20000, offMin: 200, offAmt: 20, // एक दौड़ में 20,000+ → ₹200+ मिठाई/नमकीन पर ₹20 छूट, हफ़्ते में 1
+  topGram: 250, days: 7,                   // दरभंगा हफ़्ते के टॉप 3 → 250 ग्राम; हर कूपन 7 दिन
+};
+const WHY = { gold: 1, mission: 2, dist: 4 };
+const KIND_HI = { ras: '🍬 1 रसगुल्ला मुफ़्त', off: `💰 ₹${RW.offMin}+ मिठाई/नमकीन पर ₹${RW.offAmt} छूट`, top3: `🏆 ${RW.topGram} ग्राम मिठाई (दरभंगा टॉप 3)` };
+const CODE_AB = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+function newCode() {
+  const a = new Uint8Array(6); crypto.getRandomValues(a);
+  const s = Array.from(a, (x) => CODE_AB[x % CODE_AB.length]).join('');
+  return s.slice(0, 3) + '-' + s.slice(3);
+}
+const cleanCode = (c) => { const s = String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/O/g, '0').replace(/[IL]/g, '1'); return s.length === 6 ? s.slice(0, 3) + '-' + s.slice(3) : ''; };
+const okPid = (p) => /^[a-z0-9]{12,40}$/.test(String(p || ''));
+const plausible = (b) => { const score = Math.floor(+b.score || 0), dist = Math.floor(+b.dist || 0), secs = +b.secs || 0, mult = Math.max(1, Math.min(31, Math.floor(+b.mult || 1))); return secs >= 3 && dist <= secs * 46 + 60 && score <= (secs * 560 + 2500) * mult; };
+async function getCap(env) { const r = await env.DB.prepare("SELECT v FROM cfg WHERE k='cap'").first(); const v = r ? parseInt(r.v, 10) : NaN; return Number.isFinite(v) ? v : RW.capDefault; }
+async function issue(env, pid, kind, week, now) {
+  for (let i = 0; i < 5; i++) {
+    const code = newCode();
+    try {
+      await env.DB.prepare('INSERT INTO coupon (code,pid,kind,week,created,expires) VALUES (?,?,?,?,?,?)').bind(code, pid, kind, week, now, now + RW.days * 864e5).run();
+      return { code, kind, label: KIND_HI[kind], expires: now + RW.days * 864e5, used: 0 };
+    } catch (e) { /* कोड टकराया — फिर */ }
+  }
+  throw new Error('code');
+}
+const weekCount = async (env, pid, kind, wk) => (await env.DB.prepare('SELECT COUNT(*) AS n FROM coupon WHERE pid=? AND kind=? AND week=?').bind(pid, kind, wk).first()).n;
+async function loadCard(env, pid, now) {
+  let c = await env.DB.prepare('SELECT * FROM card WHERE pid=?').bind(pid).first();
+  if (!c) {
+    await env.DB.prepare('INSERT OR IGNORE INTO card (pid,n,day,flags,created,ts) VALUES (?,?,?,?,?,?)').bind(pid, RW.bonus, '', 0, now, 0).run();
+    c = { pid, n: RW.bonus, day: '', flags: 0, created: now, ts: 0, fresh: true };
+  }
+  if (c.day !== istDay(now)) { c.day = istDay(now); c.flags = 0; }
+  return c;
+}
+// भरा कार्ड → रसगुल्ला कूपन (हफ़्ते की सीमा बची हो तो)
+async function maybeRas(env, c, now) {
+  if (c.n < RW.need) return null;
+  const wk = weekKey(now);
+  if (await weekCount(env, c.pid, 'ras', wk) >= RW.rasWeek) return null;
+  const cp = await issue(env, c.pid, 'ras', wk, now); c.n = 0; return cp;
+}
+async function saveCard(env, c, now) { await env.DB.prepare('UPDATE card SET n=?, day=?, flags=?, ts=? WHERE pid=?').bind(c.n, c.day, c.flags, now, c.pid).run(); }
+async function mine(env, pid, now) {
+  const wk = weekKey(now), out = { got: [] };
+  const c = await loadCard(env, pid, now);
+  const r = await maybeRas(env, c, now); if (r) out.got.push(r);
+  await saveCard(env, c, c.ts || 0);
+  // पिछले हफ़्ते दरभंगा के टॉप 3?
+  const lastWk = weekKey(now - 7 * 864e5);
+  const top = (await env.DB.prepare("SELECT pid FROM best WHERE period=? AND city='darbhanga' ORDER BY score DESC, ts ASC LIMIT 3").bind(lastWk).all()).results || [];
+  if (top.some((x) => x.pid === pid) && !(await weekCount(env, pid, 'top3', lastWk))) out.got.push(await issue(env, pid, 'top3', lastWk, now));
+  const coupons = ((await env.DB.prepare('SELECT code,kind,expires,used FROM coupon WHERE pid=? AND (used=0 AND expires>? OR used>?) ORDER BY created DESC LIMIT 12').bind(pid, now, now - 2 * 864e5).all()).results || [])
+    .map((x) => ({ ...x, label: KIND_HI[x.kind] || x.kind }));
+  return {
+    ok: true, n: c.n, need: RW.need, perDay: RW.perDay, fresh: !!c.fresh,
+    today: { gold: !!(c.flags & 1), mission: !!(c.flags & 2), dist: !!(c.flags & 4) },
+    rasWeek: await weekCount(env, pid, 'ras', wk), rasWeekMax: RW.rasWeek,
+    offWeek: (await weekCount(env, pid, 'off', wk)) > 0, off: { score: RW.offScore, min: RW.offMin, amt: RW.offAmt },
+    coupons, got: out.got, week: wk,
+  };
+}
+async function couponInfo(env, code, now) {
+  const c = await env.DB.prepare('SELECT * FROM coupon WHERE code=?').bind(code).first();
+  const today = istDay(now), cap = await getCap(env);
+  const rasToday = (await env.DB.prepare("SELECT COUNT(*) AS n FROM coupon WHERE kind='ras' AND used_day=?").bind(today).first()).n;
+  if (!c) return { ok: true, status: 'nf', rasToday, cap };
+  const status = c.used ? 'used' : (c.expires < now ? 'expired' : 'ok');
+  return { ok: true, status, code: c.code, kind: c.kind, label: KIND_HI[c.kind] || c.kind, expires: c.expires, used: c.used, created: c.created, rasToday, cap,
+    off: c.kind === 'off' ? { min: RW.offMin, amt: RW.offAmt } : null, gram: c.kind === 'top3' ? RW.topGram : null };
+}
 
 export default {
   async fetch(req, env) {
@@ -151,6 +244,64 @@ export default {
         if (!adminOk(env, b.key)) return json(req, { ok: false }, 403);
         await env.DB.prepare('DELETE FROM best WHERE pid=?').bind(String(b.pid || '')).run();
         return json(req, { ok: true });
+      }
+      // ---- इनाम: खिलाड़ी ----
+      if (url.pathname === '/mine' && req.method === 'POST') {
+        const b = await req.json();
+        if (!okPid(b.pid)) return json(req, { ok: false, err: 'pid' }, 400);
+        return json(req, await mine(env, b.pid, Date.now()));
+      }
+      if (url.pathname === '/stamp' && req.method === 'POST') {
+        const b = await req.json(), now = Date.now();
+        if (!okPid(b.pid) || !WHY[b.why]) return json(req, { ok: false, err: 'bad' }, 400);
+        if (!plausible(b) || (b.why === 'dist' && Math.floor(+b.dist || 0) < 1000)) return json(req, { ok: false, err: 'check' }, 400);
+        const c = await loadCard(env, b.pid, now);
+        if (c.flags & WHY[b.why]) return json(req, { ok: true, dup: true, n: c.n, need: RW.need });
+        c.flags |= WHY[b.why];
+        const wkFull = c.n >= RW.need;
+        if (!wkFull) c.n = Math.min(RW.need, c.n + 1);
+        const cp = await maybeRas(env, c, now);
+        await saveCard(env, c, now);
+        return json(req, { ok: true, n: c.n, need: RW.need, added: !wkFull, coupon: cp, full: c.n >= RW.need && !cp });
+      }
+      if (url.pathname === '/reward' && req.method === 'POST') {
+        const b = await req.json(), now = Date.now();
+        if (!okPid(b.pid)) return json(req, { ok: false, err: 'pid' }, 400);
+        if (Math.floor(+b.score || 0) < RW.offScore || !plausible(b)) return json(req, { ok: false, err: 'check' }, 400);
+        const wk = weekKey(now);
+        if (await weekCount(env, b.pid, 'off', wk)) return json(req, { ok: true, already: true });
+        return json(req, { ok: true, coupon: await issue(env, b.pid, 'off', wk, now) });
+      }
+      // ---- इनाम: दुकान (बिलिंग ऐप, ADMIN_KEY) ----
+      if (url.pathname.startsWith('/coupon/') && req.method === 'POST') {
+        const b = await req.json(), now = Date.now();
+        if (!adminOk(env, b.key)) return json(req, { ok: false, err: 'key' }, 403);
+        const code = cleanCode(b.code);
+        if (!code) return json(req, { ok: false, err: 'code' }, 400);
+        const info = await couponInfo(env, code, now);
+        if (url.pathname === '/coupon/check') return json(req, info);
+        if (url.pathname === '/coupon/use') {
+          if (info.status !== 'ok') return json(req, { ...info, ok: false, err: info.status });
+          if (info.kind === 'ras' && info.rasToday >= info.cap) return json(req, { ...info, ok: false, err: 'cap' });
+          const r = await env.DB.prepare('UPDATE coupon SET used=?, used_day=? WHERE code=? AND used=0').bind(now, istDay(now), code).run();
+          if (r && r.meta && r.meta.changes === 0) return json(req, { ...info, ok: false, err: 'used' });
+          return json(req, { ...(await couponInfo(env, code, now)), ok: true });
+        }
+        if (url.pathname === '/coupon/undo') { // गलती से दबा — उसी दिन वापस
+          if (info.status !== 'used' || istDay(info.used) !== istDay(now)) return json(req, { ...info, ok: false, err: 'undo' });
+          await env.DB.prepare("UPDATE coupon SET used=0, used_day='' WHERE code=?").bind(code).run();
+          return json(req, { ...(await couponInfo(env, code, now)), ok: true });
+        }
+        return json(req, { ok: false }, 404);
+      }
+      if (url.pathname === '/admin/config' && req.method === 'POST') {
+        const b = await req.json();
+        if (!adminOk(env, b.key)) return json(req, { ok: false, err: 'key' }, 403);
+        if (b.cap != null) { const cap = Math.max(0, Math.min(500, Math.floor(+b.cap || 0))); await env.DB.prepare("INSERT INTO cfg (k,v) VALUES ('cap',?) ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(String(cap)).run(); }
+        const today = istDay(), wk = weekKey();
+        const rasToday = (await env.DB.prepare("SELECT COUNT(*) AS n FROM coupon WHERE kind='ras' AND used_day=?").bind(today).first()).n;
+        const week = (await env.DB.prepare('SELECT kind, COUNT(*) AS made, SUM(CASE WHEN used>0 THEN 1 ELSE 0 END) AS used FROM coupon WHERE week=? GROUP BY kind').bind(wk).all()).results;
+        return json(req, { ok: true, cap: await getCap(env), rasToday, week, rules: RW });
       }
       return json(req, { ok: true, app: 'rasgulla-run-leaderboard' });
     } catch (e) {

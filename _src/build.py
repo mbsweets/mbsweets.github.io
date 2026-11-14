@@ -431,10 +431,10 @@ def home():
    <span class="gpic">{pic("game-golu", "रसगुल्ला रन — गोलू मिठाइयों के साथ दरभंगा की गली में दौड़ता हुआ", "(min-width:900px) 460px, 92vw")}</span>
    <span class="gtext">
     <span class="gbadge">🎮 {T("नया · मुफ़्त गेम", "New · free game")}</span>
-    <b class="gtitle">{T("रसगुल्ला रन — गेम खेलिए!", "Rasgulla Run — play the game!")}</b>
+    <b class="gtitle">{T("रसगुल्ला रन — खेलिए और जीतिए!", "Rasgulla Run — play and win!")}</b>
     <span class="gline">{T("माँ भगवती मिष्ठान भंडार की ओर से मुफ़्त गेम 🍬", "A free game from Maa Bhagwati Misthan Bhandar 🍬")}</span>
     <span class="gline">{T("गोलू के साथ दरभंगा की गलियों में दौड़िए, मिठाइयाँ लूटिए!", "Run through the lanes of Darbhanga with Golu and grab the sweets!")}</span>
-    <span class="gsoon">✨ {T("जल्द ही: खेलिए और दुकान पर इनाम जीतिए!", "Coming soon: play and win treats at our shop!")}</span>
+    <span class="gsoon">🎫 {T("रोज़ खेलिए, स्टैम्प भरिए — दुकान पर रसगुल्ला मुफ़्त! (10 स्टैम्प = 1 रसगुल्ला, कुछ ख़रीदना ज़रूरी नहीं)", "Play daily, fill stamps — a FREE rasgulla at our shop! (10 stamps = 1 rasgulla, no purchase needed)")}</span>
     <span class="btn btn-main gplay">▶ {T("अभी खेलें", "Play now")}</span>
    </span>
   </a>

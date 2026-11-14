@@ -70,7 +70,7 @@ def main():
         t = (out / rel).read_text(encoding='utf-8')
         for m in re.finditer(r'https?://[^\s\'"`)<]+', t):
             u = m.group(0)
-            if u.startswith(SDK) or 'xxxx.workers.dev' in u:
+            if u.startswith(SDK) or 'xxxx.workers.dev' in u or u.startswith('https://rasgulla-lb.'):  # अपना Cloudflare (सिर्फ़ खिलाड़ी गिनती; पोर्टल पर लीडरबोर्ड/इनाम बंद)
                 continue
             bad.append(f'{rel}: {u}')
     if bad:
