@@ -11,7 +11,8 @@ export const CITIES = [
   ['supaul', 'सुपौल', 'Supaul'], ['patna', 'पटना', 'Patna'], ['bihar', 'बिहार (दोसर शहर)', 'Bihar (other)'],
   ['india', 'भारत (दोसर राज्य)', 'India (other)'], ['abroad', 'विदेश', 'Outside India'],
 ];
-const cityName = (k) => { const c = CITIES.find((x) => x[0] === k) || CITIES[CITIES.length - 1]; return LANG === 'hi' ? c[1] : c[2]; };
+const hiCity = (t) => (LANG === 'hi' ? t.replace('दोसर शहर', 'दूसरा शहर').replace('दोसर राज्य', 'दूसरा राज्य') : t);
+const cityName = (k) => { const c = CITIES.find((x) => x[0] === k) || CITIES[CITIES.length - 1]; return LANG === 'en' ? c[2] : hiCity(c[1]); };
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -53,7 +54,7 @@ export class Leaderboard {
     $('#lbSave').addEventListener('click', () => this.saveProfile());
     $('#lbEdit').addEventListener('click', () => this.showForm());
     const sel = $('#lbCity');
-    sel.innerHTML = CITIES.map((c) => `<option value="${c[0]}">${LANG === 'hi' ? c[1] : c[2]}</option>`).join('');
+    sel.innerHTML = CITIES.map((c) => `<option value="${c[0]}">${LANG === 'en' ? c[2] : hiCity(c[1])}</option>`).join('');
   }
   open() {
     $('#lbS').hidden = false;

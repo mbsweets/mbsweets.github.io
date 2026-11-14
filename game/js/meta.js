@@ -1,5 +1,5 @@
 // मिशन, रोज़ का इनाम, अपग्रेड, सेटिंग्स — सब फ़ोन में (localStorage, rr-*)
-import { LANG } from './i18n.js';
+import { LANG, L } from './i18n.js';
 import { store, storeNum } from './util.js';
 
 const J = (k, d) => { try { const v = store(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
@@ -112,7 +112,7 @@ export class Missions {
   get set() { return this.st.set; }
   get mult() { return 1 + Math.min(MAX_SET, this.st.done); }
   get reward() { return SET_REWARD[Math.min(this.st.set, MAX_SET)]; }
-  text(m) { const t = MT.find((x) => x.id === m.id); return (LANG === 'hi' ? t.hi : t.en).replace('{n}', m.n.toLocaleString('en-IN')); }
+  text(m) { const t = MT.find((x) => x.id === m.id); return L(t).replace('{n}', m.n.toLocaleString('en-IN')); }
   mReward() { return 40 + 10 * Math.min(this.st.set, 30); } // हर मिशन की मिठाई
   startRun() { this.run = {}; this.justDone = []; }
   bump(id, v = 1, absolute = false) {

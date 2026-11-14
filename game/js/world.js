@@ -196,6 +196,7 @@ export class World {
     this.parts = new Particles(scene);
     this.obs = []; this.pups = []; this.gates = []; this.flexes = []; this.events = [];
     this.oPool = {}; this.pPool = {};
+    this.viewZ = -999; // ग्राफ़िक्स दर्जा तय करता है
     this.chunks = { '-1': [], '1': [] };
     this.cPool = {};
     this.buildRoad();
@@ -644,7 +645,7 @@ export class World {
     // मकान
     for (const s of [-1, 1]) {
       const arr = this.chunks[s];
-      for (const c of arr) c.position.z += dz;
+      for (const c of arr) { c.position.z += dz; c.visible = c.position.z + CHUNK / 2 > this.viewZ; } // हल्के दर्जे में दूर के मकान नहीं बनाओ (कोहरे में छिपे ही हैं)
       while (arr.length && arr[0].position.z - CHUNK / 2 > DESPAWN_Z) this.relChunk(arr.shift());
       this.farZ[s] += dz;
       while (this.farZ[s] > SPAWN_Z - 20) this.spawnChunk(s);

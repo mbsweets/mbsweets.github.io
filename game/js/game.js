@@ -14,7 +14,7 @@ import { Leaderboard } from './lb.js';
 import { Rewards } from './rewards.js';
 import { Voice } from './voice.js';
 import { Sound } from './audio.js';
-import { T, LANG, setLang, applyLang } from './i18n.js';
+import { T, LANG, setLang, applyLang, L } from './i18n.js';
 import { clamp, lerp, damp, rand, store, storeNum, vibrate, VIB } from './util.js';
 import { SETTINGS, loadSettings, Missions, wallet, upTime, wardrobe, stats, checkBadges, buyHeadstart, HEADSTART_COST } from './meta.js';
 import { P, PORTAL } from './platform.js';
@@ -22,6 +22,22 @@ import { MetaUI } from './metaui.js';
 import { countOpen, countGame } from './count.js';
 
 const $ = (s) => document.querySelector(s);
+// ग्राफ़िक्स के दर्जे (0 = सबसे बढ़िया). ऑटो: पूरी दौड़ में हर 2 सेकंड रफ़्तार देखो, धीमा हो तो एक दर्जा नीचे; फ़ोन याद रखे
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+const TIERS = [
+  { pr: DPR, sh: true, fog: [70, 155], view: -175 },
+  { pr: Math.min(DPR, 1.5), sh: true, fog: [70, 155], view: -175 },
+  { pr: Math.min(DPR, 1.25), sh: false, fog: [66, 150], view: -165 },
+  { pr: 1, sh: false, fog: [52, 128], view: -132 },
+  { pr: Math.min(DPR, 1) * 0.8, sh: false, fog: [44, 112], view: -116 },
+];
+// कम RAM वाले फ़ोन पहले से हल्के दर्जे से (navigator.deviceMemory: 0.5/1/2/4/8 GB)
+function startTier() {
+  const saved = parseInt(store('gfxTier'), 10);
+  if (saved >= 0 && saved < TIERS.length) return saved;
+  const m = navigator.deviceMemory || 8, c = navigator.hardwareConcurrency || 8;
+  return m <= 2 ? 3 : m <= 3 ? 2 : (m <= 4 || c <= 4) ? 1 : 0;
+}
 const GRAV = -36, JUMP_V = 11.6, SHOE_V = 16.2, ROLL_T = 0.62, H_STAND = 1.75, H_ROLL = 0.9, HALF_W = 0.38;
 const REVIVE_COST = 300; // मिठाइ दय आगू खेलू
 const LOCAL = !PORTAL && /mbsweets\.github\.io$|^127\.0\.0\.1$|^localhost$/.test(location.hostname) || /[?&]shop=1/.test(location.search);
@@ -73,18 +89,24 @@ class Game {
     P.watchMute((m) => this.sound.setBlock('portal', m));
   }
   applySettings() { this.sound.setMusic(SETTINGS.music); VIB.on = SETTINGS.vib; if (!SETTINGS.voice && this.voice) this.voice.stop(); }
-  // ग्राफ़िक्स: कम = हल्का (परछाईं बंद), ऑटो = फ़ोन देखकर, बेसी = पूरा
+  // ग्राफ़िक्स: कम = हल्का दर्जा 3, बेसी = 0, ऑटो = फ़ोन देखकर (दौड़ते-दौड़ते घटता भी है)
   applyGfx() {
-    const q = SETTINGS.gfx, r = this.renderer; if (!r) return;
-    this.pr = q === 'low' ? 1 : Math.min(window.devicePixelRatio || 1, 2);
+    const q = SETTINGS.gfx; if (!this.renderer) return;
+    this.setTier(q === 'low' ? 3 : q === 'high' ? 0 : startTier());
+    this.perf = { t: 0, n: 0, sum: 0, done: q !== 'auto', prev: 0, miss: 0 };
+  }
+  setTier(n) {
+    const T0 = TIERS[n], r = this.renderer;
+    this.tier = n;
+    this.pr = T0.pr;
     r.setPixelRatio(this.pr); this.resize();
-    const sh = q !== 'low';
-    if (r.shadowMap.enabled !== sh) {
-      r.shadowMap.enabled = sh; this.sun.castShadow = sh;
-      this.golu.shadow.material.opacity = sh ? 0.16 : 0.28;
+    this.scene.fog.near = T0.fog[0]; this.scene.fog.far = T0.fog[1];
+    this.world.viewZ = T0.view;
+    if (r.shadowMap.enabled !== T0.sh) {
+      r.shadowMap.enabled = T0.sh; this.sun.castShadow = T0.sh;
+      this.golu.shadow.material.opacity = T0.sh ? 0.16 : 0.28;
       this.scene.traverse((o) => { if (o.material) for (const m of [].concat(o.material)) m.needsUpdate = true; });
     }
-    this.perf = { t: 0, n: 0, sum: 0, done: q !== 'auto' };
   }
 
   async boot() {
@@ -111,7 +133,8 @@ class Game {
 
   setup() {
     const canvas = $('#c');
-    const r = this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+    // फ़ोन (घनी स्क्रीन) पर MSAA बहुत भारी और फ़ायदा कम — सिर्फ़ कंप्यूटर/कम-घनी स्क्रीन पर
+    const r = this.renderer = new THREE.WebGLRenderer({ canvas, antialias: (window.devicePixelRatio || 1) < 1.5, powerPreference: 'high-performance' });
     r.outputColorSpace = THREE.SRGBColorSpace;
     r.toneMapping = THREE.ACESFilmicToneMapping;
     r.toneMappingExposure = 1.45;
@@ -165,8 +188,18 @@ class Game {
     this.camX = 0; this.shake = 0;
     this.world.reset(false);
     this.applyGfx();
-    // पहला फ़्रेम पहले से (shader compile) — शुरू में अटके नहीं
-    r.compile(sc, this.cam);
+    this.warmUp();
+  }
+
+  // छिपी चीज़ें (हाट, मेला, ट्रेन, रुकावटें…) के shader और तस्वीरें लोडिंग में ही GPU पर — पहली बार दिखने पर झटका नहीं
+  warmUp() {
+    const r = this.renderer, hid = [], texs = new Set();
+    this.scene.traverse((o) => {
+      if (!o.visible) { hid.push(o); o.visible = true; }
+      if (o.material) for (const m of [].concat(o.material)) for (const k of ['map', 'normalMap', 'roughnessMap', 'emissiveMap', 'alphaMap', 'bumpMap']) if (m[k] && m[k].isTexture) texs.add(m[k]);
+    });
+    try { r.compile(this.scene, this.cam); for (const t of texs) r.initTexture(t); } catch (e) { console.warn('warmUp', e); }
+    for (const o of hid) o.visible = false;
   }
 
   resize() {
@@ -245,7 +278,7 @@ class Game {
   // ------------------------------------------------ UI
   bindUI() {
     const click = (sel, fn) => { const el = $(sel); if (el) el.addEventListener('click', (e) => { e.preventDefault(); this.sound.init(); this.sound.click(); fn(); }); };
-    click('#btnPlay', () => this.start());
+    click('#btnPlay', () => { this.goFull(); this.start(); });
     click('#btnAgain', () => this.afterAd(() => this.start()));
     click('#btnHome', () => this.afterAd(() => this.toMenu()));
     click('#revAd', () => this.reviveAd());
@@ -253,7 +286,17 @@ class Game {
     click('#revNo', () => this.reviveNo());
     click('#btnHome2', () => this.toMenu());
     click('#btnPause', () => this.pause());
-    click('#btnResume', () => this.resume());
+    click('#btnResume', () => { this.goFull(); this.resume(); });
+    click('#leaveNo', () => { $('#leaveS').hidden = true; this.leaveOpen = false; if (this.state === 'paused') { this.goFull(); this.resume(); } });
+    click('#leaveYes', () => this.leaveNow());
+    for (const b of document.querySelectorAll('[data-lang3]')) b.addEventListener('click', (e) => {
+      e.preventDefault(); this.sound.init(); this.sound.click();
+      setLang(b.dataset.lang3); $('#langS').hidden = true; this.refreshMenu(); this.meta.maybeDaily();
+    });
+    // सिखाने वाली चमक — दबाते ही हटे और याद रहे
+    $('#btnRush').addEventListener('click', () => { if (store('tutRush') !== '1') { store('tutRush', 1); $('#btnRush').classList.remove('teach'); this.bubble(null); } });
+    $('#btnPause').addEventListener('click', () => { store('tutPause', 1); $('#btnPause').classList.remove('teach'); this.bubble(null); });
+    this.backGuard();
     click('#btnRush', () => this.startRush());
     click('#hsChip', () => { this.headstart = !this.headstart; this.refreshMenu(); });
     click('#btnWard', () => this.meta.openWard());
@@ -284,7 +327,72 @@ class Game {
     const desk = P.isDesktop();
     $('#keysTip').hidden = desk === null ? matchMedia('(pointer: coarse)').matches : !desk;
   }
+  // ---------- बैक बटन से खेल न कटे (अपनी वेबसाइट; पोर्टल अपना ख़ुद संभालता है) ----------
+  // खुलते ही इतिहास में एक कदम जोड़ो: बैक दबे तो खेल रुके और पूछे "खेल छोड़ें?"; दोबारा बैक या "हाँ" = बाहर
+  backGuard() {
+    if (PORTAL || !window.history || !history.pushState) return;
+    const arm = () => { try { history.pushState({ rr: 1 }, ''); } catch (e) { /* */ } };
+    arm();
+    window.addEventListener('popstate', () => {
+      if (this.leaving) return;
+      if (this.leaveOpen) { this.leaveNow(1); return; } // दूसरा बैक — हमारा कदम पहले ही हट चुका
+      // कोई खिड़की खुली हो (सेटिंग, कपड़े, रैंक, इनाम) तो बैक = वही बंद करो
+      const open = [['#wardS', '#wardClose'], ['#metaS', '#metaClose'], ['#lbS', '#lbClose'], ['#rwS', '#rwClose']].find(([w]) => $(w) && !$(w).hidden);
+      if (open) { $(open[1]).click(); arm(); return; }
+      if (this.state === 'play') this.pause();
+      this.leaveOpen = true; $('#leaveS').hidden = false;
+      arm();
+    });
+    // पूरी स्क्रीन से निकलना (Android पर पहला बैक यही करता है) = खेल रोको
+    document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && this.state === 'play') this.pause(); });
+  }
+  leaveNow(back = 2) {
+    this.leaving = true; this.leaveOpen = false; $('#leaveS').hidden = true;
+    if (this.state === 'play' || this.state === 'paused') this.toMenu();
+    try { if (document.fullscreenElement) document.exitFullscreen(); } catch (e) { /* */ }
+    // जहाँ से आए थे वहाँ (हमारे जोड़े कदम के पीछे); पीछे कुछ न हो (सीधे लिंक से खुला) तो दुकान की वेबसाइट
+    const here = location.href;
+    try { history.go(-back); } catch (e) { /* */ }
+    setTimeout(() => { if (location.href === here && document.visibilityState === 'visible') location.href = 'https://mbsweets.github.io/'; }, 600);
+  }
+  // खेलते समय पूरी स्क्रीन — फ़ोन की नीचे वाली पट्टी (बैक/होम) छिपे, गलती से न दबे. सिर्फ़ अपनी वेबसाइट + टच वाले फ़ोन पर
+  goFull() {
+    if (PORTAL || document.fullscreenElement || !matchMedia('(pointer: coarse)').matches) return;
+    const el = document.documentElement, f = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (!f) return;
+    try {
+      const pr = f.call(el, { navigationUI: 'hide' });
+      const ok = () => { if (store('fsHint') === '1') return; store('fsHint', 1); const h = $('#fsHint'); h.textContent = '⛶ ' + T('fullHint'); h.hidden = false; setTimeout(() => { h.hidden = true; }, 5000); };
+      if (pr && pr.then) pr.then(ok, () => {}); else ok();
+    } catch (e) { /* */ }
+  }
+  // ---------- सिखाना: छोटा बुलबुला किसी बटन के पास ----------
+  bubble(el, text, ms = 0) {
+    let b = $('#tBub');
+    clearTimeout(this.bubT);
+    if (!el) { if (b) b.remove(); return; }
+    if (!b) { b = document.createElement('div'); b.id = 'tBub'; $('#app').appendChild(b); }
+    b.textContent = text;
+    const r = el.getBoundingClientRect(), bw = b.offsetWidth, top = r.top < innerHeight / 2;
+    b.style.left = Math.max(8, Math.min(innerWidth - bw - 8, r.left + r.width / 2 - bw / 2)) + 'px';
+    b.style.top = (top ? r.bottom + 10 : r.top - b.offsetHeight - 12) + 'px';
+    if (ms) this.bubT = setTimeout(() => this.bubble(null), ms);
+  }
+  teachPause() {
+    if (this.state !== 'play' || store('tutPause') === '1') return;
+    store('tutPause', 1);
+    const b = $('#btnPause'); b.classList.add('teach');
+    this.bubble(b, '❚❚ ' + T('tutPause'), 3800);
+    setTimeout(() => b.classList.remove('teach'), 3800);
+  }
+  // सेटिंग्स → "कैसे खेलें": सीखने वाली दौड़ फिर से
+  replayTutorial() {
+    store('tut', 0); store('tutRush', 0); store('tutPause', 0); this.tutDone = false;
+    $('#metaS').hidden = true;
+    this.goFull(); this.start();
+  }
   show(id) {
+    this.bubble(null);
     for (const s of ['#menu', '#over', '#pauseS', '#hud', '#reviveS']) $(s).hidden = true;
     for (const s of id) $(s).hidden = false;
   }
@@ -305,7 +413,8 @@ class Game {
     this.beeC.set(0, 2, 18);
     if (this.mk) { this.mk.st = 'off'; this.monkey.visible = false; }
     if (this.sound.ctx && !this.sound.playing) this.sound.startMusic();
-    if (!skipDaily && (!PORTAL || this.runs > 0)) this.meta.maybeDaily(); // पोर्टल पर पहली बार सीधे खेल (एक क्लिक)
+    if (!PORTAL && store('lang3') == null) $('#langS').hidden = false; // पहली बार: भाषा चुनो (फिर रोज़ का इनाम)
+    else if (!skipDaily && (!PORTAL || this.runs > 0)) this.meta.maybeDaily(); // पोर्टल पर पहली बार सीधे खेल (एक क्लिक)
   }
 
   // अलमारी: जो पहना है (या ट्राय वाला) गोलू पर
@@ -315,7 +424,7 @@ class Game {
     this.sound.levelUp(); this.sayKind('unlock');
     void id;
   }
-  sayKind(kind) { const [en, mai] = pickCheer(kind); this.sayPair(en, mai, true); }
+  sayKind(kind) { this.sayPair(pickCheer(kind), true); }
 
   start() {
     $('#wardS').hidden = true; this.wardOpen = false; this.wearNow();
@@ -331,7 +440,7 @@ class Game {
     this.level = 0; this.samosa.visible = false; this.skyShow.reset();
     this.rushT = 0; this.meter = 0;
     this.score = 0; this.got = 0; this.combo = 0; this.comboT = 0; this.timeScale = 1; this.slowmo = 0;
-    this.speed = 14; this.runT = 0; this.perf = { t: 0, n: 0, sum: 0, done: SETTINGS.gfx !== 'auto' };
+    this.speed = 14; this.runT = 0; this.perf = { t: 0, n: 0, sum: 0, done: SETTINGS.gfx !== 'auto' || this.tier >= TIERS.length - 1, prev: 0, miss: 0 };
     this.golu.root.rotation.y = 0;
     this.golu.setGlow(0);
     this.show(['#hud']);
@@ -469,8 +578,8 @@ class Game {
     if (it.type === 'rasmalai') this.msBump('rasmalai');
     this.sound.collect(this.combo - 1, it.type);
     this.world.parts.burst(it.x, it.y, it.z, SW_COL[it.type], it.type === 'rasmalai' ? 18 : 6, 2.5, 2, 0.5);
-    if (it.type === 'rasmalai') this.toast('+10 ' + (LANG === 'hi' ? 'रसमलाई!' : 'Rasmalai!'), 700, 'gold');
-    else if (it.type === 'milkcake') this.toast('+' + s.pts * mul + ' ' + SKY_NAME[LANG === 'hi' ? 'hi' : 'en'][it.type] + '!', 600, 'gold');
+    if (it.type === 'rasmalai') this.toast('+10 ' + (LANG === 'en' ? 'Rasmalai!' : 'रसमलाई!'), 700, 'gold');
+    else if (it.type === 'milkcake') this.toast('+' + s.pts * mul + ' ' + SKY_NAME[LANG === 'en' ? 'en' : 'hi'][it.type] + '!', 600, 'gold');
   }
 
   takePu(p) {
@@ -505,26 +614,27 @@ class Game {
     if (this.state === 'play') this.cheer('land', 900);
   }
 
-  // शाबाशी: मैथिली बड़ी + बोली (अपनी साइट पर और CrazyGames पर भी), English नीचे छोटी
+  // शाबाशी: चुनी भाषा बड़ी + बोली; नीचे छोटी — हिंदी/मैथिली में English, English में मैथिली (मिथिला का स्वाद)
   cheer(kind = 'near', ms = 900, tier = -1, prio = false, cls = 'cheer', small = null) {
-    const [en, mai] = pickCheer(kind, tier);
-    const maiBig = LANG === 'hi' || !!PORTAL;
+    const ln = pickCheer(kind, tier), [en, mai, hi] = ln;
+    const big = LANG === 'en' ? en : LANG === 'hi' ? hi : mai;
     const t = $('#toast');
-    const sm = small != null ? small : (maiBig ? en : mai);
-    t.innerHTML = `${maiBig ? mai : en}${sm ? `<small>${sm}</small>` : ''}`;
+    const sm = small != null ? small : (LANG === 'en' ? mai : en);
+    t.innerHTML = `${big}${sm ? `<small>${sm}</small>` : ''}`;
     t.className = 'show ' + cls;
     clearTimeout(this.toastT);
     this.toastT = setTimeout(() => { t.className = ''; }, ms);
-    this.sayPair(en, mai, prio || kind === 'level');
+    this.sayPair(ln, prio || kind === 'level');
   }
-  sayPair(en, mai, prio = false) {
+  // [en, mai, hi] में से चुनी भाषा बोलो (मैथिली भी हिंदी आवाज़ से — फ़ोन में मैथिली आवाज़ नहीं होती); हिंदी आवाज़ न हो तो English
+  sayPair(ln, prio = false) {
     if (!this.voice || !SETTINGS.voice) return;
-    const maiBig = LANG === 'hi' || !!PORTAL;
-    if (maiBig && this.voice.canHi()) this.voice.say(mai, 'hi', prio);
+    const [en, mai, hi] = ln;
+    if (LANG !== 'en' && this.voice.canHi()) this.voice.say(LANG === 'hi' ? (hi || mai) : mai, 'hi', prio);
     else this.voice.say(en, 'en', prio);
   }
-  // बोलो — हिंदी मोड में मैथिली, English मोड में अंग्रेज़ी
-  say(text, prio = false) { if (this.voice && SETTINGS.voice) this.voice.say(text, LANG === 'hi' ? 'hi' : 'en', prio); }
+  // बोलो — चुनी भाषा में (हिंदी/मैथिली = हिंदी आवाज़)
+  say(text, prio = false) { if (this.voice && SETTINGS.voice) this.voice.say(text, LANG === 'en' ? 'en' : 'hi', prio); }
 
   // मिशन — कुछ हुआ तो गिनो; पूरा हुआ तो खुशी
   msBump(id, v = 1, abs = false) {
@@ -707,7 +817,7 @@ class Game {
     const parts = [];
     if (ms.setDone) parts.push(`🎉 ${T('msSet')} ${ms.setDone.set} ✔ → ×${this.ms.mult}`);
     if (ms.gain) parts.push(T('msGain', ms.gain));
-    for (const b of bd) parts.push(`${b.icon} ${T('badgeNew')} ${LANG === 'hi' ? b.hi : b.en} (+100)`);
+    for (const b of bd) parts.push(`${b.icon} ${T('badgeNew')} ${L(b)} (+100)`);
     $('#overMs').hidden = !parts.length;
     $('#overMs').innerHTML = parts.join('<br>');
     if (ms.setDone && ms.setDone.item) setTimeout(() => { if (this.state === 'over') this.meta.showUnlocks([ms.setDone.item]); }, 1100);
@@ -719,7 +829,7 @@ class Game {
     $('#overBest').textContent = Math.floor(this.best).toLocaleString('en-IN');
     $('#newBest').hidden = !nb;
     const ln = pickCheer(nb ? 'newBest' : 'over');
-    setTimeout(() => { if (this.state === 'over') this.sayPair(ln[0], ln[1], true); }, 500);
+    setTimeout(() => { if (this.state === 'over') this.sayPair(ln, true); }, 500);
     $('#overLb').hidden = true; $('#overRw').hidden = true;
     if (this.goldMesh) this.goldMesh.visible = false; this.goldObj = null;
     this.show(['#over']);
@@ -1015,7 +1125,11 @@ class Game {
       if (e.z < a || e.z > b) continue;
       const done = e.need === 'lane' ? p.lane !== e.lane : e.need === 'jump' ? !p.ground : p.roll > 0 || p.rollQ;
       if (done) {
-        if (e.need === 'roll') { this.tutDone = true; store('tut', 1); setTimeout(() => { if (this.state === 'play') this.toast(T('tip'), 2800); }, 900); }
+        if (e.need === 'roll') {
+          this.tutDone = true; store('tut', 1);
+          setTimeout(() => { if (this.state === 'play') this.toast(T('tip'), 2800); }, 900);
+          setTimeout(() => this.teachPause(), 4200);
+        }
         e.need = null;
         continue;
       }
@@ -1023,7 +1137,10 @@ class Game {
     }
     const h = $('#hint');
     if (need) {
-      if (this.hud.hint !== need) { h.textContent = T(need); h.dataset.k = need; this.hud.hint = need; }
+      if (this.hud.hint !== need) {
+        const trk = need === 'lane' ? '⟵ ⟶' : need === 'jump' ? '⟰' : '⟱';
+        h.innerHTML = `<span class="hand ${need}">👆</span><span class="trk">${trk}</span><b>${T(need)}</b>`; h.dataset.k = need; this.hud.hint = need;
+      }
       h.hidden = false;
     } else if (!h.hidden) { h.hidden = true; this.hud.hint = null; }
     return need;
@@ -1072,7 +1189,12 @@ class Game {
     const m = Math.round(this.meter * 100);
     if (h.m !== m) { h.m = m; $('#meter i').style.width = m + '%'; }
     const ready = this.meter >= 1 && this.rushT <= 0;
-    if (h.ready !== ready) { h.ready = ready; $('#btnRush').hidden = !ready; $('#meter').classList.toggle('full', ready); }
+    if (h.ready !== ready) {
+      h.ready = ready; $('#btnRush').hidden = !ready; $('#meter').classList.toggle('full', ready);
+      const teach = ready && store('tutRush') !== '1';
+      $('#btnRush').classList.toggle('teach', teach);
+      if (teach) requestAnimationFrame(() => this.bubble($('#btnRush'), '👇 ' + T('tutRush'), 6000)); else if (!ready) this.bubble(null);
+    }
     const rush = this.rushT > 0;
     if (h.rush !== rush) { h.rush = rush; document.body.classList.toggle('rushing', rush); }
     const pu = (this.pu.magnet > 0 ? 'm' + Math.ceil(this.pu.magnet) : '') + (this.pu.shoes > 0 ? 's' + Math.ceil(this.pu.shoes) : '') + (this.pu.shield ? 'L' : '') + (this.pu.thali > 0 ? 't' + Math.ceil(this.pu.thali) : '') + (this.p.fly > 0 ? 'f' + Math.ceil(this.p.fly) : '');
@@ -1093,23 +1215,18 @@ class Game {
     const q = this.perf;
     if (q.done) return;
     q.t += dt; q.n++; q.sum += dt;
-    if (q.t > 4) {
-      const avg = q.sum / q.n;
-      if (avg > 1 / 40 && this.pr > 1) {
-        this.pr = Math.max(1, this.pr * 0.72);
-        this.renderer.setPixelRatio(this.pr);
-        this.resize();
-        q.t = 0; q.n = 0; q.sum = 0;
-      } else if (avg > 1 / 40 && this.renderer.shadowMap.enabled) {
-        // फिर भी धीमा — परछाईं बंद (कमज़ोर फ़ोन)
-        this.renderer.shadowMap.enabled = false;
-        this.sun.castShadow = false;
-        this.golu.shadow.material.opacity = 0.28;
-        this.scene.traverse((o) => { if (o.material) for (const m of [].concat(o.material)) m.needsUpdate = true; });
-        q.t = 0; q.n = 0; q.sum = 0;
-      } else q.done = true;
-    }
+    if (q.t < 2) return;
+    const avg = q.sum / q.n;
+    q.t = 0; q.n = 0; q.sum = 0;
+    if (avg <= 1 / 45) { q.prev = 0; return; } // ठीक चल रहा — देखते रहो (आगे भारी जगह आ सकती है)
+    // पिछली बार घटाने से फ़ायदा नहीं हुआ (जैसे फ़ोन ख़ुद 30fps पर बँधा हो) — दो बार ऐसा हो तो रुक जाओ
+    if (q.prev && avg > q.prev * 0.93) { if (++q.miss >= 2) { q.done = true; return; } } else q.miss = 0;
+    q.prev = avg;
+    if (this.tier >= TIERS.length - 1) { q.done = true; return; }
+    this.setTier(this.tier + 1);
+    store('gfxTier', this.tier);
   }
+
 }
 
 const game = new Game();

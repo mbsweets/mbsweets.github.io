@@ -8,7 +8,7 @@ import { store } from './util.js';
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const istDay = () => new Date(Date.now() + 5.5 * 3600e3).toISOString().slice(0, 10);
-const fmtDate = (ms) => { const d = new Date(ms + 5.5 * 3600e3); return d.getUTCDate() + ' ' + (LANG === 'hi' ? ['जन', 'फ़र', 'मार्च', 'अप्रैल', 'मई', 'जून', 'जुलाई', 'अग', 'सित', 'अक्टू', 'नव', 'दिस'] : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'])[d.getUTCMonth()]; };
+const fmtDate = (ms) => { const d = new Date(ms + 5.5 * 3600e3); return d.getUTCDate() + ' ' + (LANG !== 'en' ? ['जन', 'फ़र', 'मार्च', 'अप्रैल', 'मई', 'जून', 'जुलाई', 'अग', 'सित', 'अक्टू', 'नव', 'दिस'] : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'])[d.getUTCMonth()]; };
 
 export class Rewards {
   constructor(lb, on) {

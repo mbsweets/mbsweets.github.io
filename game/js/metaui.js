@@ -1,5 +1,5 @@
 // मिशन सेट / बैज / अपग्रेड / सेटिंग्स वाली खिड़की + अलमारी + नई चीज़ खुलने का जश्न + रोज़ का इनाम
-import { T, LANG, setLang } from './i18n.js';
+import { T, LANG, setLang, L } from './i18n.js';
 import { SETTINGS, saveSettings, wallet, UPG, UPG_COST, upLevel, upTime, buyUp, DAILY, dailyState, claimDaily,
   ITEMS, SLOTS, itemById, wardrobe, MAX_SET, BADGES, badgesGot } from './meta.js';
 import { store } from './util.js';
@@ -7,7 +7,7 @@ import { store } from './util.js';
 const $ = (s) => document.querySelector(s);
 const fmt = (n) => Math.floor(n).toLocaleString('en-IN');
 const RG = '<i class="rg"></i>';
-const nm = (it) => (LANG === 'hi' ? it.hi : it.en);
+const nm = (it) => L(it);
 const rewardHtml = (rw) => (typeof rw === 'string' ? `${itemById(rw).icon} ${nm(itemById(rw))}` : `${RG} ${fmt(rw)}`);
 
 export class MetaUI {
@@ -87,16 +87,18 @@ export class MetaUI {
     const tog = (k, on) => `<button class="tg${on ? ' on' : ''}" data-set="${k}">${on ? T('on') : T('off')}</button>`;
     const row = (lbl, ctl) => `<div class="st"><span>${lbl}</span>${ctl}</div>`;
     const gfx = ['low', 'auto', 'high'].map((q) => `<button class="${SETTINGS.gfx === q ? 'on' : ''}" data-gfx="${q}">${T('g_' + q)}</button>`).join('');
-    const lang = ['hi', 'en'].map((l) => `<button class="${LANG === l ? 'on' : ''}" data-lang="${l}">${l === 'hi' ? 'मैथिली' : 'English'}</button>`).join('');
+    const lang = [['en', 'English'], ['hi', 'हिंदी'], ['mai', 'मैथिली']].map(([l, n]) => `<button class="${LANG === l ? 'on' : ''}" data-lang="${l}">${n}</button>`).join('');
     return row('🔊 ' + T('sound'), tog('sound', !s.muted)) + row('🎵 ' + T('sMusic'), tog('music', SETTINGS.music))
       + row('🗣️ ' + T('sVoice'), tog('voice', SETTINGS.voice)) + row('📳 ' + T('sVib'), tog('vib', SETTINGS.vib))
       + `<div class="st col"><span>🖼️ ${T('sGfx')}</span><div class="seg sm2">${gfx}</div></div>`
-      + `<div class="st col"><span>🌐 ${T('sLang')}</span><div class="seg sm2">${lang}</div></div>`;
+      + `<div class="st col"><span>🌐 ${T('sLang')}</span><div class="seg sm2">${lang}</div></div>`
+      + `<button class="sm howto" data-act="howto">${T('howTo')}</button>`;
   }
   onClick(e) {
     const b = e.target.closest('button'); if (!b) return;
     const g = this.g; g.sound.init(); g.sound.click();
     if (b.dataset.act === 'daily') { this.claim(); return; }
+    if (b.dataset.act === 'howto') { this.g.replayTutorial(); return; }
     if (b.dataset.up) {
       if (buyUp(b.dataset.up)) { g.sound.power(); g.toast(T('upDone'), 900, 'gold'); } else if (upLevel(b.dataset.up) < 5) g.toast(T('noSweets'), 900, 'warn');
     } else if (b.dataset.set) {

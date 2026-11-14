@@ -15,7 +15,7 @@ const SPEAK_FIX = [
 ];
 export function speakText(text, lang) {
   let s = String(text);
-  if (lang === 'hi') for (const [a, b] of SPEAK_FIX) s = s.replace(a, b);
+  if (lang !== 'en') for (const [a, b] of SPEAK_FIX) s = s.replace(a, b);
   else s = s.replace(/[!•…]/g, ',').replace(/,\s*$/g, '');
   return s.replace(/\s+/g, ' ').trim();
 }
