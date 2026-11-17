@@ -408,7 +408,8 @@ export class World {
   }
 
   // ---------- मिठाई के पैटर्न ----------
-  sweetType() { return weighted([['rasgulla', 60], ['gulabjamun', 22], ['balushahi', 12], ['chamcham', 6]]); }
+  // ऑर्डर चालू हो तो उसकी मिठाइयाँ ज़्यादा (delivery.js → this.boost)
+  sweetType() { const b = this.boost || {}; return weighted([['rasgulla', 60 + (b.rasgulla || 0)], ['gulabjamun', 22 + (b.gulabjamun || 0)], ['balushahi', 12 + (b.balushahi || 0)], ['chamcham', 6 + (b.chamcham || 0)]]); }
   line(lane, z, n, type = this.sweetType(), y = 0.7, gap = 2.0) {
     for (let i = 0; i < n; i++) this.sweets.spawn(type, LANES[lane], y, z - i * gap);
   }

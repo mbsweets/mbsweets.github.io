@@ -17,7 +17,7 @@ const S = {
     lv1: 'Easy Lane', lv2: 'Market Rush', lv3: 'Full Speed', lv4: 'Tough Turns', lv5: 'Ustad Mode',
     rail: 'Train zone! Climb the ramp!', haat: 'Mithila Haat!', baraat: 'Baraat ahead!', mela: 'Mela bonus! Sweets everywhere!',
     lb: '🏆 Leaderboard', lbShort: '🏆 Ranks', lbIndia: 'India', lbWorld: 'World', lbWeek: 'This week', lbAll: 'All time',
-    lbYourName: 'Your name', lbCityL: 'Your city', lbSave: 'Save', lbEdit: 'Change name', lbClose: 'Close',
+    lbYourName: 'Your name', lbCityL: 'Your district', lbSave: 'Save', lbEdit: 'Change name', lbClose: 'Close',
     lbPrivacy: 'Only your name and city are shown. No phone number.', lbNameErr: 'Name: 2–16 letters, no phone numbers.',
     lbEmpty: 'Nobody yet — be the first!', lbErr: 'Could not connect. Try again.', lbMyRank: 'Your rank', lbJoin: '🏆 Add your name to join the leaderboard',
     btnMs: '🎯 Missions', btnUp: '⬆️ Upgrades', btnSet: '⚙️ Settings', msT: 'Missions', upT: 'Upgrades', setT: 'Settings',
@@ -50,6 +50,10 @@ const S = {
     t_lag: 'Lag / slow', t_hard: 'Too hard', t_confusing: "Didn't understand", t_boring: 'Boring', t_bugs: 'Glitch / stuck',
     ratePhG: 'Anything else you want? (optional)', ratePhB: 'What should we fix? (optional)', ratePriv: 'No name or phone number is sent.', rateSend: 'Send',
     rateThanks: 'Thank you!', rateThanksG: 'So happy you like it! Invite your friends too.', rateThanksB: "We'll fix it soon. Thanks for telling us!", rateOffline: 'will be sent when you are online', rateBtn: '⭐ Rate the game',
+    ordSay: (who, list) => `${who} wants ${list}!`, ordReady: 'Packed! Run through the door 🎁', ordGo: 'Door is in this lane:', ordMiss: 'Missed the door!',
+    ordLate: (who) => `Too late — ${who} is upset!`, ordGot: (n) => `Delivered! +${n} sweets`, ordWrong: 'Wrong sweet!',
+    tutTrick: 'Tap in the air = trick!', trickFail: 'Oops! Land straight!',
+    profT: 'Your name & district', profP: 'For the leaderboard and shop prizes. Only name and district are shown — no phone number.', profGo: "Let's play!", profLater: 'Later',
   },
   hi: { // हिंदी
     title: 'रसगुल्ला रन', sub: 'मिथिला की मीठी दौड़', play: 'खेलो', best: 'सबसे अच्छा', sweets: 'मिठाई', score: 'स्कोर',
@@ -66,7 +70,7 @@ const S = {
     lv1: 'आसान गली', lv2: 'बाज़ार की भीड़', lv3: 'तेज़ रफ़्तार', lv4: 'मुश्किल मोड़', lv5: 'उस्ताद',
     rail: 'रेल आ रही है! ढलान पर चढ़ो!', haat: 'मिथिला हाट!', baraat: 'आगे बारात है!', mela: 'मेला! मिठाई ही मिठाई!',
     lb: '🏆 लीडरबोर्ड', lbShort: '🏆 रैंक', lbIndia: 'भारत', lbWorld: 'दुनिया', lbWeek: 'इस हफ़्ते', lbAll: 'अब तक',
-    lbYourName: 'तुम्हारा नाम', lbCityL: 'तुम्हारा शहर', lbSave: 'सेव करो', lbEdit: 'नाम बदलो', lbClose: 'बंद करो',
+    lbYourName: 'तुम्हारा नाम', lbCityL: 'तुम्हारा ज़िला', lbSave: 'सेव करो', lbEdit: 'नाम बदलो', lbClose: 'बंद करो',
     lbPrivacy: 'सिर्फ़ नाम और शहर दिखेगा — फ़ोन नंबर नहीं।', lbNameErr: 'नाम: 2–16 अक्षर, फ़ोन नंबर नहीं।',
     lbEmpty: 'अभी कोई नहीं — पहले बनो!', lbErr: 'नेटवर्क नहीं मिला, फिर कोशिश करो।', lbMyRank: 'तुम्हारी रैंक', lbJoin: '🏆 नाम लिखो और लीडरबोर्ड पर आओ',
     btnMs: '🎯 मिशन', btnUp: '⬆️ अपग्रेड', btnSet: '⚙️ सेटिंग्स', msT: 'मिशन', upT: 'अपग्रेड', setT: 'सेटिंग्स',
@@ -99,6 +103,10 @@ const S = {
     t_lag: 'लैग / धीमा', t_hard: 'बहुत कठिन', t_confusing: 'समझ नहीं आया', t_boring: 'बोरिंग', t_bugs: 'गड़बड़ / अटकता है',
     ratePhG: 'और क्या चाहिए? (मर्ज़ी से)', ratePhB: 'क्या ठीक करें? (मर्ज़ी से)', ratePriv: 'नाम या फ़ोन नंबर नहीं जाता।', rateSend: 'भेजो',
     rateThanks: 'धन्यवाद!', rateThanksG: 'बहुत ख़ुशी हुई! दोस्तों को भी खिलाओ।', rateThanksB: 'हम जल्दी ठीक करेंगे। बताने के लिए शुक्रिया!', rateOffline: 'नेट आते ही भेज देंगे', rateBtn: '⭐ राय दो',
+    ordSay: (who, list) => `${who} को चाहिए: ${list}!`, ordReady: 'पैक हो गया! दरवाज़े से निकलो 🎁', ordGo: 'दरवाज़ा इस लेन में:', ordMiss: 'दरवाज़ा छूट गया!',
+    ordLate: (who) => `देर हो गई — ${who} नाराज़!`, ordGot: (n) => `डिलीवरी! +${n} मिठाई`, ordWrong: 'ग़लत मिठाई!',
+    tutTrick: 'हवा में टैप = करतब!', trickFail: 'उफ़! सीधा उतरो!',
+    profT: 'आपका नाम और ज़िला', profP: 'लीडरबोर्ड और दुकान के इनाम के लिए। सिर्फ़ नाम और ज़िला दिखेगा — फ़ोन नंबर नहीं।', profGo: 'चलो खेलें!', profLater: 'बाद में',
   },
   mai: { // मैथिली (मिथिलाक बोली)
     title: 'रसगुल्ला रन', sub: 'मिथिलाक मीठ दौड़', play: 'खेलू', best: 'सबसँ नीक', sweets: 'मिठाइ', score: 'स्कोर',
@@ -115,7 +123,7 @@ const S = {
     lv1: 'सहज गली', lv2: 'हाटक भीड़', lv3: 'तेज़ रफ़्तार', lv4: 'कठिन मोड़', lv5: 'उस्ताद',
     rail: 'रेल आबि रहल अछि! ढलान पर चढ़ू!', haat: 'मिथिलाक हाट!', baraat: 'आगू बरियाती!', mela: 'मेला! मिठाइए मिठाइ!',
     lb: '🏆 लीडरबोर्ड', lbShort: '🏆 रैंक', lbIndia: 'भारत', lbWorld: 'दुनिया', lbWeek: 'एहि हफ़्ता', lbAll: 'सब दिन',
-    lbYourName: 'अहाँक नाम', lbCityL: 'अहाँक शहर', lbSave: 'सेव करू', lbEdit: 'नाम बदलू', lbClose: 'बंद करू',
+    lbYourName: 'अहाँक नाम', lbCityL: 'अहाँक जिला', lbSave: 'सेव करू', lbEdit: 'नाम बदलू', lbClose: 'बंद करू',
     lbPrivacy: 'मात्र नाम आ शहर देखाओल जाएत — फ़ोन नंबर नहि।', lbNameErr: 'नाम: 2–16 अक्षर, फ़ोन नंबर नहि।',
     lbEmpty: 'एखन कियो नहि — पहिल बनू!', lbErr: 'नेटवर्क नहि भेटल, फेर कोशिश करू।', lbMyRank: 'अहाँक रैंक', lbJoin: '🏆 नाम लिखू आ लीडरबोर्ड पर आउ',
     btnMs: '🎯 मिशन', btnUp: '⬆️ अपग्रेड', btnSet: '⚙️ सेटिंग्स', msT: 'मिशन', upT: 'अपग्रेड', setT: 'सेटिंग्स',
@@ -148,6 +156,10 @@ const S = {
     t_lag: 'लैग / धीमा', t_hard: 'बड़ कठिन', t_confusing: 'बुझबा मे नहि आएल', t_boring: 'बोरिंग', t_bugs: 'गड़बड़ / अटकैत अछि',
     ratePhG: 'आर की चाही? (मर्ज़ी सँ)', ratePhB: 'की ठीक करी? (मर्ज़ी सँ)', ratePriv: 'नाम वा फ़ोन नंबर नहि जाइत अछि।', rateSend: 'पठाउ',
     rateThanks: 'धन्यवाद!', rateThanksG: 'बड़ खुशी भेल! संगी सब केँ सेहो खेलाउ।', rateThanksB: 'हम जल्दी ठीक करब। कहबाक लेल धन्यवाद!', rateOffline: 'नेट अबिते पठा देब', rateBtn: '⭐ राय दिअ',
+    ordSay: (who, list) => `${who} केँ चाही: ${list}!`, ordReady: 'पैक भ गेल! दरबज्जा सँ निकलू 🎁', ordGo: 'दरबज्जा एहि लेन मे:', ordMiss: 'दरबज्जा छूटि गेल!',
+    ordLate: (who) => `देरी भ गेल — ${who} रूसि गेलाह!`, ordGot: (n) => `डिलीवरी! +${n} मिठाइ`, ordWrong: 'गलत मिठाइ!',
+    tutTrick: 'हवा मे टैप = करतब!', trickFail: 'उफ़! सोझ उतरू!',
+    profT: 'अहाँक नाम आ जिला', profP: 'लीडरबोर्ड आ दोकानक इनामक लेल। खाली नाम आ जिला देखाएत — फ़ोन नंबर नहि।', profGo: 'चलू खेली!', profLater: 'बाद मे',
   },
 };
 
@@ -192,6 +204,7 @@ const HIN = {
   'पहिल दौड़': 'पहली दौड़', 'एक किलोमीटर': 'एक किलोमीटर', 'तीन किलोमीटर': 'तीन किलोमीटर', 'मिठाइ प्रेमी': 'मिठाई प्रेमी', 'मिठाइक राजा': 'मिठाई का राजा',
   'रेलक राजा': 'रेल का राजा', 'हाटक उस्ताद': 'हाट का उस्ताद', 'उड़ाका': 'उड़ाका', 'बाल-बाल 100': 'बाल-बाल 100', 'बंदर-बाज़': 'बंदर-बाज़',
   'सोनाक छल्ला': 'सोने का छल्ला', 'सुपर स्टार': 'सुपर स्टार', 'जंगलक राजा': 'जंगल का राजा',
+  '{n} डिलीवरी पूरा करू': '{n} डिलीवरी पूरी करो', 'एक दौड़ मे {n} करतब करू': 'एक दौड़ में {n} करतब करो', '{n} करतब करू': '{n} करतब करो', 'डिलीवरी स्टार': 'डिलीवरी स्टार', 'करतबबाज़': 'करतबबाज़',
   'जलेबी': 'जलेबी', 'लड्डू': 'लड्डू', 'पेड़ा': 'पेड़ा', 'कलाकंद': 'कलाकंद', 'मिल्क केक': 'मिल्क केक', 'रसमलाई!': 'रसमलाई!',
 };
 // {en, hi(=मैथिली)} वाली चीज़ से चुनी भाषा का लिखा

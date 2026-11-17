@@ -22,6 +22,9 @@ import { SETTINGS, loadSettings, Missions, wallet, upTime, wardrobe, stats, chec
 import { P, PORTAL } from './platform.js';
 import { MetaUI } from './metaui.js';
 import { countOpen, countGame } from './count.js';
+import { Delivery } from './delivery.js';
+import { Emotes } from './emote.js';
+import { Tricks } from './tricks.js';
 
 const $ = (s) => document.querySelector(s);
 // ग्राफ़िक्स के दर्जे (0 = सबसे बढ़िया). ऑटो: पूरी दौड़ में हर 2 सेकंड रफ़्तार देखो, धीमा हो तो एक दर्जा नीचे; फ़ोन याद रखे
@@ -187,6 +190,10 @@ class Game {
     sc.add(this.beeGroup);
     this.beeC = new THREE.Vector3(0, 2, 18);
     this.monkey = makeMonkey(); this.monkey.visible = false; sc.add(this.monkey);
+    this.dl = new Delivery(this, sc); // 🛵 डिलीवरी
+    this.emo = new Emotes(sc); // 😅 भाव
+    this.tricks = new Tricks(this); // 🤸 करतब
+    this.camKick = 0;
     // रात: लालटेन/खंभों की चमक + जुगनू; गोलू के आगे गरम रोशनी (भारी दर्जों में बंद)
     this.nfx = new NightFX(sc);
     this.lamp = new THREE.PointLight(0xffc27a, 0, 22, 1.3); this.lamp.position.set(0, 3.2, -3); sc.add(this.lamp);
@@ -240,7 +247,8 @@ class Game {
       if (Math.abs(dx) > Math.abs(dy)) this.act(dx > 0 ? 'right' : 'left'); else this.act(dy < 0 ? 'up' : 'down');
     });
     const end = (e) => { if (e.pointerId === id) id = null; };
-    c.addEventListener('pointerup', end);
+    // छोटा टैप (खिसकाया नहीं) = हवा में करतब
+    c.addEventListener('pointerup', (e) => { if (e.pointerId === id && !used && performance.now() - st < 300) this.act('tap'); end(e); });
     c.addEventListener('pointercancel', end);
     window.addEventListener('keydown', (e) => {
       if (e.target && /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return; // नाम लिखते समय खेल के बटन नहीं
@@ -250,6 +258,7 @@ class Game {
       else if (['ArrowUp', 'w', 'W', ' '].includes(k)) this.act('up');
       else if (['ArrowDown', 's', 'S'].includes(k)) this.act('down');
       else if (['e', 'E', 'Shift', 'Enter'].includes(k)) this.act('rush');
+      else if (['f', 'F', 'q', 'Q'].includes(k)) this.act('tap');
       else if (['p', 'P', 'Escape'].includes(k)) { if (this.state === 'play') this.pause(); else if (this.state === 'paused') this.resume(); }
       else return;
       e.preventDefault();
@@ -272,12 +281,15 @@ class Game {
         const big = this.pu.shoes > 0;
         p.vy = big ? SHOE_V : JUMP_V; p.ground = false; p.roll = 0; p.big = big;
         this.sound.jump(big); this.msBump('jumps');
+        // करतब सिखाना: पहली कुछ दौड़ों में एक बार
+        if (this.tutDone && !this.trickHint && this.runT > 5 && store('tutTrick') !== '1' && storeNum('tutTrickN') < 4) { this.trickHint = true; store('tutTrickN', storeNum('tutTrickN') + 1); this.toast('👆 ' + T('tutTrick'), 1700, 'gold'); }
       } else if (p.roll > 0) p.roll = 0;
     } else if (a === 'down') {
       this.msBump('rolls');
       if (p.ground) { p.roll = ROLL_T; this.sound.roll(); }
       else { p.vy = Math.min(p.vy, -24); p.rollQ = true; }
     } else if (a === 'rush') this.startRush();
+    else if (a === 'tap') this.tricks.tap();
   }
 
   edgeBump() {
@@ -302,7 +314,7 @@ class Game {
     click('#leaveYes', () => this.leaveNow());
     for (const b of document.querySelectorAll('[data-lang3]')) b.addEventListener('click', (e) => {
       e.preventDefault(); this.sound.init(); this.sound.click();
-      setLang(b.dataset.lang3); $('#langS').hidden = true; this.refreshMenu(); this.meta.maybeDaily();
+      setLang(b.dataset.lang3); $('#langS').hidden = true; this.refreshMenu(); this.afterLang();
     });
     // सिखाने वाली चमक — दबाते ही हटे और याद रहे
     $('#btnRush').addEventListener('click', () => { if (store('tutRush') !== '1') { store('tutRush', 1); $('#btnRush').classList.remove('teach'); this.bubble(null); } });
@@ -329,10 +341,12 @@ class Game {
     this.rw.bind();
     this.rate = new Rate(this, this.lb.url, !PORTAL && this.lb.on); // ⭐ राय — सिर्फ़ अपनी वेबसाइट
     this.rate.bind();
+    const rb = $('#btnRate'); if (rb) { rb.hidden = !this.rate.on; rb.addEventListener('click', (e) => { e.preventDefault(); this.sound.init(); this.sound.click(); this.rate.open(); }); }
     for (const el of document.querySelectorAll('.local')) el.hidden = !LOCAL;
     const ol = $('#orderLink'); if (ol) ol.href = ORDER_URL;
   }
   refreshMenu() {
+    if (this.rw && this.rw.on) this.rw.paintBadge(); // भाषा बदली हो तो इनाम-बटन भी
     $('#ttl').dataset.text = T('title');
     $('#bestV').textContent = Math.floor(this.best).toLocaleString('en-IN');
     $('#totalV').textContent = Math.floor(wallet.v).toLocaleString('en-IN');
@@ -352,7 +366,7 @@ class Game {
       if (this.leaving) return;
       if (this.leaveOpen) { this.leaveNow(1); return; } // दूसरा बैक — हमारा कदम पहले ही हट चुका
       // कोई खिड़की खुली हो (सेटिंग, कपड़े, रैंक, इनाम) तो बैक = वही बंद करो
-      const open = [['#rateS', '#rateX'], ['#wardS', '#wardClose'], ['#metaS', '#metaClose'], ['#lbS', '#lbClose'], ['#rwS', '#rwClose']].find(([w]) => $(w) && !$(w).hidden);
+      const open = [['#profS', '#pfLater'], ['#rateS', '#rateX'], ['#wardS', '#wardClose'], ['#metaS', '#metaClose'], ['#lbS', '#lbClose'], ['#rwS', '#rwClose']].find(([w]) => $(w) && !$(w).hidden);
       if (open) { $(open[1]).click(); arm(); return; }
       if (this.state === 'play') this.pause();
       this.leaveOpen = true; $('#leaveS').hidden = false;
@@ -428,10 +442,15 @@ class Game {
     this.beeC.set(0, 2, 18);
     this.nightSaid = false; this.wild = 0; this.nfx.update(0, 0, 0, 0, this.world.chunks, this.cam.quaternion);
     if (this.mk) { this.mk.st = 'off'; this.monkey.visible = false; }
+    if (this.dl) { this.dl.reset(); this.tricks.reset(); this.emo.clear(); }
     if (this.sound.ctx && !this.sound.playing) this.sound.startMusic();
     if (!PORTAL && store('lang3') == null) $('#langS').hidden = false; // पहली बार: भाषा चुनो (फिर रोज़ का इनाम)
+    else if (this.needProfile()) this.lb.askProfile(() => { if (!skipDaily) this.meta.maybeDaily(); }); // पुराने खिलाड़ी: एक बार नाम-ज़िला
     else if (!skipDaily && (!PORTAL || this.runs > 0)) this.meta.maybeDaily(); // पोर्टल पर पहली बार सीधे खेल (एक क्लिक)
   }
+  // पहली बार: भाषा → नाम और ज़िला (बाद में न पूछना पड़े) → रोज़ का इनाम
+  needProfile() { return !PORTAL && this.lb && this.lb.on && !this.lb.name && store('profAsk') !== '1'; }
+  afterLang() { if (this.needProfile()) this.lb.askProfile(() => this.meta.maybeDaily()); else this.meta.maybeDaily(); }
 
   // अलमारी: जो पहना है (या ट्राय वाला) गोलू पर
   wearNow(of) { if (this.golu && this.golu.wear) this.golu.wear(of || wardrobe.outfit); }
@@ -444,10 +463,11 @@ class Game {
 
   start() {
     $('#wardS').hidden = true; this.wardOpen = false; this.wearNow();
-    $('#metaS').hidden = true; $('#dailyS').hidden = true;
+    $('#metaS').hidden = true; $('#dailyS').hidden = true; $('#profS').hidden = true;
     this.ms.startRun(); this.flyT = upTime('samosa');
     this.revived = false; this.runs++;
     this.mk = { st: 'off', t: 0, x: 0, y: 0, z: 4 }; this.monkey.visible = false; this.toMonkey = rand(550, 800);
+    this.dl.reset(); this.tricks.reset(); this.emo.clear(); this.trickHint = false; this.camKick = 0;
     this.sound.init();
     if (!this.sound.playing) this.sound.startMusic();
     this.world.reset(!this.tutDone);
@@ -555,6 +575,7 @@ class Game {
     p.y = this.world.groundAt(p.x, 0); p.vy = 0; p.ground = true; p.roll = 0; p.rollQ = false; p.fly = 0;
     p.beesT = 0; p.stumT = 0; p.slowT = 0; p.invT = 3;
     this.mk.st = 'off'; this.monkey.visible = false; this.toMonkey = Math.max(this.toMonkey, 400);
+    this.emo.clear(); this.tricks.reset();
     this.sound.bees(false);
     this.state = 'play';
     this.show(['#hud']);
@@ -591,6 +612,7 @@ class Game {
     this.score += s.pts * 10 * mul * (this.rushT > 0 ? 2 : 1) * this.mult;
     if (this.combo > 0 && this.combo % 15 === 0) this.cheer('combo', 1000, this.combo / 15 - 1);
     this.golu.eat();
+    this.dl.onCollect(it.type);
     this.msBump('sweets', this.got, true);
     if (it.type === 'rasmalai') this.msBump('rasmalai');
     this.sound.collect(this.combo - 1, it.type);
@@ -704,6 +726,7 @@ class Game {
     this.shake = Math.max(this.shake, 0.3);
     this.meter = Math.max(0, this.meter - 0.25);
     p.stumT = 0.55;
+    this.emo.play('dizzy', 0.9); this.tricks.reset();
     if (this.mk.st === 'chase' || this.mk.st === 'enter') this.monkeyGrab();
     if (p.beesT > 0) { this.die('caught'); return; }
     p.beesT = lerp(6, 9, this.world.diff); // आगे चलकर मधुमक्खियाँ ज़्यादा देर
@@ -718,7 +741,7 @@ class Game {
     this.mk = { st: 'enter', t: 0, side, x0: side * 6.8, y0: 5.2, z0: -3, x: side * 6.8, y: 5.2, z: -3 };
     this.monkey.visible = true; this.monkey.userData.bag.visible = false;
     this.toMonkey = rand(1000, 1500);
-    this.sound.monkey();
+    this.sound.monkey(); this.emo.play('wow', 0.8);
     this.cheer('monkey', 1700, -1, true, 'warn');
   }
   monkeyGrab() {
@@ -729,7 +752,7 @@ class Game {
       this.got -= n;
       for (let i = 0; i < 3; i++) this.world.parts.burst(this.p.x, this.p.y + 1.2, 0.5, [0xffffff, 0x9a3b1c, 0xf2b84b][i], 10, 4, 3, 0.7, 0);
     }
-    this.sound.monkey(true);
+    this.sound.monkey(true); this.emo.play('angry', 1.5);
     setTimeout(() => { if (this.state === 'play') this.cheer('monkeyGrab', 1600, -1, true, 'warn', n > 0 ? `−${n} 🍬` : null); }, 350);
 
   }
@@ -818,6 +841,7 @@ class Game {
     vibrate([80, 40, 120]);
     this.shake = 0.6;
     this.p.roll = 0;
+    this.tricks.reset(); this.emo.clear(); this.emo.play('dizzy', 30);
     if (this.p.fly > 0) { this.p.fly = 0; this.sound.fly(false); this.skyShow.stop(); }
   }
 
@@ -836,7 +860,7 @@ class Game {
     const ms = this.ms.settle();
     const rs = this.rs || {};
     stats.merge({ runs: 1, dist: Math.floor(this.world.dist), bestDist: Math.floor(this.world.dist), sweets: this.got, bestScore: sc,
-      roof: Math.floor(rs.roof || 0), haat: rs.haat || 0, samosa: rs.samosa || 0, near: rs.near || 0, monkeyEsc: rs.monkeyEsc || 0, rings: rs.rings || 0, jungle: Math.floor(rs.jungle || 0) });
+      roof: Math.floor(rs.roof || 0), haat: rs.haat || 0, samosa: rs.samosa || 0, near: rs.near || 0, monkeyEsc: rs.monkeyEsc || 0, rings: rs.rings || 0, jungle: Math.floor(rs.jungle || 0), deliv: rs.deliver || 0, tricks: rs.tricks || 0 });
     const bd = checkBadges();
     const parts = [];
     if (ms.setDone) parts.push(`🎉 ${T('msSet')} ${ms.setDone.set} ✔ → ×${this.ms.mult}`);
@@ -854,7 +878,7 @@ class Game {
     $('#newBest').hidden = !nb;
     const ln = pickCheer(nb ? 'newBest' : 'over');
     setTimeout(() => { if (this.state === 'over') this.sayPair(ln, true); }, 500);
-    $('#overLb').hidden = true; $('#overRw').hidden = true;
+    $('#overLb').hidden = true; $('#overRw').hidden = true; this.dl.hide();
     this.rate.maybeAsk();
     if (this.goldMesh) this.goldMesh.visible = false; this.goldObj = null;
     this.show(['#over']);
@@ -947,7 +971,7 @@ class Game {
     }
     if (this.state !== 'play' && this.state !== 'paused') this.skyShow.update(rdt, 0, 0, 0, this.cam.position);
     if (this.state === 'paused' || this.state === 'over' || this.state === 'revive') {
-      if (this.state !== 'paused') { g.update(rdt, 'dead', {}); this.updateMonkey(rdt); }
+      if (this.state !== 'paused') { g.update(rdt, 'dead', {}); this.updateMonkey(rdt); this.updateEmo(rdt); }
       this.updateBees(rdt);
       return;
     }
@@ -960,6 +984,7 @@ class Game {
       this.updateMonkey(rdt);
       this.updateBees(rdt);
       this.updateCam(rdt);
+      this.updateEmo(rdt);
       if (this.deathT > 1.5) this.afterDeath();
       return;
     }
@@ -1011,6 +1036,7 @@ class Game {
       if (p.y <= floor && p.vy <= 0) {
         p.y = floor; p.vy = 0; p.ground = true; p.air = 0;
         if (p.rollQ) { p.roll = ROLL_T; p.rollQ = false; this.sound.roll(); }
+        this.tricks.land();
       }
     }
     if (p.roll > 0) p.roll -= dt;
@@ -1026,6 +1052,8 @@ class Game {
     this.comboT -= dt;
     // दुनिया
     this.world.update(dt, dz, this.speed, this.ctx());
+    this.dl.update(dt, dz);
+    this.tricks.update(dt);
     {
       const td = this.tod || { eve: 0, night: 0 }, zn = this.world.zone;
       this.wild = damp(this.wild, zn === 'jungle' ? 1 : zn === 'fields' ? 0.7 : 0, 1.5, dt);
@@ -1053,7 +1081,13 @@ class Game {
     if (p.roll > 0) mode = 'roll';
     if (p.stumT > 0 && p.ground && p.roll <= 0) mode = 'stumble';
     const flip = !p.ground && p.big ? clamp(p.air / (2 * SHOE_V / -GRAV), 0, 1) : null;
-    g.update(dt, mode, { speed: this.speed, y: p.y, gy, big: this.rushT > 0, shield: this.pu.shield, flip });
+    // पीछा हो रहा हो तो बीच-बीच में पीछे मुड़कर देखे + पसीना
+    const chased = p.beesT > 0 || this.mk.st === 'chase' || this.mk.st === 'enter';
+    this.lookC = chased ? (this.lookC || 0) + dt : 0;
+    const look = chased && p.ground && p.roll <= 0 && p.fly <= 0 && this.lookC % 1.7 > 1.12 ? 1 : 0;
+    this.emo.set('sweat', chased && p.fly <= 0);
+    const tr = this.tricks;
+    g.update(dt, mode, { speed: this.speed, y: p.y, gy, big: this.rushT > 0, shield: this.pu.shield, flip, tx: tr.rx, tz: tr.rz, look });
     g.root.position.set(p.x, p.y, 0);
     g.root.rotation.z = (p.tx - p.x) * -0.06;
     // उड़ान का अंदाज़: उठते समय पूरी कलाबाज़ी, बीच-बीच में घूमकर मुस्कान दिखाए
@@ -1063,7 +1097,7 @@ class Game {
       roll = ft < 1.1 ? e(ft / 1.1) * Math.PI * 2 : 0;
       for (const t0 of [3.3, 6.2]) if (ft > t0 && ft < t0 + 0.8) twirl = e((ft - t0) / 0.8) * Math.PI * 2;
     }
-    g.root.rotation.z += roll; g.root.rotation.y = twirl;
+    g.root.rotation.z += roll; g.root.rotation.y = twirl + tr.ry;
     const hits = this.skyShow.update(dt, dz, p.x, p.y, this.cam.position);
     if (hits) {
       this.score += 100 * hits * this.mult; this.got += 3 * hits;
@@ -1094,6 +1128,7 @@ class Game {
     this.updateMonkey(dt);
     this.updateBees(dt);
     this.updateCam(rdt);
+    this.updateEmo(rdt);
     this.updateHud();
     this.autoQuality(rdt);
   }
@@ -1203,8 +1238,9 @@ class Game {
   updateCam(dt) {
     const p = this.p, v = this.view;
     this.camX = damp(this.camX, p.x * 0.55, 7, dt);
-    const fov = v.fov + (this.speed - 14) * 0.28 + (this.rushT > 0 ? 6 : 0);
-    if (Math.abs(this.cam.fov - fov) > 0.05) { this.cam.fov = damp(this.cam.fov, fov, 4, dt); this.cam.updateProjectionMatrix(); }
+    this.camKick = Math.max(0, (this.camKick || 0) - dt * 2.5);
+    const fov = v.fov + (this.speed - 14) * 0.28 + (this.rushT > 0 ? 6 : 0) + Math.sin(Math.min(1, this.camKick * 2) * Math.PI) * 4;
+    if (Math.abs(this.cam.fov - fov) > 0.05) { this.cam.fov = damp(this.cam.fov, fov, this.camKick > 0 ? 14 : 4, dt); this.cam.updateProjectionMatrix(); }
     this.shake = Math.max(0, this.shake - dt * 1.6);
     const sh = this.shake * this.shake;
     const fk = clamp(p.y / FLY_Y, 0, 1) * (p.fly > 0 || p.y > 3 ? 1 : 0);
@@ -1215,6 +1251,18 @@ class Game {
     if (this.flyK > 0.01) this.cam.rotateZ((p.tx - p.x) * 0.035 * this.flyK);
   }
 
+  // भाव सिर के ऊपर (लुढ़कते समय नीचे, गिरने पर ज़मीन के पास)
+  updateEmo(dt) {
+    const p = this.p; if (!p) return;
+    const sc = this.golu.scale || 1;
+    if (this.state === 'dying' || this.state === 'over' || this.state === 'revive') this.emo.update(dt, p.x, Math.max(0, p.y) + 0.85, 0.9, 1);
+    else this.emo.update(dt, p.x, p.y + (p.roll > 0 ? 1.15 : 2.45) * sc, 0.05, sc);
+  }
+  // छोटा उड़ता लिखा (करतब के अंक)
+  floatText(txt, cls = '') {
+    const d = document.createElement('div'); d.className = 'ftxt ' + cls; d.textContent = txt;
+    $('#app').appendChild(d); setTimeout(() => d.remove(), 900);
+  }
   updateHud() {
     const h = this.hud;
     const s = Math.floor(this.score);

@@ -169,7 +169,9 @@ export class Golu {
     B.foreR.rotation.x = -C.eR * D2R; B.foreL.rotation.x = -C.eL * D2R;
     B.hips.rotation.y = C.hipY * D2R;
     B.spine.rotation.set(C.spX * D2R - 6 * D2R, C.spY * D2R, 0);
-    B.head.rotation.set(C.hdX * D2R, -C.spY * 0.5 * D2R, C.hdZ * D2R);
+    this.look = k(this.look || 0, o.look || 0, 9); // पीछे मुड़कर देखना (मधुमक्खी/बंदर)
+    B.spine.rotation.y += this.look * 0.35;
+    B.head.rotation.set(C.hdX * D2R, -C.spY * 0.5 * D2R + this.look * 1.15, C.hdZ * D2R);
     // खाते समय सिर हल्का फूले
     this.eatT = Math.max(0, this.eatT - dt);
     const hs = this.eatT > 0 ? 1.07 : 1;
@@ -177,10 +179,13 @@ export class Golu {
     const b = this.body;
     b.position.y = 0.5 * SCALE * 0.95 + C.by;
     // ध्यान: model 180° घूमा है, इसलिए आगे झुकना = body.rotation.x ऋणात्मक नहीं, धनात्मक कोण x पर (खेल की -z दिशा)
-    if (mode === 'roll') { this.spin -= dt * 15; b.rotation.x = this.spin; }
-    else if (o.flip != null) { b.rotation.x = -o.flip * PI * 2 - C.bx; this.spin = 0; }
-    else { this.spin = 0; b.rotation.x = k(((b.rotation.x % (PI * 2)) + PI * 3) % (PI * 2) - PI, -C.bx, 12); }
-    b.rotation.z = k(b.rotation.z, C.bz, 12);
+    // rx0/rz0 = अपना झुकाव; ऊपर से करतब (o.tx/o.tz) जोड़ते हैं — ताकि अगले फ़्रेम में झुकाव करतब से न बिगड़े
+    if (mode === 'roll') { this.spin -= dt * 15; this.rx0 = this.spin; }
+    else if (o.flip != null && !o.tx && !o.tz) { this.rx0 = -o.flip * PI * 2 - C.bx; this.spin = 0; }
+    else { this.spin = 0; const r = this.rx0 == null ? b.rotation.x : this.rx0; this.rx0 = k(((r % (PI * 2)) + PI * 3) % (PI * 2) - PI, -C.bx, 12); }
+    this.rz0 = k(this.rz0 || 0, C.bz, 12);
+    b.rotation.x = this.rx0 + (o.tx || 0);
+    b.rotation.z = this.rz0 + (o.tz || 0);
     b.scale.setScalar(C.sq);
     this.scale = k(this.scale, o.big ? 1.45 : 1, 6);
     this.root.scale.setScalar(this.scale);

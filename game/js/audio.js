@@ -236,6 +236,17 @@ export class Sound {
   smash() { if (!this.ok()) return; const t = this.now(); this.hiss(t, 0.3, { vol: 0.35, fq: 1200, to: 300 }); this.tone(200, t, 0.2, { vol: 0.25, to: 60, type: 'square' }); }
   near() { if (!this.ok()) return; const t = this.now(); this.hiss(t, 0.3, { vol: 0.2, fq: 400, to: 3000, q: 2 }); }
   splash() { if (!this.ok()) return; this.hiss(this.now(), 0.3, { vol: 0.25, type: 'lowpass', fq: 900, to: 300 }); }
+  // नया ऑर्डर — दरवाज़े की घंटी जैसा "डिंग-डोंग"
+  order() { if (!this.ok()) return; const t = this.now(); this.tone(f(7, 659.25), t, 0.35, { vol: 0.13, type: 'triangle' }); this.tone(f(0, 659.25), t + 0.18, 0.5, { vol: 0.13, type: 'triangle' }); }
+  // डिलीवरी — साइकिल की घंटी "ट्रिंग-ट्रिंग" + सिक्के
+  deliver() {
+    if (!this.ok()) return; const t = this.now();
+    for (let r = 0; r < 2; r++) { this.tone(2093, t + r * 0.15, 0.16, { vol: 0.06, vib: 1.5 }); this.tone(2637, t + r * 0.15, 0.13, { vol: 0.045, vib: 1.5 }); }
+    [0, 4, 7, 12, 16].forEach((n, k) => this.tone(f(n, 783.99), t + 0.34 + k * 0.055, 0.22, { vol: 0.08, type: 'triangle' }));
+  }
+  fail() { if (!this.ok()) return; const t = this.now(); this.tone(392, t, 0.22, { vol: 0.12, to: 330, type: 'triangle' }); this.tone(311, t + 0.2, 0.35, { vol: 0.12, to: 247, type: 'triangle' }); }
+  trick(n = 0) { if (!this.ok()) return; const t = this.now(); this.hiss(t, 0.28, { vol: 0.16, fq: 700 + n * 300, to: 3200 + n * 600, q: 1.4 }); }
+  trickLand(n = 1) { if (!this.ok()) return; const t = this.now(); [0, 4, 7, 12, 16, 19].slice(0, 2 + Math.min(n, 4)).forEach((k, i) => this.tone(f(k, 587.33), t + i * 0.045, 0.2, { vol: 0.09, type: 'triangle' })); }
   click() { if (!this.ok()) return; this.tone(880, this.now(), 0.06, { vol: 0.1, type: 'triangle' }); }
   bees(on) {
     if (!this.ctx) return;

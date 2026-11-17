@@ -58,10 +58,29 @@ export class Leaderboard {
   }
   open() {
     $('#lbS').hidden = false;
+    $('#lbCity').innerHTML = CITIES.map((c) => `<option value="${c[0]}">${LANG === 'en' ? c[2] : hiCity(c[1])}</option>`).join('');
     $('#lbTabs button[data-s="city"]').textContent = cityName(this.city);
     if (!this.name) this.showForm(); else { $('#lbForm').hidden = true; this.load(); }
   }
   close() { $('#lbS').hidden = true; if (this.onClose) this.onClose(); }
+  // पहली बार खुलते ही नाम और ज़िला (लीडरबोर्ड + दुकान के इनाम के लिए) — "बाद में" भी चुन सकते हैं
+  askProfile(done) {
+    const s = $('#profS'); if (!s) { if (done) done(); return; }
+    store('profAsk', 1);
+    $('#pfName').value = this.name; $('#pfMsg').textContent = '';
+    $('#pfCity').innerHTML = CITIES.map((c) => `<option value="${c[0]}">${LANG === 'en' ? c[2] : hiCity(c[1])}</option>`).join('');
+    $('#pfCity').value = this.city;
+    s.hidden = false;
+    const fin = () => { s.hidden = true; if (done) done(); };
+    $('#pfGo').onclick = (e) => {
+      e.preventDefault();
+      const n = $('#pfName').value.replace(/\s+/g, ' ').trim().slice(0, 16);
+      if (n.length < 2 || /\d{6,}/.test(n.replace(/\s/g, ''))) { $('#pfName').focus(); $('#pfMsg').textContent = T('lbNameErr'); return; }
+      store('lbname', n); store('lbcity', $('#pfCity').value);
+      fin();
+    };
+    $('#pfLater').onclick = (e) => { e.preventDefault(); fin(); };
+  }
   showForm() {
     $('#lbForm').hidden = false; $('#lbList').innerHTML = ''; $('#lbMe').textContent = '';
     $('#lbName').value = this.name; $('#lbCity').value = this.city;

@@ -21,11 +21,45 @@
 #leaveS{z-index:60}
 #langS{z-index:55}
 #rateS{z-index:58}
+#profS{z-index:56}
+.pf{align-self:stretch;display:flex;flex-direction:column;gap:3px;font:700 14px var(--body);text-align:left}
+.pf input,.pf select{font:600 17px var(--body);padding:9px 10px;border:2px solid var(--ink);border-radius:10px;background:#fff;color:var(--ink)}
+#pfMsg:empty{display:none}
+/* 🛵 डिलीवरी का कार्ड */
+#order{position:absolute;left:50%;top:calc(max(10px,env(safe-area-inset-top)) + 100px);transform:translateX(-50%);width:min(66vw,280px);background:#fffaf0f2;border:3px solid var(--ink);border-radius:16px;
+  padding:5px 9px 6px;box-shadow:0 4px 0 var(--ink);display:flex;flex-direction:column;gap:4px;pointer-events:none}
+#order .oh{display:flex;align-items:center;gap:6px}
+#order .oa{font-size:24px;line-height:1}
+#order .on{flex:1;min-width:0;font:800 15px/1.1 var(--disp);color:var(--maroon);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#order .os{font-size:12px;letter-spacing:-1px;white-space:nowrap}
+#order .oc{display:flex;gap:5px;flex-wrap:wrap;justify-content:center}
+#order .oc span{display:inline-flex;align-items:center;gap:4px;background:#fff;border:2px solid var(--ink);border-radius:99px;padding:1px 8px 0 3px;font:700 13px/1.2 var(--body);white-space:nowrap}
+#order .oc span b{font:800 14px var(--disp)}
+#order .oc i{width:14px;height:14px;border-radius:50%;border:2px solid var(--ink);flex:none}
+#order .oc span.ok{background:#E9F8E4;border-color:var(--leaf)}
+#order .oc span.just{animation:pop .3s}
+#order .ot{height:7px;border:2px solid var(--ink);border-radius:99px;overflow:hidden;background:#f3e6c8}
+#order .ot b{display:block;height:100%;width:100%;background:linear-gradient(90deg,var(--leaf),var(--haldi))}
+#order .ot b.low{background:var(--sindoor)}
+#order .ol{display:flex;gap:6px;justify-content:center}
+#order .ol span{width:44px;height:28px;border:2.5px solid var(--ink);border-radius:8px;background:#fff;display:grid;place-items:center;font-size:16px}
+#order .ol span.t{background:var(--haldi);animation:pulse .45s ease-in-out infinite alternate}
+#order .ol span.me:not(.t){background:#f3e6c8}
+#order.pop{animation:opop .4s}
+@keyframes opop{0%{transform:translateX(-50%) scale(.5)}70%{transform:translateX(-50%) scale(1.08)}100%{transform:translateX(-50%) scale(1)}}
+#order.shake{animation:oshake .4s}
+@keyframes oshake{0%,100%{transform:translateX(-50%)}25%{transform:translateX(calc(-50% - 8px))}75%{transform:translateX(calc(-50% + 8px))}}
+body.hasOrder #combo{top:calc(max(10px,env(safe-area-inset-top)) + 178px)}
+body.hasOrder #toast{top:33%}
+/* उड़ते अंक (करतब) */
+.ftxt{position:absolute;left:50%;top:52%;transform:translate(-50%,0);font:800 clamp(22px,6vw,30px) var(--disp);color:#FFE45C;-webkit-text-stroke:5px var(--ink);paint-order:stroke fill;pointer-events:none;z-index:4;animation:ftxt .9s ease-out forwards}
+@keyframes ftxt{0%{opacity:0;transform:translate(-50%,10px) scale(.6)}20%{opacity:1;transform:translate(-50%,0) scale(1.1)}100%{opacity:0;transform:translate(-50%,-60px) scale(1)}}
 /* ⭐ राय */
 .orate{display:flex;align-items:center;gap:8px;width:100%;background:#fff3cf;border:3px solid var(--ink);border-radius:14px;padding:6px 8px 4px 12px;font:800 15px/1.1 var(--disp)}
 .orate span{white-space:nowrap}
-.ostars{display:flex;gap:2px;flex:1;justify-content:center}
-.ost,.rst{background:none;border:0;color:#d8c7a2;font-size:30px;line-height:1;padding:0 2px;cursor:pointer;text-shadow:0 2px 0 var(--ink);transition:transform .12s}
+.ostars{display:flex;gap:0;flex:1;min-width:0;justify-content:center}
+.orate .ox{flex:none;padding:4px 2px}
+.ost,.rst{background:none;border:0;color:#d8c7a2;font-size:clamp(22px,7.2vw,30px);line-height:1;padding:0 2px;cursor:pointer;text-shadow:0 2px 0 var(--ink);transition:transform .12s}
 .ost:active,.rst:active{transform:scale(1.25)}
 .rst{font-size:clamp(40px,11vw,52px)}
 .ost.on,.rst.on{color:#ffc21a}
@@ -311,6 +345,7 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
         <div class="sw"><i class="rg"></i><span id="sweetsV">0</span></div>
       </div>
     </div>
+    <div id="order" hidden></div>
     <div id="combo" hidden></div>
     <div class="bottom">
       <div id="meter"><i></i><span>⚡</span></div>
@@ -339,7 +374,7 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
       </div>
       <div class="row"><button id="btnMs" class="sm" data-t="btnMs"></button><button id="btnWard" class="sm ward" data-t="btnWard"></button></div>
       <div class="row"><button id="btnUp" class="sm" data-t="btnUp"></button><button id="btnSet" class="sm" data-t="btnSet"></button></div>
-      <button id="btnLb" class="sm lbbtn wide" data-t="lb" hidden></button>
+      <div class="row"><button id="btnLb" class="sm lbbtn" data-t="lb" hidden></button><button id="btnRate" class="sm" data-t="rateBtn" hidden></button></div>
       <button id="btnRw" class="sm wide rwbtn rwon" hidden></button>
       <p id="keysTip" class="tiny" data-t="keys"></p>
       <p class="tiny local" data-t="soon"></p>
@@ -475,6 +510,17 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
     </div>
   </section>
 
+  <section id="profS" class="screen dim" hidden>
+    <div class="card">
+      <h2 data-t="profT"></h2>
+      <p class="lbnote" data-t="profP"></p>
+      <label class="pf"><span data-t="lbYourName"></span><input id="pfName" maxlength="16" autocomplete="nickname" enterkeyhint="done"></label>
+      <label class="pf"><span data-t="lbCityL"></span><select id="pfCity"></select></label>
+      <p id="pfMsg" class="lbnote warn"></p>
+      <button id="pfGo" class="big" data-t="profGo"></button>
+      <button id="pfLater" class="sm" data-t="profLater"></button>
+    </div>
+  </section>
   <section id="langS" class="screen dim" hidden>
     <div class="card">
       <h2>भाषा · Language</h2>
