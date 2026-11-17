@@ -1568,7 +1568,7 @@ class Game {
     const sh = this.shake * this.shake;
     const fk = clamp(p.y / FLY_Y, 0, 1) * (p.fly > 0 || p.y > 3 ? 1 : 0);
     this.flyK = damp(this.flyK || 0, fk, 3, dt);
-    const zo = this.zipOff || 0, cy = p.y * (0.35 + 0.55 * this.flyK) + zo * 0.22, ly = p.y * (0.3 + 0.62 * this.flyK) + zo * 0.9; // रस्सी पर: कैमरा रस्सी से थोड़ा नीचे — ऊपर रस्सी, नीचे नदी दिखे
+    const zo = this.zipOff || 0, cy = p.y * (0.35 + 0.55 * this.flyK) + zo * 0.3, ly = p.y * (0.3 + 0.62 * this.flyK) + zo * 0.9; // रस्सी पर: कैमरा रस्सी से थोड़ा नीचे — ऊपर रस्सी, नीचे नदी दिखे
     // 🎬 बंदर वाले पल: कैमरा गोलू के पास, थोड़ा बगल से (धीमी गति के साथ)
     this.cineK = damp(this.cineK || 0, this.cine > 0 && this.state === 'play' ? 1 : 0, this.cine > 0 ? 5 : 3, dt);
     const ck = this.cineK, cs = this.cineSide || (this.mk && this.mk.side) || 1;

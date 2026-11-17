@@ -14,7 +14,7 @@ import { rand, randi, pick, chance, weighted, clamp, lerp } from './util.js';
 import { POND_LEN, WATER_Y, TILE, POND_OBST, makeWaterTile, makeGhat, makeMakhana, makeFish, WATER } from './pond.js';
 import { makeMadhubaniPu } from './madhubani.js';
 import { seeded } from './ghost.js';
-import { ZIP_LEN, ZIP_H, ZIP_OBST, makeZipRig } from './zipline.js';
+import { ZIP_LEN, ZIP_H, ZIP_OBST, makeZipRig, trimRopes } from './zipline.js';
 Object.assign(OBST, JUNGLE_OBST, POND_OBST, ZIP_OBST);
 const REAL_RANDOM = Math.random;
 const real = (fn) => { const r = Math.random; Math.random = REAL_RANDOM; try { return fn(); } finally { Math.random = r; } }; // नई चीज़ बनाते समय असली random (बीज वाली गिनती न बिगड़े)
@@ -850,7 +850,7 @@ export class World {
       this.events.push('zip');
     }
     if (this.zip) {
-      this.zip.a += dz; this.zip.b += dz; this.zipRig.position.z += dz;
+      this.zip.a += dz; this.zip.b += dz; this.zipRig.position.z += dz; trimRopes(this.zipRig);
       for (let i = this.zwaters.length - 1; i >= 0; i--) { const t = this.zwaters[i]; t.position.z += dz; if (t.position.z - TILE / 2 > DESPAWN_Z) { t.visible = false; this.zwPool.push(t); this.zwaters.splice(i, 1); } }
       if (WATER.nm && !this.pond) { WATER.nm.offset.y += dz / 13; WATER.nm.offset.x = Math.sin((this.time || 0) * 0.6) * 0.04; }
       if (this.zip.b - 6 > DESPAWN_Z) { this.zipRig.visible = false; this.zip = null; }

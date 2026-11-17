@@ -20,7 +20,9 @@ const LX = [-2.5, 0, 2.5];
 // रस्सियाँ + दोनों ओर बाँस के मचान (z=0 शुरू, z=-ZIP_LEN अंत)
 export function makeZipRig() {
   const g = new THREE.Group(), mg = new Merge(), y = ZIP_H + ROPE_Y;
-  for (const x of LX) mg.add(G.cyl(0.035, 0.035, ZIP_LEN + 6, 6), mat4(x, y, -ZIP_LEN / 2, PI / 2, 0, 0), 0xd9c08a);
+  // रस्सियाँ अलग (हर फ़्रेम गोलू के ठीक पीछे तक काटी जाती हैं — कैमरे के पास मोटी कील जैसी न दिखें)
+  const rg = G.cyl(0.035, 0.035, 1, 6); rg.rotateX(PI / 2); const rm = new THREE.MeshStandardMaterial({ color: 0xd9c08a, roughness: 0.8 });
+  const ropes = LX.map((x) => { const r = new THREE.Mesh(rg, rm); r.position.set(x, y, -ZIP_LEN / 2); r.scale.z = ZIP_LEN + 6; g.add(r); return r; });
   for (const z of [3, -ZIP_LEN - 3]) { // मचान
     for (const s of [-1, 1]) {
       const x = s * (ROAD_HALF + 0.6);
@@ -37,8 +39,13 @@ export function makeZipRig() {
   const fl = new Merge();
   for (let i = 0; i < 11; i++) fl.add(G.cone(0.16, 0.3, 3), mat4(-4 + i * 0.8, y + 0.15 - Math.sin(PI * i / 10) * 0.35, 2.3, PI, 0, 0), [0xd1261c, 0xf2a91b, 0x2e7b47, 0xd8457f][i % 4]);
   g.add(fl.mesh(0));
-  g.visible = false;
+  g.visible = false; g.userData.ropes = ropes;
   return g;
+}
+// रस्सी का पास वाला सिरा गोलू (z≈0) के ठीक पीछे तक
+export function trimRopes(rig) {
+  const a = rig.position.z, near = Math.min(3, 0.6 - a), far = -ZIP_LEN - 3; // स्थानीय z
+  for (const r of rig.userData.ropes) { const L = Math.max(0.01, near - far); r.scale.z = L; r.position.z = (near + far) / 2; r.visible = near > far; }
 }
 // गोलू के हाथ का कुंडा (रस्सी पर चलती घिरनी)
 export function makeTrolley() {
