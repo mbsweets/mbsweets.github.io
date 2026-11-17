@@ -22,6 +22,14 @@
 #langS{z-index:55}
 #rateS{z-index:58}
 #profS{z-index:56}
+/* 🎨 मधुबनी शक्ति का बॉर्डर */
+#mbFrame{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .45s;
+  background:radial-gradient(circle at 0 0,#f2a91b 0 26px,#c4161c 26px 31px,#2a1511 31px 34px,transparent 35px),radial-gradient(circle at 100% 0,#f2a91b 0 26px,#c4161c 26px 31px,#2a1511 31px 34px,transparent 35px),
+    radial-gradient(circle at 0 100%,#f2a91b 0 26px,#c4161c 26px 31px,#2a1511 31px 34px,transparent 35px),radial-gradient(circle at 100% 100%,#f2a91b 0 26px,#c4161c 26px 31px,#2a1511 31px 34px,transparent 35px),
+    repeating-linear-gradient(90deg,#c4161c 0 12px,#f2a91b 12px 24px,#2e7b47 24px 36px) top/100% 9px no-repeat,repeating-linear-gradient(90deg,#c4161c 0 12px,#f2a91b 12px 24px,#2e7b47 24px 36px) bottom/100% 9px no-repeat,
+    repeating-linear-gradient(0deg,#c4161c 0 12px,#f2a91b 12px 24px,#2e7b47 24px 36px) left/9px 100% no-repeat,repeating-linear-gradient(0deg,#c4161c 0 12px,#f2a91b 12px 24px,#2e7b47 24px 36px) right/9px 100% no-repeat;
+  box-shadow:inset 0 0 0 9px transparent,inset 0 0 0 12px #2a1511,inset 0 0 0 17px #fbf0d6,inset 0 0 0 19px #2a1511}
+#mbFrame.on{opacity:1}
 .sub.fest{background:var(--maroon);color:#FFE7A8;font-size:clamp(13px,3.6vw,16px);margin-top:6px;max-width:92vw}
 .pf{align-self:stretch;display:flex;flex-direction:column;gap:3px;font:700 14px var(--body);text-align:left}
 .pf input,.pf select{font:600 17px var(--body);padding:9px 10px;border:2px solid var(--ink);border-radius:10px;background:#fff;color:var(--ink)}
@@ -335,6 +343,7 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
 <body>
 <div id="app">
   <canvas id="c"></canvas>
+  <div id="mbFrame"></div>
 
   <div id="hud" hidden>
     <div class="top">

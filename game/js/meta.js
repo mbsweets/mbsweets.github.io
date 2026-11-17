@@ -91,6 +91,8 @@ const MT = [
   { id: 'deliver', min: 2, f: (s) => 1 + s / 5, hi: '{n} डिलीवरी पूरा करू', en: 'Complete {n} deliveries' },
   { id: 'tricks', min: 2, f: (s) => 6 + 2 * s, hi: '{n} करतब करू', en: 'Land {n} tricks' },
   { id: 'monkeyCatch', min: 3, f: (s) => 1 + s / 8, hi: 'चोर बंदर केँ {n} बेर पकड़ू', en: 'Catch the thief monkey {n} times' },
+  { id: 'pond', min: 5, f: (s) => Math.min(600, 150 + 25 * s), hi: 'नाव सँ {n} मीटर चलू', en: 'Go {n} m by boat' },
+  { id: 'madhu', min: 4, f: (s) => 1 + s / 8, hi: '{n} बेर मधुबनी शक्ति पकड़ू', en: 'Grab Madhubani Magic {n} times' },
   { id: 'roof', min: 6, f: (s) => 60 + 30 * s, hi: 'रेलगाड़ीक छत पर {n} मीटर दौड़ू', en: 'Run {n} m on train roofs' },
 ];
 // सेट पूरा होने का इनाम: कपड़ा (id) या मिठाई (संख्या)
@@ -171,6 +173,8 @@ export const BADGES = [
   { id: 'trick', icon: '🤸', hi: 'करतबबाज़', en: 'Trickster (100 tricks)', t: (s) => s.tricks >= 100 },
   { id: 'catch', icon: '🍌', hi: 'बंदर-पकड़', en: 'Monkey Catcher (10 catches)', t: (s) => s.monkeyCatch >= 10 },
   { id: 'sama26', icon: '🕊️', hi: 'सामा-चकेवा 2026', en: 'Sama-Chakeva 2026 (5 Chakeva birds)', t: (s) => s.sama >= 5 },
+  { id: 'naav', icon: '🚣', hi: 'नाविक', en: 'Boatman (2 km by boat)', t: (s) => s.pond >= 2000 },
+  { id: 'madhu', icon: '🎨', hi: 'मधुबनी कलाकार', en: 'Madhubani Artist (10 times)', t: (s) => s.madhu >= 10 },
   { id: 'star', icon: '⭐', hi: 'सुपर स्टार', en: 'Superstar (50,000 score)', t: (s) => s.bestScore >= 50000 },
 ];
 export function checkBadges() {

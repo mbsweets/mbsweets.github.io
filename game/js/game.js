@@ -26,6 +26,8 @@ import { Delivery } from './delivery.js';
 import { Emotes } from './emote.js';
 import { Tricks } from './tricks.js';
 import { Festival } from './festivals.js';
+import { makeBoat, WATER_Y } from './pond.js';
+import { MadhubaniFX } from './madhubani.js';
 
 const $ = (s) => document.querySelector(s);
 // ग्राफ़िक्स के दर्जे (0 = सबसे बढ़िया). ऑटो: पूरी दौड़ में हर 2 सेकंड रफ़्तार देखो, धीमा हो तो एक दर्जा नीचे; फ़ोन याद रखे
@@ -195,6 +197,8 @@ class Game {
     this.emo = new Emotes(sc); // 😅 भाव
     this.tricks = new Tricks(this); // 🤸 करतब
     this.fest = new Festival(this, this.world); // 🪔 त्योहार (तारीख़ से)
+    this.boat = makeBoat(); this.boat.visible = false; sc.add(this.boat); // 🚣 पोखर की नाव
+    this.mfx = new MadhubaniFX(r); this.madK = 0; // 🎨 मधुबनी
     this.camKick = 0;
     // रात: लालटेन/खंभों की चमक + जुगनू; गोलू के आगे गरम रोशनी (भारी दर्जों में बंद)
     this.nfx = new NightFX(sc);
@@ -445,7 +449,7 @@ class Game {
     this.beeC.set(0, 2, 18);
     this.nightSaid = false; this.wild = 0; this.nfx.update(0, 0, 0, 0, this.world.chunks, this.cam.quaternion);
     if (this.mk) { this.mk.st = 'off'; this.monkey.visible = false; }
-    if (this.dl) { this.dl.reset(); this.tricks.reset(); this.emo.clear(); }
+    if (this.dl) { this.dl.reset(); this.tricks.reset(); this.emo.clear(); this.boat.visible = false; if (this.pu) this.pu.madhu = 0; }
     if (this.sound.ctx && !this.sound.playing) this.sound.startMusic();
     if (!PORTAL && store('lang3') == null) $('#langS').hidden = false; // पहली बार: भाषा चुनो (फिर रोज़ का इनाम)
     else if (this.needProfile()) this.lb.askProfile(() => { if (!skipDaily) this.meta.maybeDaily(); }); // पुराने खिलाड़ी: एक बार नाम-ज़िला
@@ -471,12 +475,12 @@ class Game {
     this.revived = false; this.runs++;
     this.mk = { st: 'off', t: 0, x: 0, y: 0, z: 4 }; this.monkey.visible = false; this.toMonkey = rand(550, 800);
     this.dl.reset(); this.tricks.reset(); this.emo.clear(); this.trickHint = false; this.camKick = 0;
-    this.fest.start();
+    this.fest.start(); this.boat.visible = false; this.madK = 0;
     this.sound.init();
     if (!this.sound.playing) this.sound.startMusic();
     this.world.reset(!this.tutDone);
-    this.p = { lane: 1, prevLane: 1, x: 0, tx: 0, y: 0, vy: 0, ground: true, roll: 0, rollQ: false, laneT: 9, big: false, stumT: 0, beesT: 0, invT: 0, slowT: 0, air: 0, fly: 0 };
-    this.pu = { magnet: 0, shoes: 0, shield: false, thali: 0 };
+    this.p = { lane: 1, prevLane: 1, x: 0, tx: 0, y: 0, vy: 0, ground: true, roll: 0, rollQ: false, laneT: 9, big: false, stumT: 0, beesT: 0, invT: 0, slowT: 0, air: 0, fly: 0, boat: false };
+    this.pu = { magnet: 0, shoes: 0, shield: false, thali: 0, madhu: 0 };
     this.level = 0; this.samosa.visible = false; this.skyShow.reset();
     this.nightSaid = false; this.wild = 0; this.nfx.update(0, 0, 0, 0, this.world.chunks, this.cam.quaternion);
     this.rushT = 0; this.meter = 0;
@@ -608,7 +612,7 @@ class Game {
   // ------------------------------------------------ खेल की घटनाएँ
   collect(it) {
     const s = SWEETS[it.type];
-    const mul = this.pu.thali > 0 ? 2 : 1;
+    const mul = (this.pu.thali > 0 ? 2 : 1) * (this.pu.madhu > 0 ? 2 : 1);
     this.got += s.pts * mul;
     this.combo = this.comboT > 0 ? this.combo + 1 : 1;
     this.comboT = 1.1;
@@ -627,6 +631,8 @@ class Game {
 
   takePu(p) {
     p.taken = true;
+    if (p.kind === 'makhana') { this.got += 5; this.score += 50 * this.mult; this.world.parts.burst(p.x, p.y, p.z, 0xfaf6ea, 18, 3, 3, 0.7); this.sound.collect(3, 'rasgulla'); this.toast(T('makhanaT'), 700, 'gold'); this.msBump('sweets', this.got, true); return; }
+    if (p.kind === 'madhubani') { this.pu.madhu = 9; this.sound.power(); this.sound.levelUp(); vibrate([30, 40, 30]); this.cheer('madhubani', 1600, -1, true, 'gold'); this.msBump('power'); this.msBump('madhu'); this.camKick = 0.6; return; }
     if (p.kind === 'chakeva') { this.world.parts.burst(p.x, p.y, p.z, 0xfff4d6, 16, 3, 3, 0.7); this.world.parts.burst(p.x, p.y, p.z, 0xd1261c, 8, 3, 3, 0.7); this.fest.got(); return; }
     this.sound.power();
     vibrate(25);
@@ -928,7 +934,7 @@ class Game {
     const ms = this.ms.settle();
     const rs = this.rs || {};
     stats.merge({ runs: 1, dist: Math.floor(this.world.dist), bestDist: Math.floor(this.world.dist), sweets: this.got, bestScore: sc,
-      roof: Math.floor(rs.roof || 0), haat: rs.haat || 0, samosa: rs.samosa || 0, near: rs.near || 0, monkeyEsc: rs.monkeyEsc || 0, rings: rs.rings || 0, jungle: Math.floor(rs.jungle || 0), deliv: rs.deliver || 0, tricks: rs.tricks || 0, sama: rs.sama || 0, monkeyCatch: rs.monkeyCatch || 0 });
+      roof: Math.floor(rs.roof || 0), haat: rs.haat || 0, samosa: rs.samosa || 0, near: rs.near || 0, monkeyEsc: rs.monkeyEsc || 0, rings: rs.rings || 0, jungle: Math.floor(rs.jungle || 0), deliv: rs.deliver || 0, tricks: rs.tricks || 0, sama: rs.sama || 0, monkeyCatch: rs.monkeyCatch || 0, pond: Math.floor(rs.pond || 0), madhu: rs.madhu || 0 });
     const bd = checkBadges();
     const parts = [];
     if (ms.setDone) parts.push(`🎉 ${T('msSet')} ${ms.setDone.set} ✔ → ×${this.ms.mult}`);
@@ -997,7 +1003,11 @@ class Game {
     this.update(rdt);
     this.sky.position.copy(this.cam.position);
     this.sky.material.uniforms.uTime.value += rdt;
-    this.renderer.render(this.scene, this.cam);
+    const mk = this.pu && this.state !== 'menu' && this.pu.madhu > 0 ? 1 : 0;
+    this.madK = damp(this.madK || 0, mk, mk ? 5 : 3, rdt);
+    if (this.madK > 0.01) this.mfx.render(this.scene, this.cam, this.madK, this.tier >= 2 ? 0.7 : 1);
+    else this.renderer.render(this.scene, this.cam);
+    const fr = this.madK > 0.3; if (fr !== this.frOn) { this.frOn = fr; this.mfx.showFrame(fr); }
   }
 
   // शाम/रात — आसमान, धूप, कोहरा, चमक
@@ -1107,11 +1117,21 @@ class Game {
         this.tricks.land();
       }
     }
+    // 🚣 पोखर: घाट पार होते ही नाव पर (उछलकर), दूसरे घाट पर उतरो
+    const pd = this.world.pond, inPond = !!pd && pd.a > 0.4 && pd.b < -0.4;
+    if (inPond !== !!p.boat) {
+      p.boat = inPond;
+      if (p.fly <= 0 && p.ground) { p.vy = 7.5; p.ground = false; }
+      this.world.parts.burst(p.x, WATER_Y + 0.1, -0.6, 0xe9fbff, 22, 3.5, 3, 0.7); this.world.parts.burst(p.x, WATER_Y + 0.1, -0.6, 0x5fb7c4, 12, 3, 2.5, 0.6);
+      this.sound.splash();
+      if (inPond) { this.zoneBanner('🚣', T('pondZ')); this.cheer('pond', 1700, -1, true); } else this.cheer('pondOut', 1000);
+    }
+    if (p.boat && p.fly <= 0) this.msBump('pond', dz);
     if (p.roll > 0) p.roll -= dt;
     p.stumT = Math.max(0, p.stumT - dt);
     p.invT = Math.max(0, p.invT - dt);
     if (p.beesT > 0) { p.beesT -= dt; if (p.beesT <= 0) this.sound.bees(false); }
-    for (const k of ['magnet', 'shoes', 'thali']) this.pu[k] = Math.max(0, this.pu[k] - dt);
+    for (const k of ['magnet', 'shoes', 'thali', 'madhu']) this.pu[k] = Math.max(0, this.pu[k] - dt);
     if (this.rushT > 0) {
       this.rushT -= dt;
       this.meter = Math.max(0, this.rushT / 6);
@@ -1148,6 +1168,8 @@ class Game {
     else if (!p.ground) mode = 'jump';
     if (p.roll > 0) mode = 'roll';
     if (p.stumT > 0 && p.ground && p.roll <= 0) mode = 'stumble';
+    const inBoat = !!p.boat && p.fly <= 0;
+    if (inBoat) mode = p.roll > 0 ? 'duck' : 'boat';
     const flip = !p.ground && p.big ? clamp(p.air / (2 * SHOE_V / -GRAV), 0, 1) : null;
     // पीछा हो रहा हो तो बीच-बीच में पीछे मुड़कर देखे + पसीना
     const chased = p.beesT > 0 || this.mk.st === 'chase' || this.mk.st === 'enter';
@@ -1156,8 +1178,14 @@ class Game {
     this.emo.set('sweat', chased && p.fly <= 0);
     const tr = this.tricks;
     g.update(dt, mode, { speed: this.speed, y: p.y, gy, big: this.rushT > 0, shield: this.pu.shield, flip, tx: tr.rx, tz: tr.rz, look });
-    g.root.position.set(p.x, p.y, 0);
+    g.root.position.set(p.x, p.y + (inBoat ? WATER_Y + 0.12 : 0), inBoat ? 0.12 : 0);
     g.root.rotation.z = (p.tx - p.x) * -0.06;
+    const bt = this.boat; bt.visible = inBoat;
+    if (inBoat) {
+      bt.position.set(p.x, p.y + WATER_Y - 0.22 + Math.sin(this.runT * 3.2) * 0.04, 0.05);
+      bt.rotation.set(Math.sin(this.runT * 2.1) * 0.03 - (p.ground ? 0 : 0.08), 0, (p.tx - p.x) * -0.09 + Math.sin(this.runT * 2.6) * 0.03);
+      if (p.ground && Math.random() < 0.5) this.world.parts.burst(p.x + rand(-0.55, 0.55), WATER_Y + 0.06, 1.5, Math.random() < 0.6 ? 0xffffff : 0xbfe9ee, 1, 0.7, 0.5, 0.6, -2);
+    }
     // उड़ान का अंदाज़: उठते समय पूरी कलाबाज़ी, बीच-बीच में घूमकर मुस्कान दिखाए
     let roll = 0, twirl = 0;
     if (p.fly > 0) {
@@ -1325,7 +1353,7 @@ class Game {
     const p = this.p; if (!p) return;
     const sc = this.golu.scale || 1;
     if (this.state === 'dying' || this.state === 'over' || this.state === 'revive') this.emo.update(dt, p.x, Math.max(0, p.y) + 0.85, 0.9, 1);
-    else this.emo.update(dt, p.x, p.y + (p.roll > 0 ? 1.15 : 2.45) * sc, 0.05, sc);
+    else this.emo.update(dt, p.x, p.y + (p.boat && p.fly <= 0 ? WATER_Y - 0.4 : 0) + (p.roll > 0 ? 1.15 : 2.45) * sc, 0.05, sc);
   }
   // छोटा उड़ता लिखा (करतब के अंक)
   floatText(txt, cls = '') {
@@ -1352,7 +1380,7 @@ class Game {
     const rush = this.rushT > 0;
     if (h.rush !== rush) { h.rush = rush; document.body.classList.toggle('rushing', rush); }
     const thief = this.mk && this.mk.st === 'thief' ? Math.ceil(this.mk.T) : 0, fc = this.fest && this.fest.on && !this.fest.done ? this.fest.n : -1;
-    const pu = (thief ? 'k' + thief : '') + (fc >= 0 ? 'c' + fc : '') + (this.pu.magnet > 0 ? 'm' + Math.ceil(this.pu.magnet) : '') + (this.pu.shoes > 0 ? 's' + Math.ceil(this.pu.shoes) : '') + (this.pu.shield ? 'L' : '') + (this.pu.thali > 0 ? 't' + Math.ceil(this.pu.thali) : '') + (this.p.fly > 0 ? 'f' + Math.ceil(this.p.fly) : '');
+    const pu = (thief ? 'k' + thief : '') + (fc >= 0 ? 'c' + fc : '') + (this.pu.magnet > 0 ? 'm' + Math.ceil(this.pu.magnet) : '') + (this.pu.shoes > 0 ? 's' + Math.ceil(this.pu.shoes) : '') + (this.pu.shield ? 'L' : '') + (this.pu.thali > 0 ? 't' + Math.ceil(this.pu.thali) : '') + (this.pu.madhu > 0 ? 'b' + Math.ceil(this.pu.madhu) : '') + (this.p.fly > 0 ? 'f' + Math.ceil(this.p.fly) : '');
     if (h.pu !== pu) {
       h.pu = pu;
       const box = $('#pu');
@@ -1364,6 +1392,7 @@ class Game {
       if (this.pu.shoes > 0) chip('🌀', T('shoes'), Math.ceil(this.pu.shoes));
       if (this.pu.shield) chip('🟠', T('shield'), '');
       if (this.pu.thali > 0) chip('✖️2', T('thali'), Math.ceil(this.pu.thali));
+      if (this.pu.madhu > 0) chip('🎨', T('madhuS'), Math.ceil(this.pu.madhu));
       if (this.p.fly > 0) chip('🔺', T('samosaS'), Math.ceil(this.p.fly));
     }
   }

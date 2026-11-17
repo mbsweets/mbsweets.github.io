@@ -137,6 +137,11 @@ export class Golu {
     } else if (mode === 'fly') { // समोसे पर बैठा — हाथ फैलाकर संतुलन, मज़े में
       P.tR = 80; P.tL = 80; P.kR = 100; P.kL = 100; P.aR = 20 + 18 * s; P.aL = 20 - 18 * s; P.oR = 70 + 12 * c; P.oL = 70 - 12 * c; P.eR = 20; P.eL = 20;
       P.spX = 4; P.hdZ = 5 * s; P.spY = 6 * s; P.by = -0.55; P.bx = 0.05; P.bz = 0.06 * s;
+    } else if (mode === 'boat') { // नाव में बैठा, पतवार चलाता
+      P.tR = 82; P.tL = 82; P.kR = 98; P.kL = 98; P.aR = 45 + 30 * s; P.aL = 45 + 30 * s; P.oR = 22; P.oL = 22; P.eR = 35 - 20 * s; P.eL = 35 - 20 * s;
+      P.spX = 10 + 9 * s; P.hdX = -4 * s; P.by = -0.52; P.bx = 0.05;
+    } else if (mode === 'duck') { // नाव में झुका (जाल के नीचे)
+      P.tR = 88; P.tL = 88; P.kR = 105; P.kL = 105; P.aR = 70; P.aL = 70; P.oR = 30; P.oL = 30; P.eR = 70; P.eL = 70; P.spX = 42; P.hdX = 25; P.by = -0.78; P.sq = 0.9;
     } else if (mode === 'roll') {
       P.tR = 70; P.tL = 70; P.kR = 95; P.kL = 95; P.aR = 50; P.aL = 50; P.oR = 12; P.oL = 12; P.spX = 20; P.hdX = 15; P.by = -0.38; P.sq = 0.74;
     } else if (mode === 'dead') {
@@ -154,7 +159,7 @@ export class Golu {
     const k = (cur, tgt, spd = 16) => cur + (tgt - cur) * (1 - Math.exp(-spd * dt));
     const sp = o.speed || 14;
     const run = mode === 'run' || mode === 'stumble';
-    this.phase += dt * (run ? 8 + sp * 0.34 : mode === 'dance' ? 6.5 : mode === 'fly' ? 4 : 3);
+    this.phase += dt * (run ? 8 + sp * 0.34 : mode === 'dance' ? 6.5 : mode === 'fly' ? 4 : mode === 'boat' ? 5 : 3);
     const P = this.pose(mode, this.phase, sp);
     if (!this.cur) this.cur = { ...P };
     const C = this.cur, spd = run ? 40 : 18;
