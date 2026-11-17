@@ -92,13 +92,15 @@ export class MetaUI {
       + row('🗣️ ' + T('sVoice'), tog('voice', SETTINGS.voice)) + row('📳 ' + T('sVib'), tog('vib', SETTINGS.vib))
       + `<div class="st col"><span>🖼️ ${T('sGfx')}</span><div class="seg sm2">${gfx}</div></div>`
       + `<div class="st col"><span>🌐 ${T('sLang')}</span><div class="seg sm2">${lang}</div></div>`
-      + `<button class="sm howto" data-act="howto">${T('howTo')}</button>`;
+      + `<button class="sm howto" data-act="howto">${T('howTo')}</button>`
+      + (this.g.rate && this.g.rate.on ? `<button class="sm howto" data-act="rate">${T('rateBtn')}</button>` : '');
   }
   onClick(e) {
     const b = e.target.closest('button'); if (!b) return;
     const g = this.g; g.sound.init(); g.sound.click();
     if (b.dataset.act === 'daily') { this.claim(); return; }
     if (b.dataset.act === 'howto') { this.g.replayTutorial(); return; }
+    if (b.dataset.act === 'rate') { $('#metaS').hidden = true; this.g.rate.open(); return; }
     if (b.dataset.up) {
       if (buyUp(b.dataset.up)) { g.sound.power(); g.toast(T('upDone'), 900, 'gold'); } else if (upLevel(b.dataset.up) < 5) g.toast(T('noSweets'), 900, 'warn');
     } else if (b.dataset.set) {

@@ -10,6 +10,7 @@
 // POST /stamp  {pid, why:'gold'|'mission'|'dist', score, dist, secs}  — दिन में हर काम का 1 स्टैम्प (कुल 3); 10 = 1 रसगुल्ला मुफ़्त (हफ़्ते में 2 तक)
 // POST /reward {pid, score, dist, secs, mult} — एक दौड़ में 20,000+ → ₹200+ मिठाई/नमकीन पर ₹20 छूट (हफ़्ते में 1)
 // POST /coupon/check {key, code} · /coupon/use {key, code} · /coupon/undo {key, code} · /admin/config {key, cap}  — सिर्फ़ बिलिंग ऐप (ADMIN_KEY)
+// POST /feedback {pid, stars 1-5, tags[], text, lang, src, dev, tier, runs, best, ver} — खिलाड़ी की राय (एक फ़ोन की दिन में 1; नाम/फ़ोन नहीं; लिखे में फ़ोन नंबर/गाली कटती)
 const ORIGINS = ['https://mbsweets.github.io', 'http://127.0.0.1:8766', 'http://localhost:8766'];
 const CITIES = ['darbhanga', 'madhubani', 'samastipur', 'sitamarhi', 'muzaffarpur', 'saharsa', 'supaul', 'patna', 'bihar', 'india', 'abroad'];
 const BAD = ['madarchod', 'bhenchod', 'behenchod', 'chutiya', 'bhosdi', 'gandu', 'randi', 'fuck', 'shit', 'bitch', 'मादर', 'बहनचो', 'भेनचो', 'चुतिया', 'भोसड़', 'गांडू', 'रंडी'];
@@ -47,7 +48,13 @@ async function stats(req, env, asJson) {
     rasToday: (await env.DB.prepare("SELECT COUNT(*) AS n FROM coupon WHERE kind='ras' AND used_day=?").bind(today).first()).n,
     cap: await getCap(env),
     cards: (await env.DB.prepare('SELECT COUNT(*) AS n FROM card').first()).n,
+    fb: await env.DB.prepare('SELECT COUNT(*) AS n, AVG(stars) AS avg FROM feedback').first(),
+    fb30: await env.DB.prepare('SELECT COUNT(*) AS n, AVG(stars) AS avg FROM feedback WHERE day>=?').bind(d30).first(),
+    fbStars: (await env.DB.prepare('SELECT stars, COUNT(*) AS n FROM feedback GROUP BY stars').all()).results,
+    fbTags: {}, fbList: [], fbBad: new URL(req.url).searchParams.get('bad') === '1',
   };
+  for (const r of (await env.DB.prepare('SELECT tags FROM feedback WHERE day>=?').bind(d30).all()).results) for (const t of String(r.tags || '').split(',')) if (TAG_HI[t]) out.fbTags[t] = (out.fbTags[t] || 0) + 1;
+  out.fbList = (await env.DB.prepare(`SELECT day, stars, tags, text, lang, src, dev, tier, runs, best, country FROM feedback ${out.fbBad ? 'WHERE stars<=3' : ''} ORDER BY ts DESC LIMIT 30`).all()).results;
   if (asJson) return json(req, { ok: true, ...out });
   const n = (v) => Number(v || 0).toLocaleString('en-IN');
   const row = (a) => `<tr>${a.map((x) => `<td>${x}</td>`).join('')}</tr>`;
@@ -59,12 +66,35 @@ async function stats(req, env, asJson) {
 table{width:100%;border-collapse:collapse;background:#fff;border:2px solid #2a1511;border-radius:12px;margin-top:14px}td,th{padding:7px 8px;border-bottom:1px solid #eee;text-align:left}th{background:#7a111a;color:#fff}</style>
 <h1>🍬 रसगुल्ला रन — खिलाड़ी हिसाब</h1><p>सब जगह मिलाकर (वेबसाइट + गेम पोर्टल + आगे ऐप)। आज: ${today} (भारत समय)</p>
 <div class="g">${card('आज', out.today)}${card('पिछले 7 दिन', out.last7)}${card('पिछले 30 दिन', out.last30)}<div class="c"><small>अब तक कुल</small><b>${n(out.all.newp)}</b><span>अलग-अलग खिलाड़ी</span><em>${n(out.all.games)} गेम खेले गए</em></div></div>
+${fbHtml(out, req)}
 <table><tr><th>कहाँ से</th><th>कुल खिलाड़ी</th><th>7 दिन में</th><th>गेम</th></tr>${out.bySrc.map((r) => row([SRC_HI[r.src] || r.src, n(r.players), n(r.users7), n(r.games)])).join('')}</table>
 <table><tr><th>देश (30 दिन)</th><th>खिलाड़ी</th></tr>${out.byCountry.map((r) => row([r.country === 'IN' ? '🇮🇳 भारत' : (r.country || '?'), n(r.users)])).join('')}</table>
 <table><tr><th>दिन</th><th>खिलाड़ी</th><th>नए</th><th>गेम</th></tr>${out.days.map((r) => row([r.day, n(r.users), n(r.newp), n(r.games)])).join('')}</table>
 <table><tr><th>🎮 दुकान इनाम (इस हफ़्ते)</th><th>बने</th><th>दुकान पर दिए</th></tr>${['ras', 'off', 'top3'].map((k) => { const r = out.coupons.find((x) => x.kind === k) || {}; return row([KIND_HI[k], n(r.made), n(r.used)]); }).join('')}
 <tr><td>आज दिए मुफ़्त रसगुल्ले</td><td colspan="2"><b>${n(out.rasToday)}</b> / ${n(out.cap)} (रोज़ की सीमा)</td></tr><tr><td>स्टैम्प कार्ड वाले खिलाड़ी</td><td colspan="2">${n(out.cards)}</td></tr></table>`;
   return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
+}
+
+// राय वाला हिस्सा (पन्ने पर)
+function fbHtml(out, req) {
+  const n = (v) => Number(v || 0).toLocaleString('en-IN'), st = (k) => '★'.repeat(k) + '☆'.repeat(5 - k);
+  const tot = out.fb.n || 0, avg = out.fb.avg ? (+out.fb.avg).toFixed(1) : '–', avg30 = out.fb30.avg ? (+out.fb30.avg).toFixed(1) : '–';
+  const by = {}; for (const r of out.fbStars) by[r.stars] = r.n;
+  const bars = [5, 4, 3, 2, 1].map((k) => { const c = by[k] || 0, w = tot ? Math.round(c * 100 / tot) : 0; return `<div class="br"><span>${k}★</span><i><u style="width:${w}%"></u></i><b>${n(c)}</b></div>`; }).join('');
+  const tags = Object.entries(out.fbTags).sort((a, b) => b[1] - a[1]).map(([t, c]) => `<span class="tg ${['lag', 'hard', 'confusing', 'boring', 'bugs'].includes(t) ? 'bad' : ''}">${TAG_HI[t]} <b>${n(c)}</b></span>`).join('') || '<em>अभी कोई नहीं</em>';
+  const u = new URL(req.url), lnk = (bad) => { u.searchParams.set('bad', bad ? '1' : '0'); return esc(u.pathname + u.search); };
+  const list = out.fbList.map((r) => `<div class="fb s${r.stars}"><div><b>${st(r.stars)}</b> <small>${esc(r.day)} · ${LANG_HI[r.lang] ? LANG_HI[r.lang] + ' · ' : ''}${r.dev === 'pc' ? '💻 कंप्यूटर' : '📱 फ़ोन'}${r.tier >= 0 ? ' · ग्राफ़िक्स दर्जा ' + r.tier : ''} · ${n(r.runs)} दौड़ · सबसे लंबी ${n(r.best)} मी.${r.src !== 'web' ? ' · ' + esc(SRC_HI[r.src] || r.src) : ''}</small></div>`
+    + `${r.tags ? `<p>${r.tags.split(',').map((t) => TAG_HI[t] || '').filter(Boolean).join(' · ')}</p>` : ''}${r.text ? `<q>${esc(r.text)}</q>` : ''}</div>`).join('') || '<p><em>अभी कोई राय नहीं आई।</em></p>';
+  return `<style>.fbw{margin-top:18px;background:#fff;border:2px solid #2a1511;border-radius:14px;padding:12px}.fbw h2{margin:0 0 8px;font-size:20px;color:#7a111a}
+.avg{display:flex;gap:14px;align-items:center;margin-bottom:8px}.avg b{font-size:40px;color:#c98a00}.avg span{font-size:14px}
+.br{display:flex;align-items:center;gap:8px;font-size:14px;margin:3px 0}.br span{width:28px}.br i{flex:1;height:12px;background:#f1e3c8;border-radius:6px;overflow:hidden}.br u{display:block;height:100%;background:#f2a91b}.br b{width:34px;text-align:right}
+.tgs{margin:10px 0}.tg{display:inline-block;margin:3px;padding:4px 9px;border-radius:12px;background:#e6f4e9;border:1px solid #2e7b47;font-size:14px}.tg.bad{background:#fde8e6;border-color:#c0392b}
+.tabs a{display:inline-block;margin:6px 6px 8px 0;padding:6px 12px;border:2px solid #2a1511;border-radius:12px;color:#2a1511;text-decoration:none;font-weight:700}.tabs a.on{background:#7a111a;color:#fff}
+.fb{border-top:1px solid #eee;padding:8px 0}.fb b{color:#c98a00;font-size:18px}.fb.s1 b,.fb.s2 b{color:#c0392b}.fb small{color:#6b4a3a}.fb p{margin:4px 0;font-size:14px}.fb q{display:block;background:#fff6e3;border-left:4px solid #f2a91b;padding:6px 8px;margin-top:4px;quotes:none}</style>
+<div class="fbw"><h2>⭐ खिलाड़ियों की राय</h2>
+<div class="avg"><b>${avg}</b><span>औसत (5 में से) · कुल ${n(tot)} राय<br>पिछले 30 दिन: ${avg30} (${n(out.fb30.n)} राय)</span></div>${bars}
+<div class="tgs"><b>30 दिन में क्या कहा:</b><br>${tags}</div>
+<div class="tabs"><a class="${out.fbBad ? '' : 'on'}" href="${lnk(false)}">सब राय</a><a class="${out.fbBad ? 'on' : ''}" href="${lnk(true)}">सिर्फ़ 1–3★ (सुधार के लिए)</a></div>${list}</div>`;
 }
 
 function cleanName(n) {
@@ -74,6 +104,21 @@ function cleanName(n) {
   if (/\d{6,}/.test(n.replace(/\s/g, ''))) return null; // फ़ोन नंबर जैसा नाम नहीं
   return n;
 }
+
+// ---------------- खिलाड़ी की राय ----------------
+const TAGS = ['fun', 'gfx', 'rewards', 'world', 'voice', 'lag', 'hard', 'confusing', 'boring', 'bugs'];
+const TAG_HI = { fun: '😄 मज़ेदार', gfx: '🎨 ग्राफ़िक्स बढ़िया', rewards: '🍬 इनाम अच्छे', world: '🌳 जंगल/रात पसंद', voice: '🗣️ बोली/आवाज़ अच्छी',
+  lag: '🐢 लैग / धीमा', hard: '😣 बहुत कठिन', confusing: '❓ समझ नहीं आया', boring: '😴 बोरिंग', bugs: '🐞 गड़बड़ / अटकता' };
+const LANG_HI = { en: 'English', hi: 'हिंदी', mai: 'मैथिली' };
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function cleanText(t) {
+  t = String(t || '').normalize('NFC').replace(/[\u0000-\u001f<>`\\]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200);
+  t = t.replace(/(\+?\d[\d\s-]{6,}\d)/g, '***'); // फ़ोन नंबर नहीं
+  t = t.replace(BAD_RE, '***'); // गाली छिपे
+  return t;
+}
+const BAD_RE = new RegExp(BAD.map((b) => b.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'gi');
+const intIn = (v, a, b, d) => { const n = Math.floor(+v); return Number.isFinite(n) ? Math.max(a, Math.min(b, n)) : d; };
 
 // पहली बार चलते ही टेबल अपने-आप बनती हैं (schema.sql जैसी) — "Deploy to Cloudflare" बटन से लगाने पर अलग से SQL नहीं चलाना पड़ता
 const SCHEMA = [
@@ -86,7 +131,9 @@ const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS coupon ( code TEXT PRIMARY KEY, pid TEXT NOT NULL, kind TEXT NOT NULL, week TEXT NOT NULL, created INTEGER NOT NULL, expires INTEGER NOT NULL, used INTEGER NOT NULL DEFAULT 0, used_day TEXT NOT NULL DEFAULT '' )`,
   `CREATE INDEX IF NOT EXISTS coupon_pid ON coupon (pid, kind, week)`,
   `CREATE INDEX IF NOT EXISTS coupon_used ON coupon (used_day, kind)`,
-  `CREATE TABLE IF NOT EXISTS cfg ( k TEXT PRIMARY KEY, v TEXT NOT NULL )`
+  `CREATE TABLE IF NOT EXISTS cfg ( k TEXT PRIMARY KEY, v TEXT NOT NULL )`,
+  `CREATE TABLE IF NOT EXISTS feedback ( pid TEXT NOT NULL, day TEXT NOT NULL, ts INTEGER NOT NULL, stars INTEGER NOT NULL, tags TEXT NOT NULL DEFAULT '', text TEXT NOT NULL DEFAULT '', lang TEXT NOT NULL DEFAULT '', src TEXT NOT NULL DEFAULT 'web', dev TEXT NOT NULL DEFAULT '', tier INTEGER NOT NULL DEFAULT -1, runs INTEGER NOT NULL DEFAULT 0, best INTEGER NOT NULL DEFAULT 0, country TEXT NOT NULL DEFAULT '', ver TEXT NOT NULL DEFAULT '', PRIMARY KEY (pid, day) )`,
+  `CREATE INDEX IF NOT EXISTS feedback_ts ON feedback (ts DESC)`
 ];
 let ready = null;
 function ensureSchema(env) {
@@ -227,6 +274,20 @@ export default {
           await env.DB.prepare('INSERT INTO daily (day,src,country,users,newp,games) VALUES (?,?,?,?,?,?) ON CONFLICT(day,src,country) DO UPDATE SET users=users+excluded.users, newp=newp+excluded.newp, games=games+excluded.games')
             .bind(day, src, country, users, newp, games).run();
         }
+        return json(req, { ok: true });
+      }
+      if (url.pathname === '/feedback' && req.method === 'POST') {
+        const b = await req.json();
+        const stars = intIn(b.stars, 0, 5, 0);
+        if (!okPid(b.pid) || stars < 1) return json(req, { ok: false }, 400);
+        const day = istDay(), now = Date.now();
+        const cnt = await env.DB.prepare('SELECT COUNT(*) AS n FROM feedback WHERE day=?').bind(day).first();
+        if (cnt.n > 3000) return json(req, { ok: false, busy: 1 }, 429); // मुफ़्त सीमा की रक्षा
+        const tags = [...new Set((Array.isArray(b.tags) ? b.tags : []).filter((t) => TAGS.includes(t)))].slice(0, 6).join(',');
+        const lang = ['en', 'hi', 'mai'].includes(b.lang) ? b.lang : '', src = SRCS.includes(b.src) ? b.src : 'web', dev = b.dev === 'pc' ? 'pc' : 'phone';
+        const country = String((req.cf && req.cf.country) || '').slice(0, 2);
+        await env.DB.prepare('INSERT INTO feedback (pid,day,ts,stars,tags,text,lang,src,dev,tier,runs,best,country,ver) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(pid,day) DO UPDATE SET ts=excluded.ts, stars=excluded.stars, tags=excluded.tags, text=excluded.text, lang=excluded.lang, tier=excluded.tier, runs=excluded.runs, best=excluded.best')
+          .bind(b.pid, day, now, stars, tags, cleanText(b.text), lang, src, dev, intIn(b.tier, -1, 9, -1), intIn(b.runs, 0, 1e7, 0), intIn(b.best, 0, 1e7, 0), country, String(b.ver || '').slice(0, 16)).run();
         return json(req, { ok: true });
       }
       if (url.pathname === '/count' && req.method === 'GET') {

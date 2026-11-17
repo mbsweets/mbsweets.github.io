@@ -20,6 +20,31 @@
 [hidden]{display:none!important}
 #leaveS{z-index:60}
 #langS{z-index:55}
+#rateS{z-index:58}
+/* ⭐ राय */
+.orate{display:flex;align-items:center;gap:8px;width:100%;background:#fff3cf;border:3px solid var(--ink);border-radius:14px;padding:6px 8px 4px 12px;font:800 15px/1.1 var(--disp)}
+.orate span{white-space:nowrap}
+.ostars{display:flex;gap:2px;flex:1;justify-content:center}
+.ost,.rst{background:none;border:0;color:#d8c7a2;font-size:30px;line-height:1;padding:0 2px;cursor:pointer;text-shadow:0 2px 0 var(--ink);transition:transform .12s}
+.ost:active,.rst:active{transform:scale(1.25)}
+.rst{font-size:clamp(40px,11vw,52px)}
+.ost.on,.rst.on{color:#ffc21a}
+.rst.pop{animation:rpop .35s ease}
+@keyframes rpop{0%{transform:scale(1)}45%{transform:scale(1.45) rotate(-8deg)}100%{transform:scale(1)}}
+.ox,.rx{background:none;border:0;font:800 18px var(--disp);color:var(--ink);opacity:.6;padding:4px 6px}
+.rcard{position:relative;max-height:92vh;overflow:auto}
+.rx{position:absolute;right:8px;top:6px}
+.rstars{display:flex;justify-content:center;gap:4px;margin-top:4px}
+.rlbl{min-height:24px;font:800 20px var(--disp);color:var(--maroon);text-align:center}
+.rtq{font:800 16px var(--disp);margin:6px 0 4px;text-align:center}
+.rtags{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:8px}
+.rtag{font:700 14px/1.1 var(--body);background:#fff;border:2px solid var(--ink);border-radius:20px;padding:7px 11px 5px;box-shadow:0 3px 0 var(--ink)}
+.rtag.on{background:var(--haldi);transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
+#rText{width:100%;font:16px/1.3 var(--body);border:2px solid var(--ink);border-radius:12px;padding:8px 10px;resize:none;background:#fff;color:var(--ink)}
+.rok{font-size:54px;text-align:center;animation:rpop .5s ease}
+#rForm,#rDone{display:flex;flex-direction:column;align-items:center;gap:8px;width:100%}
+#rMore{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%}
+#rDone[hidden],#rForm[hidden]{display:none}
 .big.lgb{display:flex;flex-direction:column;align-items:center;gap:2px}
 .big.lgb small{font:600 14px/1.1 var(--body);opacity:.9;letter-spacing:0}
 /* ट्यूटोरियल: चलता हाथ दिखाए कि उँगली किधर खिसकानी है */
@@ -349,6 +374,7 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
       <div id="overMs" class="msgain" hidden></div>
       <div id="overLb" hidden></div>
       <div id="overRw" class="rwon" hidden></div>
+      <div id="overRate" class="orate" hidden><span data-t="rateShort"></span><div id="overStars" class="ostars"></div><button id="overRateX" class="ox" aria-label="close">✕</button></div>
       <button id="btnAgain" class="big" data-t="again"></button>
       <div class="row"><button id="btnHome" class="sm" data-t="home"></button><button id="btnShare" class="sm local" data-t="share"></button><button id="btnLb2" class="sm lbbtn" data-t="lbShort" hidden></button></div>
     </div>
@@ -421,6 +447,30 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
       <h2 id="unName"></h2>
       <button id="unWear" class="big" data-t="unWear"></button>
       <button id="unLater" class="sm wide" data-t="unLater"></button>
+    </div>
+  </section>
+
+  <section id="rateS" class="screen dim" hidden>
+    <div class="card rcard">
+      <button id="rateX" class="rx" aria-label="close">✕</button>
+      <div id="rForm">
+        <h2 data-t="rateQ"></h2>
+        <div id="rStars" class="rstars"></div>
+        <div id="rLbl" class="rlbl"></div>
+        <div id="rMore" hidden>
+          <p id="rTagQ" class="rtq"></p>
+          <div id="rTags" class="rtags"></div>
+          <textarea id="rText" maxlength="200" rows="2"></textarea>
+          <p class="lbnote" data-t="ratePriv"></p>
+          <button id="rSend" class="big" data-t="rateSend"></button>
+        </div>
+      </div>
+      <div id="rDone" hidden>
+        <div class="rok">🙏</div>
+        <h2 id="rThanksT"></h2>
+        <p id="rThanksP" class="lbnote"></p>
+        <button id="rShare" class="big" data-t="share"></button>
+      </div>
     </div>
   </section>
 

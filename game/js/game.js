@@ -13,6 +13,7 @@ import { pickCheer } from './cheers.js';
 import { loadWardrobe } from './wardrobe.js';
 import { Leaderboard } from './lb.js';
 import { Rewards } from './rewards.js';
+import { Rate } from './rate.js';
 import { Voice } from './voice.js';
 import { Sound } from './audio.js';
 import { T, LANG, setLang, applyLang, L } from './i18n.js';
@@ -324,6 +325,8 @@ class Game {
     $('#overLb').addEventListener('click', () => this.lb.open());
     this.rw = new Rewards(this.lb, LOCAL && !PORTAL && this.lb.on); // 🎫 दुकान के इनाम — सिर्फ़ अपनी वेबसाइट पर
     this.rw.bind();
+    this.rate = new Rate(this, this.lb.url, !PORTAL && this.lb.on); // ⭐ राय — सिर्फ़ अपनी वेबसाइट
+    this.rate.bind();
     for (const el of document.querySelectorAll('.local')) el.hidden = !LOCAL;
     const ol = $('#orderLink'); if (ol) ol.href = ORDER_URL;
   }
@@ -347,7 +350,7 @@ class Game {
       if (this.leaving) return;
       if (this.leaveOpen) { this.leaveNow(1); return; } // दूसरा बैक — हमारा कदम पहले ही हट चुका
       // कोई खिड़की खुली हो (सेटिंग, कपड़े, रैंक, इनाम) तो बैक = वही बंद करो
-      const open = [['#wardS', '#wardClose'], ['#metaS', '#metaClose'], ['#lbS', '#lbClose'], ['#rwS', '#rwClose']].find(([w]) => $(w) && !$(w).hidden);
+      const open = [['#rateS', '#rateX'], ['#wardS', '#wardClose'], ['#metaS', '#metaClose'], ['#lbS', '#lbClose'], ['#rwS', '#rwClose']].find(([w]) => $(w) && !$(w).hidden);
       if (open) { $(open[1]).click(); arm(); return; }
       if (this.state === 'play') this.pause();
       this.leaveOpen = true; $('#leaveS').hidden = false;
@@ -850,6 +853,7 @@ class Game {
     const ln = pickCheer(nb ? 'newBest' : 'over');
     setTimeout(() => { if (this.state === 'over') this.sayPair(ln, true); }, 500);
     $('#overLb').hidden = true; $('#overRw').hidden = true;
+    this.rate.maybeAsk();
     if (this.goldMesh) this.goldMesh.visible = false; this.goldObj = null;
     this.show(['#over']);
     this.lb.afterGame(sc, this.world.dist, this.runT, this.mult);

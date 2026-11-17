@@ -48,3 +48,7 @@ CREATE TABLE IF NOT EXISTS coupon (
 CREATE INDEX IF NOT EXISTS coupon_pid ON coupon (pid, kind, week);
 CREATE INDEX IF NOT EXISTS coupon_used ON coupon (used_day, kind);
 CREATE TABLE IF NOT EXISTS cfg ( k TEXT PRIMARY KEY, v TEXT NOT NULL );
+
+-- खिलाड़ी की राय (एक फ़ोन की दिन में 1; नाम/फ़ोन नहीं)
+CREATE TABLE IF NOT EXISTS feedback ( pid TEXT NOT NULL, day TEXT NOT NULL, ts INTEGER NOT NULL, stars INTEGER NOT NULL, tags TEXT NOT NULL DEFAULT '', text TEXT NOT NULL DEFAULT '', lang TEXT NOT NULL DEFAULT '', src TEXT NOT NULL DEFAULT 'web', dev TEXT NOT NULL DEFAULT '', tier INTEGER NOT NULL DEFAULT -1, runs INTEGER NOT NULL DEFAULT 0, best INTEGER NOT NULL DEFAULT 0, country TEXT NOT NULL DEFAULT '', ver TEXT NOT NULL DEFAULT '', PRIMARY KEY (pid, day) );
+CREATE INDEX IF NOT EXISTS feedback_ts ON feedback (ts DESC);

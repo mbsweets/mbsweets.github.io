@@ -45,6 +45,11 @@ const S = {
     tutRush: 'Meter full! Tap SUGAR RUSH', tutPause: 'Tap to pause', howTo: '📖 How to play', fullHint: 'Full screen — swipe from the edge to see the phone buttons',
     lv6: 'Jungle Night', lv7: 'Golden Fields', lv8: 'Rocket Speed', lv9: 'Mithila Legend',
     zNight: 'Night falls!', zJungle: 'Into the jungle!', zFields: 'Mustard fields!', zDawn: 'Good morning!', zVillage: 'Back to the village!',
+    rateQ: 'How do you like Rasgulla Run?', rateShort: 'Enjoying it?', r1: 'Bad', r2: 'Not good', r3: 'Okay', r4: 'Good', r5: 'Awesome!',
+    rateGoodQ: 'What did you like?', rateBadQ: 'What went wrong?', t_fun: 'Fun', t_gfx: 'Great graphics', t_world: 'Love the jungle & night', t_rewards: 'Nice rewards', t_voice: 'Love the voice',
+    t_lag: 'Lag / slow', t_hard: 'Too hard', t_confusing: "Didn't understand", t_boring: 'Boring', t_bugs: 'Glitch / stuck',
+    ratePhG: 'Anything else you want? (optional)', ratePhB: 'What should we fix? (optional)', ratePriv: 'No name or phone number is sent.', rateSend: 'Send',
+    rateThanks: 'Thank you!', rateThanksG: 'So happy you like it! Invite your friends too.', rateThanksB: "We'll fix it soon. Thanks for telling us!", rateOffline: 'will be sent when you are online', rateBtn: '⭐ Rate the game',
   },
   hi: { // हिंदी
     title: 'रसगुल्ला रन', sub: 'मिथिला की मीठी दौड़', play: 'खेलो', best: 'सबसे अच्छा', sweets: 'मिठाई', score: 'स्कोर',
@@ -89,6 +94,11 @@ const S = {
     tutRush: 'मीटर भर गया! शुगर रश दबाओ', tutPause: 'रोकने के लिए दबाओ', howTo: '📖 कैसे खेलें', fullHint: 'पूरी स्क्रीन — फ़ोन के बटन देखने के लिए किनारे से खिसकाओ',
     lv6: 'जंगल की रात', lv7: 'सुनहरे खेत', lv8: 'रॉकेट रफ़्तार', lv9: 'मिथिला का महारथी',
     zNight: 'रात हो गई!', zJungle: 'जंगल शुरू!', zFields: 'सरसों के खेत!', zDawn: 'सुबह हो गई!', zVillage: 'फिर गाँव में!',
+    rateQ: 'रसगुल्ला रन कैसा लगा?', rateShort: 'कैसा लगा?', r1: 'बेकार', r2: 'ठीक नहीं', r3: 'ठीक-ठाक', r4: 'अच्छा', r5: 'ज़बरदस्त!',
+    rateGoodQ: 'क्या अच्छा लगा?', rateBadQ: 'क्या गड़बड़ लगा?', t_fun: 'मज़ेदार', t_gfx: 'ग्राफ़िक्स बढ़िया', t_world: 'जंगल और रात पसंद', t_rewards: 'इनाम अच्छे', t_voice: 'बोली/आवाज़ अच्छी',
+    t_lag: 'लैग / धीमा', t_hard: 'बहुत कठिन', t_confusing: 'समझ नहीं आया', t_boring: 'बोरिंग', t_bugs: 'गड़बड़ / अटकता है',
+    ratePhG: 'और क्या चाहिए? (मर्ज़ी से)', ratePhB: 'क्या ठीक करें? (मर्ज़ी से)', ratePriv: 'नाम या फ़ोन नंबर नहीं जाता।', rateSend: 'भेजो',
+    rateThanks: 'धन्यवाद!', rateThanksG: 'बहुत ख़ुशी हुई! दोस्तों को भी खिलाओ।', rateThanksB: 'हम जल्दी ठीक करेंगे। बताने के लिए शुक्रिया!', rateOffline: 'नेट आते ही भेज देंगे', rateBtn: '⭐ राय दो',
   },
   mai: { // मैथिली (मिथिलाक बोली)
     title: 'रसगुल्ला रन', sub: 'मिथिलाक मीठ दौड़', play: 'खेलू', best: 'सबसँ नीक', sweets: 'मिठाइ', score: 'स्कोर',
@@ -133,6 +143,11 @@ const S = {
     tutRush: 'मीटर भरि गेल! शुगर रश दबाउ', tutPause: 'रोकबाक लेल दबाउ', howTo: '📖 कोना खेलब', fullHint: 'पूरा स्क्रीन — फ़ोनक बटन देखबाक लेल किनार सँ घुसकाउ',
     lv6: 'जंगलक राति', lv7: 'सोनहुला खेत', lv8: 'रॉकेट रफ़्तार', lv9: 'मिथिलाक महारथी',
     zNight: 'राति भ गेल!', zJungle: 'जंगल शुरू!', zFields: 'सरिसोक खेत!', zDawn: 'भोर भ गेल!', zVillage: 'फेर गाम मे!',
+    rateQ: 'रसगुल्ला रन केहन लागल?', rateShort: 'केहन लागल?', r1: 'बेकार', r2: 'नीक नहि', r3: 'ठीक-ठाक', r4: 'नीक', r5: 'बड़ नीक!',
+    rateGoodQ: 'की नीक लागल?', rateBadQ: 'की गड़बड़ लागल?', t_fun: 'मज़ेदार', t_gfx: 'ग्राफ़िक्स नीक', t_world: 'जंगल आ राति पसंद', t_rewards: 'इनाम नीक', t_voice: 'बोली नीक',
+    t_lag: 'लैग / धीमा', t_hard: 'बड़ कठिन', t_confusing: 'बुझबा मे नहि आएल', t_boring: 'बोरिंग', t_bugs: 'गड़बड़ / अटकैत अछि',
+    ratePhG: 'आर की चाही? (मर्ज़ी सँ)', ratePhB: 'की ठीक करी? (मर्ज़ी सँ)', ratePriv: 'नाम वा फ़ोन नंबर नहि जाइत अछि।', rateSend: 'पठाउ',
+    rateThanks: 'धन्यवाद!', rateThanksG: 'बड़ खुशी भेल! संगी सब केँ सेहो खेलाउ।', rateThanksB: 'हम जल्दी ठीक करब। कहबाक लेल धन्यवाद!', rateOffline: 'नेट अबिते पठा देब', rateBtn: '⭐ राय दिअ',
   },
 };
 
