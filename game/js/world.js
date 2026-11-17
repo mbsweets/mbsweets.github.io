@@ -11,7 +11,7 @@ import { makeHaat, makeHaatGate } from './haat.js';
 import { makeMela, makeMelaGate } from './events.js';
 import { makeTrack, makeStation, ROOF, RAMP_L, COACH, GAP } from './rail.js';
 import { rand, randi, pick, chance, weighted, clamp, lerp } from './util.js';
-import { POND_LEN, WATER_Y, TILE, POND_OBST, makeWaterTile, makeGhat, makeMakhana, WATER } from './pond.js';
+import { POND_LEN, WATER_Y, TILE, POND_OBST, makeWaterTile, makeGhat, makeMakhana, makeFish, WATER } from './pond.js';
 import { makeMadhubaniPu } from './madhubani.js';
 import { seeded } from './ghost.js';
 Object.assign(OBST, JUNGLE_OBST, POND_OBST);
@@ -305,6 +305,7 @@ export class World {
     // 🚣 पोखर: पानी के टुकड़े + दो घाट
     this.wPool = []; this.waters = [];
     for (let i = 0; i < Math.ceil(POND_LEN / TILE) + 2; i++) { const t = makeWaterTile(i); t.visible = false; this.scene.add(t); this.wPool.push(t); }
+    this.fish = [makeFish(), makeFish()].map((o) => { this.scene.add(o); return { o, t: 1 }; }); this.toFish = 2;
     this.ghats = [makeGhat(), makeGhat()]; for (const gh of this.ghats) { gh.visible = false; shadows(gh, true, true); this.scene.add(gh); }
     for (const t of Object.keys(OBST)) { this.oPool[t] = []; for (let i = 0; i < 3; i++) { const o = this.newObs(t); o.visible = false; this.oPool[t].push(o); } }
   }
@@ -335,7 +336,7 @@ export class World {
     this.tracks = []; this.toRail = rand(950, 1150); this.railObs = 0; this.stationN = 0;
     for (const t of this.waters || []) { t.visible = false; this.wPool.push(t); }
     this.waters = []; for (const gh of this.ghats || []) gh.visible = false;
-    this.pond = null; this.pondObs = 0; this.pondFirst = false; this.toPond = rand(1450, 1700); this.yOff = 0;
+    this.pond = null; this.pondFirst = false; for (const f of this.fish || []) { f.t = 1; f.o.visible = false; } this.toPond = rand(1450, 1700); this.yOff = 0;
     for (const s of ['-1', '1']) { for (const c of this.chunks[s]) this.relChunk(c); this.chunks[s] = []; }
     this.obs = []; this.pups = []; this.gates = [];
     this.sweets.clear(); this.parts.clear();
@@ -498,7 +499,13 @@ export class World {
       return 0.1;
     }
     if (this.railObs > 0) return this.railRow(z);
-    if (this.pondObs > 0) return this.pondRow(z);
+    // 🚣 पोखर: पंक्ति की सारी चीज़ें (z+8 … z-16) पानी के अंदर हों तभी पानी वाली पंक्ति; किनारे/घाट पर पड़े तो खाली;
+    // पानी पर सड़क की चीज़ें (समोसा, ईंट, गाय…) कभी नहीं — पहले पोखर के शुरू/आख़िर में चढ़ जाती थीं
+    if (this.pond) {
+      const P = this.pond, top = z + 9, bot = z - 20;
+      if (top < P.a - 1 && bot > P.b + 1) return this.pondRow(z);
+      if (bot < P.a + 3 && top > P.b - 3) return 0;
+    }
     if (this.baraatQ) { // बारात सामने से आती — एक लेन खुली
       this.baraatQ = false;
       const vz = 2.2, sc = (zz) => zz * (this.speed + vz) / this.speed;
@@ -806,14 +813,16 @@ export class World {
     // 🚣 मखाना पोखर
     this.toPond -= dz;
     if (this.toPond <= 0 && !this.pond && this.zone !== 'jungle' && zoneAt(this.dist + POND_LEN + 180) !== 'jungle' && this.haatObs <= 0 && this.melaObs <= 0 && this.railObs <= 0 && !this.baraatQ && this.shopDist > 40 && this.shopDist < SHOP_EVERY - 60) {
-      const a = SPAWN_Z + 4, b = a - POND_LEN;
+      let far = SPAWN_Z - 20; // पिछली सड़क-पंक्ति की चीज़ों (सामने से आती बैलगाड़ी समेत) से आगे से शुरू
+      for (const e of this.obs) if (!e.dead) far = Math.min(far, e.z - (e.halfL || 1) - 4);
+      for (const u of this.pups) far = Math.min(far, u.z - 4);
+      const a = far, b = a - POND_LEN;
       for (let z = a - TILE / 2; z > b - TILE / 2 + 0.1; z -= TILE) { const t = this.wPool.pop(); if (!t) break; t.visible = true; t.position.set(0, 0, z); this.waters.push(t); }
       const [g1, g2] = this.ghats; g1.visible = true; g1.position.set(0, 0, a); g1.rotation.y = 0; g2.visible = true; g2.position.set(0, 0, b); g2.rotation.y = Math.PI;
-      this.pond = { a, b }; this.pondObs = POND_LEN - 14; this.pondFirst = false;
+      this.pond = { a, b }; this.pondFirst = false;
       this.toPond = rand(2600, 3400); this.toRail = Math.max(this.toRail, POND_LEN + 150); this.toHaat = Math.max(this.toHaat, POND_LEN + 120); this.toMela = Math.max(this.toMela, POND_LEN + 120); this.toBaraat = Math.max(this.toBaraat, POND_LEN + 120);
       this.events.push('pond');
     }
-    this.pondObs = Math.max(0, this.pondObs - dz);
     if (this.pond) {
       this.pond.a += dz; this.pond.b += dz;
       for (const gh of this.ghats) if (gh.visible) gh.position.z += dz;
@@ -821,6 +830,24 @@ export class World {
       if (this.ghats[0].position.z > DESPAWN_Z + 4) this.ghats[0].visible = false;
       if (this.pond.b > DESPAWN_Z + 4) { this.ghats[1].visible = false; this.pond = null; }
       if (WATER.nm) { WATER.nm.offset.y += dz / 13; WATER.nm.offset.x = Math.sin((this.time || 0) * 0.6) * 0.04; }
+      // 🐟 मछली उछलती — पानी का एहसास (सजावट, टक्कर नहीं)
+      this.toFish -= dt;
+      const fz = real(() => rand(-42, -16));
+      if (this.toFish <= 0 && this.pond && fz < this.pond.a - 4 && fz > this.pond.b + 4) {
+        const f = this.fish.find((q) => q.t >= 1);
+        if (f) {
+          real(() => { const sd = chance(0.5) ? 1 : -1; f.x = sd * (chance(0.5) ? 1.25 : ROAD_HALF + rand(0.5, 1.6)); f.z = fz; f.dir = chance(0.5) ? 1 : -1; f.h = rand(1.0, 1.6); });
+          f.t = 0; f.o.visible = true; this.parts.burst(f.x, WATER_Y + 0.05, f.z, 0xe9fbff, 10, 2.2, 2.4, 0.5); this.events.push('fish');
+        }
+        this.toFish = real(() => rand(1.1, 2.6));
+      }
+    }
+    for (const f of this.fish) {
+      if (f.t >= 1) continue;
+      f.t = Math.min(1, f.t + dt / 0.85); f.z += dz;
+      const u = f.t, y = WATER_Y - 0.1 + Math.sin(u * Math.PI) * f.h;
+      f.o.position.set(f.x + f.dir * (u - 0.5) * 1.4, y, f.z); f.o.rotation.set(0, f.dir * Math.PI / 2, 0); f.o.rotateX((u - 0.5) * 2.4); f.o.rotateZ(Math.sin(u * 30) * 0.15);
+      if (f.t >= 1) { f.o.visible = false; this.parts.burst(f.o.position.x, WATER_Y + 0.05, f.z, 0xe9fbff, 12, 2.6, 2.8, 0.55); }
     }
     // बारात
     this.toBaraat -= dz;

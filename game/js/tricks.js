@@ -16,9 +16,13 @@ export class Tricks {
   tap() {
     const p = this.g.p;
     if (!p || p.ground || p.fly > 0 || p.rollQ || p.y < 0.25) return false;
-    if (this.cur) { if (this.cur.t > DUR[this.cur.k] * 0.4 && this.q < 1) this.q = 1; return true; }
+    if (this.cur) { if (this.cur.t > DUR[this.cur.k] * 0.4 && this.q < 1 && this.left() > DUR[this.cur.k] - this.cur.t + this.need()) this.q = 1; return true; }
+    if (this.left() < this.need()) return true; // ज़मीन पास — करतब नहीं (टैप बेकार, पर गोलू नहीं गिरेगा)
     this.begin(); return true;
   }
+  // ज़मीन छूने में कितना समय बचा (सेकंड)
+  left() { const p = this.g.p, G = 36, h = Math.max(0, p.y - (p.gy || 0)); return (p.vy + Math.sqrt(p.vy * p.vy + 2 * G * h)) / G; }
+  need() { return DUR[KINDS[Math.min(this.n, KINDS.length - 1)]] * 0.85; }
   begin() {
     const k = KINDS[Math.min(this.n, KINDS.length - 1)];
     this.cur = { k, t: 0 }; this.busy = true;
@@ -38,16 +42,16 @@ export class Tricks {
       this.bank += pts;
       this.g.floatText(`+${pts * this.g.mult}`, 'tp');
       this.cur = null; this.rx = this.ry = this.rz = 0;
-      if (this.q) { this.q = 0; this.begin(); }
+      if (this.q) { this.q = 0; if (this.left() >= this.need()) this.begin(); }
     }
   }
   // ज़मीन छुई
   land() {
     const g = this.g;
     if (!this.busy && !this.n) return;
-    let ok = true;
-    if (this.cur) { const u = this.cur.t / DUR[this.cur.k]; if (u < 0.8) ok = false; else { this.n++; this.bank += PTS[Math.min(this.n - 1, PTS.length - 1)]; } }
-    if (ok && this.n > 0) {
+    // ज़मीन पर अधूरा करतब: बस वही नहीं गिना जाता — कोई सज़ा/धीमापन नहीं (पहले "उफ़" से कूद ख़राब लगती थी)
+    if (this.cur) { const u = this.cur.t / DUR[this.cur.k]; if (u >= 0.75) { this.n++; this.bank += PTS[Math.min(this.n - 1, PTS.length - 1)]; } }
+    if (this.n > 0) {
       const mult = this.n >= 3 ? 2 : this.n === 2 ? 1.5 : 1, pts = Math.round(this.bank * mult) * g.mult;
       g.score += pts;
       g.meter = Math.min(1, g.meter + 0.05 * this.n);
@@ -57,12 +61,6 @@ export class Tricks {
       if (g.emo) g.emo.play('cool', 0.7);
       if (g.mom) g.mom.want(200 + 100 * this.n, T('momTrick', this.n), 60);
       g.camKick = 0.5;
-    } else if (!ok) {
-      g.p.slowT = Math.max(g.p.slowT, 0.6);
-      g.shake = Math.max(g.shake, 0.22);
-      g.sound.bump();
-      g.toast(T('trickFail'), 900, 'warn');
-      if (g.emo) g.emo.play('dizzy', 0.8);
     }
     this.reset();
   }

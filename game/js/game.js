@@ -297,20 +297,24 @@ class Game {
     } else if ((a === 'up' || a === 'down') && p.fly > 0) {
       return;
     } else if (a === 'up') {
-      if (p.ground) {
-        const big = this.pu.shoes > 0;
-        p.vy = big ? SHOE_V : JUMP_V; p.ground = false; p.roll = 0; p.big = big;
-        this.sound.jump(big); this.msBump('jumps');
-        this.beatJump();
-        // करतब सिखाना: पहली कुछ दौड़ों में एक बार
-        if (this.tutDone && !this.trickHint && this.runT > 5 && store('tutTrick') !== '1' && storeNum('tutTrickN') < 4) { this.trickHint = true; store('tutTrickN', storeNum('tutTrickN') + 1); this.toast('👆 ' + T('tutTrick'), 1700, 'gold'); }
-      } else if (p.roll > 0) p.roll = 0;
+      if (p.ground || (p.coy > 0 && p.vy <= 0)) this.doJump();
+      else p.jbuf = 0.22; // ज़मीन छूने से ठीक पहले खिसकाया — छूते ही कूदेगा (उँगली बेकार न जाए)
+      if (p.roll > 0) p.roll = 0;
     } else if (a === 'down') {
       this.msBump('rolls');
       if (p.ground) { p.roll = ROLL_T; this.sound.roll(); }
       else { p.vy = Math.min(p.vy, -24); p.rollQ = true; }
     } else if (a === 'rush') this.startRush();
     else if (a === 'tap') this.tricks.tap();
+  }
+
+  doJump() {
+    const p = this.p, big = this.pu.shoes > 0;
+    p.vy = big ? SHOE_V : JUMP_V; p.ground = false; p.roll = 0; p.rollQ = false; p.big = big; p.jbuf = 0; p.coy = 0; p.air = 0;
+    this.sound.jump(big); this.msBump('jumps');
+    this.beatJump();
+    // करतब सिखाना: पहली कुछ दौड़ों में एक बार
+    if (this.tutDone && !this.trickHint && this.runT > 5 && store('tutTrick') !== '1' && storeNum('tutTrickN') < 4) { this.trickHint = true; store('tutTrickN', storeNum('tutTrickN') + 1); this.toast('👆 ' + T('tutTrick'), 1700, 'gold'); }
   }
 
   edgeBump() {
@@ -342,8 +346,10 @@ class Game {
     $('#btnPause').addEventListener('click', () => { store('tutPause', 1); $('#btnPause').classList.remove('teach'); this.bubble(null); });
     this.backGuard();
     // शुगर रश: उँगली लगते ही (pointerdown) — click उँगली उठने तक रुकता था, तब तक टक्कर हो जाती
-    $('#btnRush').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); this.startRush(); }, { passive: false });
-    $('#btnRush').addEventListener('click', (e) => { e.preventDefault(); this.startRush(); });
+    // बटन अचानक उँगली के नीचे आ जाए तो अपने-आप न चले: दिखने के 0.45 सेकंड बाद ही
+    const rushTap = (e) => { e.preventDefault(); e.stopPropagation(); if (performance.now() - (this.rushShown || 0) < 450) return; this.startRush(); };
+    $('#btnRush').addEventListener('pointerdown', rushTap, { passive: false });
+    $('#btnRush').addEventListener('click', rushTap);
     click('#hsChip', () => { this.headstart = !this.headstart; this.refreshMenu(); });
     click('#btnWard', () => this.meta.openWard());
     this.meta = new MetaUI(this);
@@ -553,7 +559,7 @@ class Game {
     this.sound.init();
     if (!this.sound.playing) this.sound.startMusic();
     this.world.reset(!this.tutDone);
-    this.p = { lane: 1, prevLane: 1, x: 0, tx: 0, y: 0, vy: 0, ground: true, roll: 0, rollQ: false, laneT: 9, big: false, stumT: 0, beesT: 0, invT: 0, slowT: 0, air: 0, fly: 0, boat: false };
+    this.p = { lane: 1, prevLane: 1, x: 0, tx: 0, y: 0, vy: 0, ground: true, roll: 0, rollQ: false, laneT: 9, big: false, stumT: 0, beesT: 0, invT: 0, slowT: 0, air: 0, fly: 0, boat: false, jbuf: 0, coy: 0 };
     this.pu = { magnet: 0, shoes: 0, shield: false, thali: 0, madhu: 0 };
     this.level = 0; this.samosa.visible = false; this.skyShow.reset();
     this.nightSaid = false; this.wild = 0; this.nfx.update(0, 0, 0, 0, this.world.chunks, this.cam.quaternion);
@@ -1235,7 +1241,7 @@ class Game {
       if (Math.random() < 0.3) this.world.parts.burst(p.x + rand(-0.4, 0.4), p.y - 0.2, 1.6, Math.random() < 0.5 ? 0xffe08a : 0xff9a3d, 1, 0.5, 0.5, 0.45, 0);
       if (p.fly <= 0) this.endFly();
     } else if (p.ground && gy < p.y - 0.06) { // छत ख़त्म — नीचे गिरो
-      p.ground = false; p.vy = 0;
+      p.ground = false; p.vy = 0; p.coy = 0.12; // किनारे से गिरते ही ज़रा देर तक कूद चलेगा
     } else if (p.ground) {
       if (gy - p.y < 0.45) p.y = gy; // ढलान पर चढ़ो / छत पर दौड़ो (बगल से दीवार पर नहीं चढ़ना)
     }
@@ -1249,8 +1255,10 @@ class Game {
         p.y = floor; p.vy = 0; p.ground = true; p.air = 0;
         if (p.rollQ) { p.roll = ROLL_T; p.rollQ = false; this.sound.roll(); }
         this.tricks.land();
+        if (p.jbuf > 0 && !p.roll && p.fly <= 0) this.doJump();
       }
     }
+    p.jbuf = Math.max(0, (p.jbuf || 0) - dt); p.coy = Math.max(0, (p.coy || 0) - dt);
     // 🚣 पोखर: घाट पार होते ही नाव पर (उछलकर), दूसरे घाट पर उतरो
     const pd = this.world.pond, inPond = !!pd && pd.a > 0.4 && pd.b < -0.4;
     if (inPond !== !!p.boat) {
@@ -1285,7 +1293,7 @@ class Game {
       else if (td.night < 0.2 && this.nightSaid) { this.nightSaid = false; this.zoneBanner('🌅', T('zDawn')); this.cheer('dawn', 1700, -1, true); }
       if (zn === 'jungle') this.msBump('jungle', dz);
     }
-    while (this.world.events.length) { const ev = this.world.events.shift(); if (ev === 'haat' || ev === 'mela') this.sound.levelUp(); else if (ev === 'baraat') { this.sound.baraat(); this.beatStart(); } else if (ev === 'rail') this.sound.train(); this.cheer(ev, 1800, -1, true); if (ev === 'haat') this.msBump('haat'); const ZB = { jungle: ['🌳', 'zJungle'], fields: ['🌼', 'zFields'], village: ['🏡', 'zVillage'] }; if (ZB[ev]) this.zoneBanner(ZB[ev][0], T(ZB[ev][1])); }
+    while (this.world.events.length) { const ev = this.world.events.shift(); if (ev === 'fish') { this.sound.plop(); continue; } if (ev === 'haat' || ev === 'mela') this.sound.levelUp(); else if (ev === 'baraat') { this.sound.baraat(); this.beatStart(); } else if (ev === 'rail') this.sound.train(); this.cheer(ev, 1800, -1, true); if (ev === 'haat') this.msBump('haat'); const ZB = { jungle: ['🌳', 'zJungle'], fields: ['🌼', 'zFields'], village: ['🏡', 'zVillage'] }; if (ZB[ev]) this.zoneBanner(ZB[ev][0], T(ZB[ev][1])); }
     this.collide();
     this.updateGold(dz);
     this.story.check();
@@ -1541,6 +1549,7 @@ class Game {
     const ready = this.meter >= 1 && this.rushT <= 0;
     if (h.ready !== ready) {
       h.ready = ready; $('#btnRush').hidden = !ready; $('#meter').classList.toggle('full', ready);
+      if (ready) this.rushShown = performance.now();
       const teach = ready && store('tutRush') !== '1';
       $('#btnRush').classList.toggle('teach', teach);
       if (teach) requestAnimationFrame(() => this.bubble($('#btnRush'), '👇 ' + T('tutRush'), 6000)); else if (!ready) this.bubble(null);

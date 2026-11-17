@@ -100,6 +100,17 @@ export function makeMakhana() {
   g.userData = { kind: 'makhana', inner, ring };
   return g;
 }
+// उछलती मछली (रोहू) — सिर्फ़ सजावट, टक्कर नहीं
+export function makeFish() {
+  const g = new THREE.Group(), mg = new Merge();
+  mg.add(G.sph(0.16, 12, 8), mat4(0, 0, 0, 0, 0, 0, 0.75, 0.62, 2.1), 0xb9c9cf); // शरीर
+  mg.add(G.sph(0.12, 10, 6), mat4(0, -0.03, 0.02, 0, 0, 0, 0.62, 0.42, 1.7), 0xeef3f2); // पेट
+  mg.add(G.cone(0.15, 0.26, 4), mat4(0, 0, 0.42, PI / 2, PI / 4, 0, 1, 1, 0.25), 0xd08a52); // पूँछ
+  mg.add(G.cone(0.06, 0.16, 4), mat4(0, 0.1, 0.02, 0, 0, 0, 0.3, 1, 1.4), 0xd08a52); // पंख
+  for (const s of [-1, 1]) mg.add(G.sph(0.025, 6, 5), mat4(s * 0.07, 0.03, -0.24), 0x1a1a1a);
+  g.add(mg.mesh(0.02)); g.visible = false;
+  return g;
+}
 // ---------------- पोखर की रुकावटें ----------------
 export const POND_OBST = {
   jaal() { // मछली का जाल दो बाँसों पर — झुको (नीचे स्वाइप)

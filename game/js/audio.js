@@ -235,6 +235,7 @@ export class Sound {
   }
   smash() { if (!this.ok()) return; const t = this.now(); this.hiss(t, 0.3, { vol: 0.35, fq: 1200, to: 300 }); this.tone(200, t, 0.2, { vol: 0.25, to: 60, type: 'square' }); }
   near() { if (!this.ok()) return; const t = this.now(); this.hiss(t, 0.3, { vol: 0.2, fq: 400, to: 3000, q: 2 }); }
+  plop() { if (!this.ok()) return; const t = this.now(); this.tone(520, t, 0.12, { vol: 0.05, type: 'sine', to: 180 }); this.hiss(t + 0.02, 0.12, { vol: 0.06, type: 'lowpass', fq: 1400, to: 500 }); }
   splash() { if (!this.ok()) return; this.hiss(this.now(), 0.3, { vol: 0.25, type: 'lowpass', fq: 900, to: 300 }); }
   // नया ऑर्डर — दरवाज़े की घंटी जैसा "डिंग-डोंग"
   order() { if (!this.ok()) return; const t = this.now(); this.tone(f(7, 659.25), t, 0.35, { vol: 0.13, type: 'triangle' }); this.tone(f(0, 659.25), t + 0.18, 0.5, { vol: 0.13, type: 'triangle' }); }
