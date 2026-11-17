@@ -17,7 +17,7 @@ import { Rate } from './rate.js';
 import { Voice } from './voice.js';
 import { Sound } from './audio.js';
 import { T, LANG, setLang, applyLang, L } from './i18n.js';
-import { clamp, lerp, damp, rand, store, storeNum, vibrate, VIB } from './util.js';
+import { clamp, lerp, damp, rand, randi, pick, store, storeNum, vibrate, VIB } from './util.js';
 import { SETTINGS, loadSettings, Missions, wallet, upTime, wardrobe, stats, checkBadges, buyHeadstart, HEADSTART_COST } from './meta.js';
 import { P, PORTAL } from './platform.js';
 import { MetaUI } from './metaui.js';
@@ -25,6 +25,7 @@ import { countOpen, countGame } from './count.js';
 import { Delivery } from './delivery.js';
 import { Emotes } from './emote.js';
 import { Tricks } from './tricks.js';
+import { Festival } from './festivals.js';
 
 const $ = (s) => document.querySelector(s);
 // ग्राफ़िक्स के दर्जे (0 = सबसे बढ़िया). ऑटो: पूरी दौड़ में हर 2 सेकंड रफ़्तार देखो, धीमा हो तो एक दर्जा नीचे; फ़ोन याद रखे
@@ -193,6 +194,7 @@ class Game {
     this.dl = new Delivery(this, sc); // 🛵 डिलीवरी
     this.emo = new Emotes(sc); // 😅 भाव
     this.tricks = new Tricks(this); // 🤸 करतब
+    this.fest = new Festival(this, this.world); // 🪔 त्योहार (तारीख़ से)
     this.camKick = 0;
     // रात: लालटेन/खंभों की चमक + जुगनू; गोलू के आगे गरम रोशनी (भारी दर्जों में बंद)
     this.nfx = new NightFX(sc);
@@ -347,6 +349,7 @@ class Game {
   }
   refreshMenu() {
     if (this.rw && this.rw.on) this.rw.paintBadge(); // भाषा बदली हो तो इनाम-बटन भी
+    const ft = $('#festTag'); if (ft) { ft.hidden = !(this.fest && this.fest.on); ft.textContent = T('festTag'); }
     $('#ttl').dataset.text = T('title');
     $('#bestV').textContent = Math.floor(this.best).toLocaleString('en-IN');
     $('#totalV').textContent = Math.floor(wallet.v).toLocaleString('en-IN');
@@ -468,6 +471,7 @@ class Game {
     this.revived = false; this.runs++;
     this.mk = { st: 'off', t: 0, x: 0, y: 0, z: 4 }; this.monkey.visible = false; this.toMonkey = rand(550, 800);
     this.dl.reset(); this.tricks.reset(); this.emo.clear(); this.trickHint = false; this.camKick = 0;
+    this.fest.start();
     this.sound.init();
     if (!this.sound.playing) this.sound.startMusic();
     this.world.reset(!this.tutDone);
@@ -623,6 +627,7 @@ class Game {
 
   takePu(p) {
     p.taken = true;
+    if (p.kind === 'chakeva') { this.world.parts.burst(p.x, p.y, p.z, 0xfff4d6, 16, 3, 3, 0.7); this.world.parts.burst(p.x, p.y, p.z, 0xd1261c, 8, 3, 3, 0.7); this.fest.got(); return; }
     this.sound.power();
     vibrate(25);
     this.world.parts.burst(p.x, p.y, p.z, 0xffd24d, 22, 3.5, 3, 0.7);
@@ -737,6 +742,8 @@ class Game {
 
   // ---------- बंदर ----------
   monkeyStart() {
+    // आधी बार: चोर बंदर आगे मिठाई का डिब्बा लेकर भागे — गोलू पीछा करे (डिलीवरी चालू हो तो नहीं)
+    if (this.world.dist > 600 && !this.dl.active() && Math.random() < 0.5) { this.toMonkey = rand(1000, 1500); this.thiefStart(0, -24); return; }
     const p = this.p, side = Math.random() < 0.5 ? -1 : 1;
     this.mk = { st: 'enter', t: 0, side, x0: side * 6.8, y0: 5.2, z0: -3, x: side * 6.8, y: 5.2, z: -3 };
     this.monkey.visible = true; this.monkey.userData.bag.visible = false;
@@ -746,7 +753,7 @@ class Game {
   }
   monkeyGrab() {
     const n = Math.floor(this.got / 2);
-    this.mk.st = 'grab'; this.mk.t = 0;
+    this.mk.st = 'grab'; this.mk.t = 0; this.mk.loot = n;
     this.monkey.userData.bag.visible = n > 0;
     if (n > 0) {
       this.got -= n;
@@ -756,10 +763,71 @@ class Game {
     setTimeout(() => { if (this.state === 'play') this.cheer('monkeyGrab', 1600, -1, true, 'warn', n > 0 ? `−${n} 🍬` : null); }, 350);
 
   }
+  // 🐒 चोर बंदर: छत से कूदकर (या गोलू से छीनकर) आगे सड़क पर भागे; उसी लेन में रहो तो दूरी घटे; पास पहुँचे = पकड़ा
+  thiefStart(loot, z0, from = null) {
+    const side = Math.random() < 0.5 ? -1 : 1, lane = randi(0, 2), M = this.monkey;
+    const m = this.mk = { st: 'thiefIn', t: 0, side, lane, loot, bonus: loot > 0 ? 25 : 40, gap: loot > 0 ? 8 : 14, T: 15, lt: rand(1.2, 1.8), drop: 0.6, dropN: Math.min(8, Math.max(4, loot)), vy: 0,
+      x0: from ? from.x : side * 6.8, y0: from ? from.y : 5.2, z0, x: from ? from.x : side * 6.8, y: from ? from.y : 5.2, z: z0 };
+    M.visible = true; M.userData.bag.visible = true;
+    void m;
+    this.sound.monkey(true); this.emo.play('wow', 0.8);
+    setTimeout(() => { if (this.state === 'play') this.cheer('thief', 1600, -1, true, 'warn', T('thiefChip') + ' 🐒'); }, loot > 0 ? 900 : 0);
+  }
+  thiefCaught() {
+    const m = this.mk, rw = m.loot + m.bonus;
+    m.st = 'caught'; m.t = 0; m.cx = m.x; m.cz = m.z;
+    this.monkey.userData.bag.visible = false;
+    this.got += rw; this.score += 500 * this.mult;
+    this.msBump('monkeyCatch'); this.msBump('sweets', this.got, true);
+    this.cheer('monkeyCaught', 1700, -1, true, 'gold', `+${rw} 🍬`);
+    this.sound.ring(); this.sound.power(); vibrate([30, 30, 60]);
+    this.emo.play('cool', 0.8); this.camKick = 0.5;
+    for (const c of [0xffffff, 0x9a3b1c, 0xf2b84b, 0xffd24d]) this.world.parts.burst(m.x, 1.2, m.z, c, 10, 4, 4, 0.8);
+  }
+  updateThief(dt, m, M, p) {
+    if (m.st === 'thiefIn') { // कूदकर आगे सड़क पर
+      const k = Math.min(1, m.t / 0.8), e = k * k * (3 - 2 * k);
+      m.x = lerp(m.x0, LANES[m.lane], e); m.z = lerp(m.z0, -m.gap, e); m.y = lerp(m.y0, 0, e) + Math.sin(k * Math.PI) * 2.2;
+      animMonkey(M, dt, 'leap'); M.rotation.y = 0; M.rotation.z = 0;
+      if (k >= 1) { m.st = 'thief'; m.t = 0; }
+      return;
+    }
+    if (m.st === 'caught') { // लुढ़ककर किनारे बैठ गया
+      const k = Math.min(1, m.t / 0.9);
+      m.x = lerp(m.cx, (m.side || 1) * 4.0, k); m.z = m.cz + k * 6; m.y = Math.abs(Math.sin(k * Math.PI * 2)) * 0.9 * (1 - k);
+      M.rotation.z = k < 0.7 ? k * 9 : 0; animMonkey(M, dt, k < 0.7 ? 'leap' : 'sit');
+      if (k >= 1) { m.st = 'off'; M.visible = false; M.rotation.z = 0; }
+      return;
+    }
+    // 'thief' — आगे भागता
+    m.T -= dt; m.lt -= dt;
+    if (m.lt <= 0) { m.lane = m.lane === 1 ? pick([0, 2]) : Math.random() < 0.7 ? 1 : 2 - m.lane; m.lt = rand(1.1, 2.0); if (m.y < 0.1) m.vy = 4.5; }
+    m.x = damp(m.x, LANES[m.lane], 7, dt);
+    // सामने रुकावट हो तो उछलकर पार
+    const near = this.world.obs.some((e) => !e.dead && Math.abs(e.x - m.x) < e.halfW + 0.4 && e.z > m.z - 2.2 && e.z < m.z + 0.6);
+    const fl = this.world.groundAt(m.x, m.z);
+    if (near && m.y <= fl + 0.05) m.vy = 9;
+    m.vy -= 26 * dt; m.y = Math.max(fl, m.y + m.vy * dt); if (m.y <= fl) m.vy = 0;
+    const same = Math.abs(p.x - m.x) < 1.25;
+    let rate = this.rushT > 0 ? 6.5 : same ? 2.7 : 0.4;
+    if (p.stumT > 0) rate = -2.5; else if (p.slowT > 0) rate *= 0.5;
+    m.gap = clamp(m.gap - rate * dt, 1.2, 17); m.z = -m.gap;
+    if (m.dropN > 0 && (m.drop -= dt) <= 0) { m.dropN--; m.drop = 0.5; this.world.sweets.spawn('rasgulla', LANES[m.lane], 0.7, m.z + 0.8); } // चुराई मिठाई की लकीर — पीछे-पीछे चलो
+    animMonkey(M, dt, m.y > fl + 0.2 ? 'leap' : 'run', this.speed); M.rotation.y = Math.sin(m.t * 5) * 0.08; M.rotation.z = 0;
+    if (m.gap <= 1.7 && same && p.y < 2.6 && p.fly <= 0) { this.thiefCaught(); return; }
+    if (m.T <= 0 || p.fly > 0) {
+      m.st = 'flee'; m.t = 0; m.fx = m.x; m.fy = m.y; m.fz = m.z;
+      this.cheer('monkeyAway', 1500, -1, true, 'warn', m.loot > 0 ? `−${m.loot} 🍬` : null);
+      this.sound.monkey(true);
+    }
+  }
   updateMonkey(dt) {
     const m = this.mk, M = this.monkey, p = this.p || { x: 0, y: 0 };
     if (m.st === 'off') { M.visible = false; return; }
     m.t += dt;
+    const th = m.st === 'thief' || m.st === 'thiefIn' || m.st === 'caught';
+    M.scale.setScalar(damp(M.scale.x, th ? 1.4 : 1, 6, dt)); // चोर बंदर आगे दूर — थोड़ा बड़ा, साफ़ दिखे
+    if (th && this.state === 'play') { this.updateThief(dt, m, M, p); M.position.set(m.x, m.y, m.z); return; }
     const sp = this.speed || 16;
     if (this.state === 'dying' || this.state === 'over' || this.state === 'revive') { // गोलू गिरा — बंदर बैठकर हँसे
       m.x = damp(m.x, p.x + 1.1, 5, dt); m.z = damp(m.z, 1.6, 5, dt); m.y = damp(m.y, 0, 8, dt);
@@ -786,7 +854,7 @@ class Game {
       const k = Math.min(1, m.t / 0.45);
       m.x = damp(m.x, p.x, 12, dt); m.z = lerp(1.9, 0.5, Math.sin(k * Math.PI)); m.y = (p.y || 0) + Math.sin(k * Math.PI) * 1.4;
       animMonkey(M, dt, 'grab');
-      if (m.t > 0.55) { m.st = 'flee'; m.t = 0; m.fx = m.x; m.fy = m.y; m.fz = m.z; }
+      if (m.t > 0.55) { if (m.loot > 0) this.thiefStart(m.loot, m.z, m); else { m.st = 'flee'; m.t = 0; m.fx = m.x; m.fy = m.y; m.fz = m.z; } }
     } else if (m.st === 'flee') { // पोटली लेकर छत पर भागा
       const k = Math.min(1, m.t / 1.1), side = m.side || 1;
       m.x = lerp(m.fx, side * 7.2, k); m.z = m.fz + k * 4; m.y = lerp(m.fy, 5.2, k) + Math.sin(k * Math.PI) * 1.2;
@@ -809,7 +877,7 @@ class Game {
     const p = this.p;
     if (this.god) return;
     this.killer = e.type;
-    if (this.rushT > 0) { this.smash(e); this.score += 50 * this.mult; return; }
+    if (this.rushT > 0) { this.smash(e); this.score += 50 * this.mult; if (e.type === 'chugla') this.fest.burned(e); return; }
     if (p.invT > 0) return;
     if (e.kind === 'trip') {
       e.dead = true; e.flyX = rand(-3, 3);
@@ -860,7 +928,7 @@ class Game {
     const ms = this.ms.settle();
     const rs = this.rs || {};
     stats.merge({ runs: 1, dist: Math.floor(this.world.dist), bestDist: Math.floor(this.world.dist), sweets: this.got, bestScore: sc,
-      roof: Math.floor(rs.roof || 0), haat: rs.haat || 0, samosa: rs.samosa || 0, near: rs.near || 0, monkeyEsc: rs.monkeyEsc || 0, rings: rs.rings || 0, jungle: Math.floor(rs.jungle || 0), deliv: rs.deliver || 0, tricks: rs.tricks || 0 });
+      roof: Math.floor(rs.roof || 0), haat: rs.haat || 0, samosa: rs.samosa || 0, near: rs.near || 0, monkeyEsc: rs.monkeyEsc || 0, rings: rs.rings || 0, jungle: Math.floor(rs.jungle || 0), deliv: rs.deliver || 0, tricks: rs.tricks || 0, sama: rs.sama || 0, monkeyCatch: rs.monkeyCatch || 0 });
     const bd = checkBadges();
     const parts = [];
     if (ms.setDone) parts.push(`🎉 ${T('msSet')} ${ms.setDone.set} ✔ → ×${this.ms.mult}`);
@@ -1165,6 +1233,7 @@ class Game {
         }
       } else {
         const oy = (e.kind === 'train' ? p.y < e.yMax - 0.35 : p.y < e.yMax) && p.y + ph > e.yMin;
+        if (e.type === 'chugla' && ox && oz && !oy && !e.cnt && !e.dead && p.y >= e.yMax - 0.05) { e.cnt = true; this.fest.jumped(e); }
         if (ox && oz && oy) {
           const side = e.pz && !e.px;
           this.hit(e, side);
@@ -1282,12 +1351,15 @@ class Game {
     }
     const rush = this.rushT > 0;
     if (h.rush !== rush) { h.rush = rush; document.body.classList.toggle('rushing', rush); }
-    const pu = (this.pu.magnet > 0 ? 'm' + Math.ceil(this.pu.magnet) : '') + (this.pu.shoes > 0 ? 's' + Math.ceil(this.pu.shoes) : '') + (this.pu.shield ? 'L' : '') + (this.pu.thali > 0 ? 't' + Math.ceil(this.pu.thali) : '') + (this.p.fly > 0 ? 'f' + Math.ceil(this.p.fly) : '');
+    const thief = this.mk && this.mk.st === 'thief' ? Math.ceil(this.mk.T) : 0, fc = this.fest && this.fest.on && !this.fest.done ? this.fest.n : -1;
+    const pu = (thief ? 'k' + thief : '') + (fc >= 0 ? 'c' + fc : '') + (this.pu.magnet > 0 ? 'm' + Math.ceil(this.pu.magnet) : '') + (this.pu.shoes > 0 ? 's' + Math.ceil(this.pu.shoes) : '') + (this.pu.shield ? 'L' : '') + (this.pu.thali > 0 ? 't' + Math.ceil(this.pu.thali) : '') + (this.p.fly > 0 ? 'f' + Math.ceil(this.p.fly) : '');
     if (h.pu !== pu) {
       h.pu = pu;
       const box = $('#pu');
       box.innerHTML = '';
       const chip = (icon, name, sec) => { const d = document.createElement('div'); d.className = 'chip'; d.innerHTML = `<b>${icon}</b><span>${name}</span>${sec ? `<em>${sec}</em>` : ''}`; box.appendChild(d); };
+      if (thief) chip('🐒', T('thiefChip'), thief);
+      if (fc >= 0) chip(this.fest.f.icon, T('festChip'), `${fc}/${this.fest.f.need}`);
       if (this.pu.magnet > 0) chip('🎁', T('magnet'), Math.ceil(this.pu.magnet));
       if (this.pu.shoes > 0) chip('🌀', T('shoes'), Math.ceil(this.pu.shoes));
       if (this.pu.shield) chip('🟠', T('shield'), '');

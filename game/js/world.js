@@ -382,6 +382,7 @@ export class World {
   addObs(t, lane, z, extra = {}) {
     const sub = ZONE_SUB[zoneAt(this.dist - z)];
     if (sub && sub[t] && !extra.vz && !extra.shift && !extra.need) t = sub[t];
+    if (this.fest) t = this.fest.swapObs(t, extra); // 🪔 त्योहार: कुछ बैरियर की जगह चुगला
     const obj = this.getObs(t);
     const u = obj.userData;
     const e = { obj, type: t, kind: u.kind, lane, x: LANES[lane], z, vz: 0, halfW: u.halfW, halfL: u.halfL, yMin: u.yMin, yMax: u.yMax, px: false, pz: false, dead: false, ...extra };
@@ -581,6 +582,7 @@ export class World {
       this.addPu(weighted([['magnet', 4], ['shoes', 3], ['shield', 2.6], ['thali', this.dist > 300 ? 2.4 : 0]]), freeLane, z - 7);
       this.toPu = rand(420, 700) * lerp(1, 1.7, this.diff); // आगे चलकर बूस्टर कम
     }
+    if (this.fest) this.fest.row(z, freeLane);
     return extra;
   }
 

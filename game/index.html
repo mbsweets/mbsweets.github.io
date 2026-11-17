@@ -22,6 +22,7 @@
 #langS{z-index:55}
 #rateS{z-index:58}
 #profS{z-index:56}
+.sub.fest{background:var(--maroon);color:#FFE7A8;font-size:clamp(13px,3.6vw,16px);margin-top:6px;max-width:92vw}
 .pf{align-self:stretch;display:flex;flex-direction:column;gap:3px;font:700 14px var(--body);text-align:left}
 .pf input,.pf select{font:600 17px var(--body);padding:9px 10px;border:2px solid var(--ink);border-radius:10px;background:#fff;color:var(--ink)}
 #pfMsg:empty{display:none}
@@ -363,6 +364,7 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
     <div class="titlewrap">
       <h1 id="ttl" class="ttl" data-t="title" data-text="Rasgulla Run">Rasgulla Run</h1><br>
       <p class="sub" data-t="sub"></p>
+      <br><p id="festTag" class="sub fest" hidden></p>
     </div>
     <div class="spacer"></div>
     <div class="panel">
