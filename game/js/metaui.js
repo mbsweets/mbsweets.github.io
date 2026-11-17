@@ -123,7 +123,7 @@ export class MetaUI {
       let st;
       if (on) st = `<em class="on">✔ ${T('wWorn')}</em>`;
       else if (own) st = `<em>${T('wWear')}</em>`;
-      else st = `<small>🔒 ${it.set ? T('wSet', it.set) : T('wDaily7')}</small>${it.cost ? `<button class="wbuy${wallet.v < it.cost ? ' poor' : ''}" data-buy="${it.id}">${RG}${fmt(it.cost)}</button>` : ''}`;
+      else st = `<small>🔒 ${it.set ? T('wSet', it.set) : it.bill ? T('wBill') : T('wDaily7')}</small>${it.cost ? `<button class="wbuy${wallet.v < it.cost ? ' poor' : ''}" data-buy="${it.id}">${RG}${fmt(it.cost)}</button>` : ''}`;
       return `<div class="witem${on ? ' on' : ''}${own ? '' : ' lock'}${prev ? ' prev' : ''}" data-it="${it.id}"><b>${it.icon}</b><span>${nm(it)}</span>${st}</div>`;
     }).join('');
     $('#wardNote').textContent = this.preview ? T('wTry') : T('wNote');

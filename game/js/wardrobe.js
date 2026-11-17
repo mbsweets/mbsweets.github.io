@@ -13,6 +13,7 @@ export const LOOKS = {
   h_holi: { turban: { holi: true } },
   h_mor: { att: 'mor' },
   h_mukut: { turban: { r: [150, 18, 40], w: [250, 225, 160] }, att: 'mukut' },
+  h_mbpag: { turban: { r: [122, 17, 26], w: [242, 169, 27] }, att: 'pag' }, // MB Sweets के रंग: मैरून + हल्दी
   b_safed: {},
   b_peela: { kurta: [250, 212, 64] },
   b_hara: { kurta: [92, 186, 106], gamchha: { r: [236, 160, 24], w: [255, 246, 214] } },

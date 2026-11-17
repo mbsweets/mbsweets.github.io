@@ -15,6 +15,9 @@
 // POST /ghost {pid, name, score, dist, secs, mult, daily, data} — दौड़ की परछाईं (हर 0.2 से. गोलू की जगह; base64url, 9000 अक्षर तक) → {id}
 //      आज के रास्ते वाली: एक खिलाड़ी की दिन में एक (बेहतर स्कोर हो तो बदले); बाकी: एक फ़ोन से दिन में 20 तक. 30 दिन बाद अपने-आप हटें
 // GET  /ghost?id=ABC123  · GET /ghost/top — आज के रास्ते का सबसे अच्छा
+// ---- 🧾 बिल पर गेम कोड (17 नवंबर 2026) ----
+// POST /admin/billcode {key, amt, bill} — बिलिंग ऐप बिल बनाते समय कोड माँगे (दिन में 500 तक); 7 दिन चलेगा, एक बार
+// POST /billcode/redeem {pid, code} — गेम में डाला: कार्ड पर +2 स्टैम्प (रोज़ की सीमा से अलग) + "MB Sweets पाग" + 300 गेम-मिठाई; एक फ़ोन से दिन में 2 कोड तक
 // POST /feedback {pid, stars 1-5, tags[], text, lang, src, dev, tier, runs, best, ver} — खिलाड़ी की राय (एक फ़ोन की दिन में 1; नाम/फ़ोन नहीं; लिखे में फ़ोन नंबर/गाली कटती)
 const ORIGINS = ['https://mbsweets.github.io', 'http://127.0.0.1:8766', 'http://localhost:8766'];
 const CITIES = ['darbhanga', 'madhubani', 'samastipur', 'sitamarhi', 'muzaffarpur', 'saharsa', 'supaul', 'patna', 'bihar', 'india', 'abroad'];
@@ -53,6 +56,7 @@ async function stats(req, env, asJson) {
     rasToday: (await env.DB.prepare("SELECT COUNT(*) AS n FROM coupon WHERE kind='ras' AND used_day=?").bind(today).first()).n,
     cap: await getCap(env),
     cards: (await env.DB.prepare('SELECT COUNT(*) AS n FROM card').first()).n,
+    bill7: await env.DB.prepare('SELECT COUNT(*) AS made, SUM(CASE WHEN used>0 THEN 1 ELSE 0 END) AS used FROM billcode WHERE day>=?').bind(d7).first(),
     fb: await env.DB.prepare('SELECT COUNT(*) AS n, AVG(stars) AS avg FROM feedback').first(),
     fb30: await env.DB.prepare('SELECT COUNT(*) AS n, AVG(stars) AS avg FROM feedback WHERE day>=?').bind(d30).first(),
     fbStars: (await env.DB.prepare('SELECT stars, COUNT(*) AS n FROM feedback GROUP BY stars').all()).results,
@@ -76,7 +80,7 @@ ${fbHtml(out, req)}
 <table><tr><th>देश (30 दिन)</th><th>खिलाड़ी</th></tr>${out.byCountry.map((r) => row([r.country === 'IN' ? '🇮🇳 भारत' : (r.country || '?'), n(r.users)])).join('')}</table>
 <table><tr><th>दिन</th><th>खिलाड़ी</th><th>नए</th><th>गेम</th></tr>${out.days.map((r) => row([r.day, n(r.users), n(r.newp), n(r.games)])).join('')}</table>
 <table><tr><th>🎮 दुकान इनाम (इस हफ़्ते)</th><th>बने</th><th>दुकान पर दिए</th></tr>${['ras', 'off', 'top3'].map((k) => { const r = out.coupons.find((x) => x.kind === k) || {}; return row([KIND_HI[k], n(r.made), n(r.used)]); }).join('')}
-<tr><td>आज दिए मुफ़्त रसगुल्ले</td><td colspan="2"><b>${n(out.rasToday)}</b> / ${n(out.cap)} (रोज़ की सीमा)</td></tr><tr><td>स्टैम्प कार्ड वाले खिलाड़ी</td><td colspan="2">${n(out.cards)}</td></tr></table>`;
+<tr><td>आज दिए मुफ़्त रसगुल्ले</td><td colspan="2"><b>${n(out.rasToday)}</b> / ${n(out.cap)} (रोज़ की सीमा)</td></tr><tr><td>स्टैम्प कार्ड वाले खिलाड़ी</td><td colspan="2">${n(out.cards)}</td></tr><tr><td>🧾 बिल पर गेम कोड (7 दिन)</td><td>${n(out.bill7 && out.bill7.made)} बने</td><td>${n(out.bill7 && out.bill7.used)} गेम में डाले</td></tr></table>`;
   return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
 }
 
@@ -141,7 +145,10 @@ const SCHEMA = [
   `CREATE INDEX IF NOT EXISTS feedback_ts ON feedback (ts DESC)`,
   `CREATE TABLE IF NOT EXISTS ghost ( id TEXT PRIMARY KEY, pid TEXT NOT NULL, name TEXT NOT NULL, city TEXT NOT NULL DEFAULT '', day TEXT NOT NULL, daily INTEGER NOT NULL DEFAULT 0, score INTEGER NOT NULL, dist INTEGER NOT NULL, secs REAL NOT NULL, data TEXT NOT NULL, ts INTEGER NOT NULL )`,
   `CREATE INDEX IF NOT EXISTS ghost_top ON ghost (daily, day, score DESC)`,
-  `CREATE INDEX IF NOT EXISTS ghost_pid ON ghost (pid, day)`
+  `CREATE INDEX IF NOT EXISTS ghost_pid ON ghost (pid, day)`,
+  `CREATE TABLE IF NOT EXISTS billcode ( code TEXT PRIMARY KEY, created INTEGER NOT NULL, day TEXT NOT NULL, expires INTEGER NOT NULL, amt INTEGER NOT NULL DEFAULT 0, bill TEXT NOT NULL DEFAULT '', used INTEGER NOT NULL DEFAULT 0, pid TEXT NOT NULL DEFAULT '', used_day TEXT NOT NULL DEFAULT '' )`,
+  `CREATE INDEX IF NOT EXISTS billcode_day ON billcode (day)`,
+  `CREATE INDEX IF NOT EXISTS billcode_pid ON billcode (pid, used_day)`
 ];
 let ready = null;
 function ensureSchema(env) {
@@ -300,6 +307,39 @@ export default {
           } catch (e) { /* id टकराया — फिर */ }
         }
         return json(req, { ok: false, err: 'id' }, 500);
+      }
+      if (url.pathname === '/admin/billcode' && req.method === 'POST') {
+        const b = await req.json(), now = Date.now(), day = istDay(now);
+        if (!adminOk(env, b.key)) return json(req, { ok: false, err: 'key' }, 403);
+        const made = (await env.DB.prepare('SELECT COUNT(*) AS n FROM billcode WHERE day=?').bind(day).first()).n;
+        if (made >= 500) return json(req, { ok: false, err: 'many' }, 429);
+        const amt = intIn(b.amt, 0, 1e7, 0), bill = String(b.bill || '').slice(0, 24);
+        for (let i = 0; i < 5; i++) {
+          const code = newCode();
+          try {
+            await env.DB.prepare('INSERT INTO billcode (code,created,day,expires,amt,bill) VALUES (?,?,?,?,?,?)').bind(code, now, day, now + RW.days * 864e5, amt, bill).run();
+            return json(req, { ok: true, code, expires: now + RW.days * 864e5 });
+          } catch (e) { /* टकराया — फिर */ }
+        }
+        return json(req, { ok: false, err: 'code' }, 500);
+      }
+      if (url.pathname === '/billcode/redeem' && req.method === 'POST') {
+        const b = await req.json(), now = Date.now(), day = istDay(now);
+        if (!okPid(b.pid)) return json(req, { ok: false, err: 'pid' }, 400);
+        const code = cleanCode(b.code); if (!code) return json(req, { ok: false, err: 'nf' });
+        const bc = await env.DB.prepare('SELECT * FROM billcode WHERE code=?').bind(code).first();
+        if (!bc) return json(req, { ok: false, err: 'nf' });
+        if (bc.used) return json(req, { ok: false, err: bc.pid === b.pid ? 'mine' : 'used' });
+        if (bc.expires < now) return json(req, { ok: false, err: 'expired' });
+        const today = (await env.DB.prepare('SELECT COUNT(*) AS n FROM billcode WHERE pid=? AND used_day=?').bind(b.pid, day).first()).n;
+        if (today >= 2) return json(req, { ok: false, err: 'many' });
+        const r = await env.DB.prepare('UPDATE billcode SET used=?, pid=?, used_day=? WHERE code=? AND used=0').bind(now, b.pid, day, code).run();
+        if (r && r.meta && r.meta.changes === 0) return json(req, { ok: false, err: 'used' }); // उसी पल किसी और ने डाला
+        const c = await loadCard(env, b.pid, now);
+        c.n = Math.min(RW.need, c.n + 2);
+        const cp = await maybeRas(env, c, now);
+        await saveCard(env, c, now);
+        return json(req, { ok: true, stamps: 2, n: c.n, need: RW.need, coupon: cp, outfit: 'h_mbpag', sweets: 300 });
       }
       if ((url.pathname === '/ghost' || url.pathname === '/ghost/top') && req.method === 'GET') {
         const g = url.pathname === '/ghost/top'

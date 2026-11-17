@@ -4,6 +4,7 @@
 // दरभंगा हफ़्ते के टॉप 3 → 250 ग्राम। सर्वर: Cloudflare Worker (repo mbsweets/rasgulla-lb), गिनती/सीमा वहीं।
 import { T, LANG } from './i18n.js';
 import { store } from './util.js';
+import { wallet, wardrobe } from './meta.js';
 
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -103,6 +104,21 @@ export class Rewards {
     await this.refresh();
     this.paint();
   }
+  // 🧾 बिल वाला कोड डालो → +2 स्टैम्प, 300 गेम-मिठाई, पहली बार "MB Sweets पाग"
+  async redeem(code) {
+    const c = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    this.bcCode = code; this.bcMsg = ''; this.bcOk = false;
+    if (c.length !== 6) { this.bcMsg = T('bcErr').nf; this.paint(); return; }
+    let d = null;
+    try { d = await this.post('/billcode/redeem', { code: c }); } catch (e) { d = { ok: false, err: 'net' }; }
+    if (d && d.ok) {
+      this.bcOk = true; this.bcCode = ''; this.bcMsg = T('bcOk', d.n);
+      if (d.sweets) wallet.add(d.sweets);
+      if (d.outfit && wardrobe.give(d.outfit)) { this.bcMsg += ' · ' + T('bcPag'); if (this.onUnlock) this.onUnlock(d.outfit); }
+      await this.refresh();
+    } else this.bcMsg = (T('bcErr')[(d && d.err) || 'net']) || T('bcErr').net;
+    this.paint();
+  }
   paint() {
     const st = this.st;
     const box = $('#rwBody');
@@ -118,6 +134,8 @@ export class Rewards {
       <div class="rwtoday"><b>${T('rwToday')}</b><ul>${task('gold', T('rwGold'))}${task('mission', T('rwMission'))}${task('dist', T('rwDist'))}</ul></div>
       <div class="rwbox"><b>${T('rwCoupons')}</b>${live.length ? `<p class="lbnote">${T('rwShow')}</p>` + live.map((c) => cp(c, false)).join('') : `<p class="lbnote">${T('rwNone')}</p>`}${used.map((c) => cp(c, true)).join('')}</div>
       <div class="rwbox"><b>${T('rwMore')}</b><ul class="rwlist"><li>${T('rwOff', st.off.score.toLocaleString('en-IN'), st.off.amt, st.off.min)}${st.offWeek ? ' ✅' : ''}</li><li>${T('rwTop')}</li></ul></div>
+      <div class="rwbox bcbox"><b>${T('bcT')}</b><p class="lbnote">${T('bcNote')}</p><div class="bcrow"><input id="bcIn" maxlength="9" autocomplete="off" autocapitalize="characters" placeholder="${T('bcPh')}" value="${esc(this.bcCode || '')}"><button id="bcGo" class="sm">${T('bcGo')}</button></div>${this.bcMsg ? `<p class="bcmsg ${this.bcOk ? 'ok' : 'bad'}">${esc(this.bcMsg)}</p>` : ''}</div>
       <details class="rwrules"><summary>${T('rwRulesT')}</summary><ul>${T('rwRules').map((x) => `<li>${x}</li>`).join('')}</ul></details>`;
+    const go = $('#bcGo'); if (go) go.onclick = () => { go.disabled = true; this.redeem($('#bcIn').value); };
   }
 }

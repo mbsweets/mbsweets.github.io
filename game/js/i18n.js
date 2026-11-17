@@ -57,7 +57,7 @@ const S = {
     thiefChip: 'Catch him!', festSama: 'Sama-Chakeva!', festTag: '🪔 Sama-Chakeva special: collect 5 clay Chakeva birds in a run!', festDone: 'All 5 Chakeva! +100 sweets', festChip: 'Chakeva', chuglaBurn: 'Chugla burned! 🔥 +15', madhubani: 'Madhubani Magic!', madhuS: 'Madhubani', pondZ: 'Makhana pond! Boat ride!', makhanaT: '+5 Makhana!', dailyBtn: "📅 Today's Route", dailySub: (n, sc) => `Top today: ${n} · ${sc}`, dailyFirst: 'Same route for everyone — be first today!', dailyOn: "Today's Route",
     chalT: (n) => `${n} challenged you!`, chalP: (d, sc) => `Beat ${d} m · ${sc} points — race the ghost!`, chalGo: "Let's beat it!",
     ghostWin: (n, d) => `👻 You beat ${n} by ${d} m!`, ghostLose: (n, d) => `👻 ${n} was ${d} m ahead`,
-    ghostShare: (d, sc) => `I ran ${d} m (${sc} points) in Rasgulla Run — race my ghost and beat me!`, lbDay: 'Today', ghostAhead: 'ahead', ghostBehind: 'behind',
+    ghostShare: (d, sc) => `I ran ${d} m (${sc} points) in Rasgulla Run — race my ghost and beat me!`, lbDay: 'Today', ghostAhead: 'ahead', ghostBehind: 'behind', wBill: 'Shop bill code', bcT: '🧾 Code from your MB Sweets bill', bcPh: 'e.g. R23-NHT', bcGo: 'Add', bcOk: (n) => `+2 stamps! Card ${n}/10 · +300 game sweets`, bcPag: 'New: MB Sweets Paag! 🧾', bcErr: { nf: 'Code not found — check the bill', used: 'This code is already used', mine: 'You already added this code', expired: 'Code expired (7 days)', many: 'Max 2 bill codes a day — try tomorrow', net: 'No internet — try again' }, bcNote: 'Buy at MB Sweets → game code on your bill → +2 stamps + special paag',
   },
   hi: { // हिंदी
     title: 'रसगुल्ला रन', sub: 'मिथिला की मीठी दौड़', play: 'खेलो', best: 'सबसे अच्छा', sweets: 'मिठाई', score: 'स्कोर',
@@ -114,7 +114,7 @@ const S = {
     thiefChip: 'पकड़ो!', festSama: 'सामा-चकेवा!', festTag: '🪔 सामा-चकेवा ख़ास: एक दौड़ में 5 चकेवा पंछी जमा करो!', festDone: 'पाँचों चकेवा! +100 मिठाई', festChip: 'चकेवा', chuglaBurn: 'चुगला दहन! 🔥 +15', madhubani: 'मधुबनी शक्ति!', madhuS: 'मधुबनी', pondZ: 'मखाना पोखर! नाव की सवारी!', makhanaT: '+5 मखाना!', dailyBtn: '📅 आज का रास्ता', dailySub: (n, sc) => `आज के टॉपर: ${n} · ${sc}`, dailyFirst: 'सबके लिए एक जैसा रास्ता — आज पहले बनो!', dailyOn: 'आज का रास्ता',
     chalT: (n) => `${n} ने चुनौती दी!`, chalP: (d, sc) => `${d} मी. · ${sc} अंक — परछाईं से रेस करो, हराओ!`, chalGo: 'चलो हराएँ!',
     ghostWin: (n, d) => `👻 ${n} को ${d} मी. से हराया!`, ghostLose: (n, d) => `👻 ${n} ${d} मी. आगे रहे`,
-    ghostShare: (d, sc) => `रसगुल्ला रन में मैंने ${d} मीटर दौड़ा (${sc} अंक) — मेरी परछाईं से रेस करो और हराओ!`, lbDay: 'आज', ghostAhead: 'आगे', ghostBehind: 'पीछे',
+    ghostShare: (d, sc) => `रसगुल्ला रन में मैंने ${d} मीटर दौड़ा (${sc} अंक) — मेरी परछाईं से रेस करो और हराओ!`, lbDay: 'आज', ghostAhead: 'आगे', ghostBehind: 'पीछे', wBill: 'दुकान के बिल का कोड', bcT: '🧾 MB Sweets के बिल वाला कोड', bcPh: 'जैसे R23-NHT', bcGo: 'डालो', bcOk: (n) => `+2 स्टैम्प! कार्ड ${n}/10 · +300 गेम-मिठाई`, bcPag: 'नई: MB Sweets पाग! 🧾', bcErr: { nf: 'कोड नहीं मिला — बिल पर फिर से देखो', used: 'यह कोड पहले ही इस्तेमाल हो चुका', mine: 'यह कोड तुम पहले ही डाल चुके', expired: 'कोड का समय निकल गया (7 दिन)', many: 'दिन में 2 बिल-कोड तक — कल डालो', net: 'इंटरनेट नहीं मिला — फिर दबाओ' }, bcNote: 'MB Sweets से ख़रीदो → बिल पर गेम कोड → +2 स्टैम्प + ख़ास पाग',
   },
   mai: { // मैथिली (मिथिलाक बोली)
     title: 'रसगुल्ला रन', sub: 'मिथिलाक मीठ दौड़', play: 'खेलू', best: 'सबसँ नीक', sweets: 'मिठाइ', score: 'स्कोर',
@@ -171,7 +171,7 @@ const S = {
     thiefChip: 'पकड़ू!', festSama: 'सामा-चकेवा!', festTag: '🪔 सामा-चकेवा विशेष: एक दौड़ मे 5 टा चकेवा चिड़ै जमा करू!', festDone: 'पाँचो चकेवा! +100 मिठाइ', festChip: 'चकेवा', chuglaBurn: 'चुगला दहन! 🔥 +15', madhubani: 'मधुबनी शक्ति!', madhuS: 'मधुबनी', pondZ: 'मखाना पोखरि! नावक सवारी!', makhanaT: '+5 मखान!', dailyBtn: '📅 आजुक रस्ता', dailySub: (n, sc) => `आजुक टॉपर: ${n} · ${sc}`, dailyFirst: 'सबहक लेल एक्के रस्ता — आइ पहिल बनू!', dailyOn: 'आजुक रस्ता',
     chalT: (n) => `${n} चुनौती देलनि!`, chalP: (d, sc) => `${d} मी. · ${sc} अंक — परछाईं सँ रेस करू, हराउ!`, chalGo: 'चलू हराबी!',
     ghostWin: (n, d) => `👻 ${n} केँ ${d} मी. सँ हरा देलहुँ!`, ghostLose: (n, d) => `👻 ${n} ${d} मी. आगू रहलाह`,
-    ghostShare: (d, sc) => `रसगुल्ला रन मे हम ${d} मीटर दौड़लहुँ (${sc} अंक) — हमर परछाईं सँ रेस करू आ हराउ!`, lbDay: 'आइ', ghostAhead: 'आगू', ghostBehind: 'पाछू',
+    ghostShare: (d, sc) => `रसगुल्ला रन मे हम ${d} मीटर दौड़लहुँ (${sc} अंक) — हमर परछाईं सँ रेस करू आ हराउ!`, lbDay: 'आइ', ghostAhead: 'आगू', ghostBehind: 'पाछू', wBill: 'दोकानक बिलक कोड', bcT: '🧾 MB Sweets बिल वला कोड', bcPh: 'जेना R23-NHT', bcGo: 'डालू', bcOk: (n) => `+2 स्टैम्प! कार्ड ${n}/10 · +300 गेम-मिठाइ`, bcPag: 'नव: MB Sweets पाग! 🧾', bcErr: { nf: 'कोड नहि भेटल — बिल पर फेर देखू', used: 'ई कोड पहिने इस्तेमाल भ चुकल', mine: 'ई कोड अहाँ पहिने डालि चुकल छी', expired: 'कोडक समय निकलि गेल (7 दिन)', many: 'दिन मे 2 बिल-कोड धरि — काल्हि डालू', net: 'इंटरनेट नहि भेटल — फेर दबाउ' }, bcNote: 'MB Sweets सँ किनू → बिल पर गेम कोड → +2 स्टैम्प + विशेष पाग',
   },
 };
 
@@ -216,7 +216,7 @@ const HIN = {
   'पहिल दौड़': 'पहली दौड़', 'एक किलोमीटर': 'एक किलोमीटर', 'तीन किलोमीटर': 'तीन किलोमीटर', 'मिठाइ प्रेमी': 'मिठाई प्रेमी', 'मिठाइक राजा': 'मिठाई का राजा',
   'रेलक राजा': 'रेल का राजा', 'हाटक उस्ताद': 'हाट का उस्ताद', 'उड़ाका': 'उड़ाका', 'बाल-बाल 100': 'बाल-बाल 100', 'बंदर-बाज़': 'बंदर-बाज़',
   'सोनाक छल्ला': 'सोने का छल्ला', 'सुपर स्टार': 'सुपर स्टार', 'जंगलक राजा': 'जंगल का राजा',
-  '{n} डिलीवरी पूरा करू': '{n} डिलीवरी पूरी करो', 'एक दौड़ मे {n} करतब करू': 'एक दौड़ में {n} करतब करो', '{n} करतब करू': '{n} करतब करो', 'डिलीवरी स्टार': 'डिलीवरी स्टार', 'करतबबाज़': 'करतबबाज़', 'चोर बंदर केँ {n} बेर पकड़ू': 'चोर बंदर को {n} बार पकड़ो', 'बंदर-पकड़': 'बंदर-पकड़', 'सामा-चकेवा 2026': 'सामा-चकेवा 2026', 'नाव सँ {n} मीटर चलू': 'नाव से {n} मीटर चलो', 'नाविक': 'नाविक', 'मधुबनी कलाकार': 'मधुबनी कलाकार', '{n} बेर मधुबनी शक्ति पकड़ू': '{n} बार मधुबनी शक्ति पकड़ो',
+  '{n} डिलीवरी पूरा करू': '{n} डिलीवरी पूरी करो', 'एक दौड़ मे {n} करतब करू': 'एक दौड़ में {n} करतब करो', '{n} करतब करू': '{n} करतब करो', 'डिलीवरी स्टार': 'डिलीवरी स्टार', 'करतबबाज़': 'करतबबाज़', 'चोर बंदर केँ {n} बेर पकड़ू': 'चोर बंदर को {n} बार पकड़ो', 'बंदर-पकड़': 'बंदर-पकड़', 'सामा-चकेवा 2026': 'सामा-चकेवा 2026', 'नाव सँ {n} मीटर चलू': 'नाव से {n} मीटर चलो', 'नाविक': 'नाविक', 'मधुबनी कलाकार': 'मधुबनी कलाकार', 'MB Sweets पाग': 'MB Sweets पाग', '{n} बेर मधुबनी शक्ति पकड़ू': '{n} बार मधुबनी शक्ति पकड़ो',
   'जलेबी': 'जलेबी', 'लड्डू': 'लड्डू', 'पेड़ा': 'पेड़ा', 'कलाकंद': 'कलाकंद', 'मिल्क केक': 'मिल्क केक', 'रसमलाई!': 'रसमलाई!',
 };
 // {en, hi(=मैथिली)} वाली चीज़ से चुनी भाषा का लिखा

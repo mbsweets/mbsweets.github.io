@@ -349,6 +349,7 @@ class Game {
     $('#overLb').addEventListener('click', () => this.lb.open());
     this.rw = new Rewards(this.lb, LOCAL && !PORTAL && this.lb.on); // 🎫 दुकान के इनाम — सिर्फ़ अपनी वेबसाइट पर
     this.rw.bind();
+    this.rw.onUnlock = (id) => { this.meta.showUnlocks([id]); };
     this.rate = new Rate(this, this.lb.url, !PORTAL && this.lb.on); // ⭐ राय — सिर्फ़ अपनी वेबसाइट
     this.rate.bind();
     // 📅 आज का रास्ता + 👻 दोस्त की चुनौती (सिर्फ़ अपनी वेबसाइट)
@@ -474,6 +475,15 @@ class Game {
   }
   // 👻 ?g=ID वाला लिंक — दोस्त की चुनौती
   async checkChallenge() {
+    // 🧾 बिल के WhatsApp संदेश वाला लिंक: ?bc=CODE → इनाम वाली स्क्रीन खुलकर कोड अपने-आप
+    const bc = new URLSearchParams(location.search).get('bc');
+    if (bc && !PORTAL && this.rw && this.rw.on) {
+      try { history.replaceState(null, '', location.pathname); } catch (e) { /* */ }
+      const busy = () => ['#langS', '#profS', '#dailyS', '#unlockS'].some((q) => $(q) && !$(q).hidden);
+      while (busy()) await new Promise((r) => setTimeout(r, 400));
+      await this.rw.open(); this.rw.redeem(bc);
+      return;
+    }
     const id = new URLSearchParams(location.search).get('g');
     if (!id || PORTAL || !this.lb.on) return;
     try { history.replaceState(null, '', location.pathname); } catch (e) { /* */ }

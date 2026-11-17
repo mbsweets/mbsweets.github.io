@@ -56,6 +56,7 @@ export const ITEMS = [
   { id: 'x_chashma', slot: 'extra', icon: '😎', hi: 'करिया चश्मा', en: 'Cool Shades', set: 5, cost: 2500 },
   { id: 'x_gubbara', slot: 'extra', icon: '🎈', hi: 'गुब्बारा', en: 'Balloon', set: 13, cost: 5500 },
   { id: 'x_chamak', slot: 'extra', icon: '🌟', hi: 'मिठाइक चमक', en: 'Sweet Sparkle Trail', daily7: 1, cost: 8000 },
+  { id: 'h_mbpag', slot: 'head', icon: '🧾', hi: 'MB Sweets पाग', en: 'MB Sweets Paag', bill: 1 }, // सिर्फ़ दुकान के बिल वाले गेम कोड से
 ];
 export const SLOTS = ['head', 'body', 'feet', 'extra'];
 export const itemById = (id) => ITEMS.find((x) => x.id === id);
