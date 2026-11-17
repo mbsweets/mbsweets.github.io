@@ -17,6 +17,8 @@
 // GET  /ghost?id=ABC123  · GET /ghost/top — आज के रास्ते का सबसे अच्छा
 // ---- 🧾 बिल पर गेम कोड (17 नवंबर 2026) ----
 // POST /admin/billcode {key, amt, bill} — बिलिंग ऐप बिल बनाते समय कोड माँगे (दिन में 500 तक); 7 दिन चलेगा, एक बार
+// GET  /weather — दरभंगा का अभी का मौसम (MET Norway Locationforecast; यहीं 30 मिनट cache, ताकि उनकी सीमा न टूटे) → {ok, sym, temp, ts}
+//      "Based on data from MET Norway" (CC BY 4.0 / NLOD) — गेम की सेटिंग्स में श्रेय लिखा है
 // POST /billcode/redeem {pid, code} — गेम में डाला: कार्ड पर +2 स्टैम्प (रोज़ की सीमा से अलग) + "MB Sweets पाग" + 300 गेम-मिठाई; एक फ़ोन से दिन में 2 कोड तक
 // POST /feedback {pid, stars 1-5, tags[], text, lang, src, dev, tier, runs, best, ver} — खिलाड़ी की राय (एक फ़ोन की दिन में 1; नाम/फ़ोन नहीं; लिखे में फ़ोन नंबर/गाली कटती)
 const ORIGINS = ['https://mbsweets.github.io', 'http://127.0.0.1:8766', 'http://localhost:8766'];
@@ -340,6 +342,27 @@ export default {
         const cp = await maybeRas(env, c, now);
         await saveCard(env, c, now);
         return json(req, { ok: true, stamps: 2, n: c.n, need: RW.need, coupon: cp, outfit: 'h_mbpag', sweets: 300 });
+      }
+      if (url.pathname === '/weather' && req.method === 'GET') {
+        const now = Date.now();
+        const row = await env.DB.prepare("SELECT v FROM cfg WHERE k='wx'").first();
+        let wx = null; try { wx = row ? JSON.parse(row.v) : null; } catch (e) { wx = null; }
+        if (!wx || now - wx.ts > 30 * 60e3) {
+          try {
+            const r = await fetch('https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=26.1542&lon=85.8918', { headers: { 'User-Agent': 'RasgullaRun/1.0 (https://mbsweets.github.io/game/; MB Sweets Darbhanga)', 'Accept': 'application/json' } });
+            if (r.ok) {
+              const d = await r.json(), ts0 = d && d.properties && d.properties.timeseries;
+              const first = ts0 && ts0[0] && ts0[0].data;
+              if (first) {
+                const sym = (first.next_1_hours && first.next_1_hours.summary && first.next_1_hours.summary.symbol_code) || (first.next_6_hours && first.next_6_hours.summary && first.next_6_hours.summary.symbol_code) || '';
+                wx = { ts: now, sym: String(sym).slice(0, 40), temp: Math.round(+first.instant.details.air_temperature) };
+                await env.DB.prepare("INSERT INTO cfg (k,v) VALUES ('wx',?) ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(JSON.stringify(wx)).run();
+              }
+            }
+          } catch (e) { /* पुराना ही सही */ }
+        }
+        if (!wx) return json(req, { ok: false });
+        return new Response(JSON.stringify({ ok: true, ...wx }), { headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=600', ...cors(req) } });
       }
       if ((url.pathname === '/ghost' || url.pathname === '/ghost/top') && req.method === 'GET') {
         const g = url.pathname === '/ghost/top'

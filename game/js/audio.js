@@ -247,6 +247,21 @@ export class Sound {
   fail() { if (!this.ok()) return; const t = this.now(); this.tone(392, t, 0.22, { vol: 0.12, to: 330, type: 'triangle' }); this.tone(311, t + 0.2, 0.35, { vol: 0.12, to: 247, type: 'triangle' }); }
   trick(n = 0) { if (!this.ok()) return; const t = this.now(); this.hiss(t, 0.28, { vol: 0.16, fq: 700 + n * 300, to: 3200 + n * 600, q: 1.4 }); }
   trickLand(n = 1) { if (!this.ok()) return; const t = this.now(); [0, 4, 7, 12, 16, 19].slice(0, 2 + Math.min(n, 4)).forEach((k, i) => this.tone(f(k, 587.33), t + i * 0.045, 0.2, { vol: 0.09, type: 'triangle' })); }
+  // 🥁 बारात का ढोल-ताशा: bpm पर n थाप; पहली थाप का समय (ctx) लौटाओ — गेम उसी से "ताल" गिनता है
+  dhol(bpm = 120, n = 18) {
+    if (!this.ctx) return null;
+    const t0 = this.now() + 0.3, sp = 60 / bpm;
+    if (this.ok()) for (let i = 0; i < n; i++) {
+      const t = t0 + i * sp;
+      this.tone(i % 4 === 0 ? 72 : 96, t, 0.24, { vol: 0.34, to: 46, type: 'sine' });
+      this.hiss(t, 0.05, { vol: 0.08, fq: 2200, q: 2 });
+      this.hiss(t + sp / 2, 0.05, { vol: 0.11, fq: 3400, q: 1.6 });
+      if (i % 4 === 3) this.hiss(t + sp * 0.75, 0.05, { vol: 0.09, fq: 3400, q: 1.6 });
+    }
+    return t0;
+  }
+  clap() { if (!this.ok()) return; const t = this.now(); this.hiss(t, 0.09, { vol: 0.22, fq: 1500, q: 0.9 }); this.tone(f(12, 587.33), t, 0.15, { vol: 0.08, type: 'triangle' }); }
+  thunder() { if (!this.ok()) return; const t = this.now(); this.hiss(t, 1.6, { vol: 0.32, type: 'lowpass', fq: 420, to: 60, q: 0.7 }); this.tone(55, t, 1.2, { vol: 0.18, to: 32, type: 'sawtooth' }); }
   click() { if (!this.ok()) return; this.tone(880, this.now(), 0.06, { vol: 0.1, type: 'triangle' }); }
   bees(on) {
     if (!this.ctx) return;

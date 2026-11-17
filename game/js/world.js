@@ -232,7 +232,7 @@ export class World {
     this.roadTile = ROAD_HALF * 2 / 3;
     this.roadTex = rep(RT.road, 3, len / this.roadTile);
     this.roadN = rep(RT.roadN, 3, len / this.roadTile);
-    const road = new THREE.Mesh(new THREE.PlaneGeometry(ROAD_HALF * 2, len), new THREE.MeshStandardMaterial({ map: this.roadTex, normalMap: this.roadN, normalScale: new THREE.Vector2(1.2, 1.2), roughness: 0.93 }));
+    const road = new THREE.Mesh(new THREE.PlaneGeometry(ROAD_HALF * 2, len), this.roadMat = new THREE.MeshStandardMaterial({ map: this.roadTex, normalMap: this.roadN, normalScale: new THREE.Vector2(1.2, 1.2), roughness: 0.93 }));
     road.rotation.x = -Math.PI / 2;
     road.position.set(0, 0, z0);
     road.receiveShadow = true;

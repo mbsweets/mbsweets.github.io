@@ -265,6 +265,7 @@ export class Delivery {
     g.sound.deliver(); vibrate([30, 40, 30, 40, 60]);
     if (g.emo) g.emo.play('love', 1.4);
     g.shake = Math.max(g.shake, 0.15);
+    if (g.mom) g.mom.want(500 + 50 * this.stars, T('momDeliver', '⭐'.repeat(this.stars)), 250);
     this.box.visible = true; this.boxT = 0; this.box0 = new THREE.Vector3(g.p.x, g.p.y + 1.6, -0.3);
     const cu = this.cm.position; g.world.parts.burst(cu.x, 2.2, cu.z, 0xff4d6d, 16, 2, 3, 1.0, -3);
     this.toNext = rand(600, 900);

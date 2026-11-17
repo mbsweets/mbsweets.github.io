@@ -30,6 +30,9 @@ import { makeBoat, WATER_Y } from './pond.js';
 import { MadhubaniFX } from './madhubani.js';
 import { Recorder, GhostRunner, decode, flagsOf, istDay } from './ghost.js';
 import { Story } from './story.js';
+import { Weather, WX_ICON } from './weather.js';
+import { Moments } from './moment.js';
+import { GoluShop } from './goshop.js';
 
 const $ = (s) => document.querySelector(s);
 // ग्राफ़िक्स के दर्जे (0 = सबसे बढ़िया). ऑटो: पूरी दौड़ में हर 2 सेकंड रफ़्तार देखो, धीमा हो तो एक दर्जा नीचे; फ़ोन याद रखे
@@ -205,6 +208,8 @@ class Game {
     this.mfx = new MadhubaniFX(r); this.madK = 0; // 🎨 मधुबनी
     this.rec = new Recorder(); this.ghost = new GhostRunner(sc, this.has3d); // 👻 परछाईं
     this.story = new Story(this); // 📖 कहानी
+    this.mom = new Moments(); // 📸 बेस्ट पल
+    this.gshop = new GoluShop(this); // 🏪 गोलू की दुकान
     this.camKick = 0;
     // रात: लालटेन/खंभों की चमक + जुगनू; गोलू के आगे गरम रोशनी (भारी दर्जों में बंद)
     this.nfx = new NightFX(sc);
@@ -215,6 +220,9 @@ class Game {
     window.addEventListener('resize', () => this.resize());
     this.bindInput();
     this.bindUI();
+    this.wx = new Weather(sc, this.lb.url, !PORTAL && this.lb.on); // 🌧️ दरभंगा का असली मौसम
+    this.wx.onChange = () => { this.tod = null; this.refreshMenu(); };
+    this.wx.load();
     this.camX = 0; this.shake = 0;
     this.world.reset(false);
     this.applyGfx();
@@ -293,6 +301,7 @@ class Game {
         const big = this.pu.shoes > 0;
         p.vy = big ? SHOE_V : JUMP_V; p.ground = false; p.roll = 0; p.big = big;
         this.sound.jump(big); this.msBump('jumps');
+        this.beatJump();
         // करतब सिखाना: पहली कुछ दौड़ों में एक बार
         if (this.tutDone && !this.trickHint && this.runT > 5 && store('tutTrick') !== '1' && storeNum('tutTrickN') < 4) { this.trickHint = true; store('tutTrickN', storeNum('tutTrickN') + 1); this.toast('👆 ' + T('tutTrick'), 1700, 'gold'); }
       } else if (p.roll > 0) p.roll = 0;
@@ -343,6 +352,7 @@ class Game {
     click('#btnSet', () => this.meta.open('set'));
     click('#btnSet2', () => this.meta.open('set'));
     click('#btnShare', () => this.share());
+    click('#btnShot', () => this.shareShot());
     this.lb = new Leaderboard();
     if (PORTAL) this.lb.on = false; // पोर्टल पर अपना लीडरबोर्ड नहीं (उनके नियम)
     this.lb.bind(() => {});
@@ -361,6 +371,9 @@ class Game {
     $('#chalNo').addEventListener('click', (e) => { e.preventDefault(); $('#chalS').hidden = true; });
     // 📖 कहानी
     click('#btnStory', () => this.story.open());
+    click('#btnShop', () => this.gshop.show(true));
+    click('#gshopClose', () => this.gshop.show(false));
+    $('#gshopBody').addEventListener('click', (e) => { const b = e.target.closest('[data-gs]'); if (!b) return; this.sound.init(); this.sound.click(); this.gshop.click(b.dataset.gs); });
     click('#storyClose', () => { $('#storyS').hidden = true; });
     $('#storyList').addEventListener('click', (e) => { const b = e.target.closest('[data-ch]'); if (!b || b.disabled) return; this.sound.init(); this.sound.click(); this.story.cut(+b.dataset.ch); });
     $('#cutSkip').addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); this.story.skip(); });
@@ -371,7 +384,9 @@ class Game {
   }
   refreshMenu() {
     if (this.rw && this.rw.on) this.rw.paintBadge(); // भाषा बदली हो तो इनाम-बटन भी
+    const gb = $('#btnShop'); if (gb && this.gshop) gb.innerHTML = T('gsBtn') + (this.gshop.canCollect() ? ' <i>1</i>' : '');
     const ft = $('#festTag'); if (ft) { ft.hidden = !(this.fest && this.fest.on); ft.textContent = T('festTag'); }
+    const wt = $('#wxTag'); if (wt) { const k = this.wx && this.wx.on && this.wx.temp != null ? this.wx.kind : null; wt.hidden = !k; if (k) wt.textContent = T('wxTag', WX_ICON[k], T('wx_' + k), this.wx.temp); }
     $('#ttl').dataset.text = T('title');
     $('#bestV').textContent = Math.floor(this.best).toLocaleString('en-IN');
     $('#totalV').textContent = Math.floor(wallet.v).toLocaleString('en-IN');
@@ -391,7 +406,7 @@ class Game {
       if (this.leaving) return;
       if (this.leaveOpen) { this.leaveNow(1); return; } // दूसरा बैक — हमारा कदम पहले ही हट चुका
       // कोई खिड़की खुली हो (सेटिंग, कपड़े, रैंक, इनाम) तो बैक = वही बंद करो
-      const open = [['#storyS', '#storyClose'], ['#chalS', '#chalNo'], ['#profS', '#pfLater'], ['#rateS', '#rateX'], ['#wardS', '#wardClose'], ['#metaS', '#metaClose'], ['#lbS', '#lbClose'], ['#rwS', '#rwClose']].find(([w]) => $(w) && !$(w).hidden);
+      const open = [['#gshopS', '#gshopClose'], ['#storyS', '#storyClose'], ['#chalS', '#chalNo'], ['#profS', '#pfLater'], ['#rateS', '#rateX'], ['#wardS', '#wardClose'], ['#metaS', '#metaClose'], ['#lbS', '#lbClose'], ['#rwS', '#rwClose']].find(([w]) => $(w) && !$(w).hidden);
       if (open) { $(open[1]).click(); arm(); return; }
       if (this.state === 'play') this.pause();
       this.leaveOpen = true; $('#leaveS').hidden = false;
@@ -528,7 +543,7 @@ class Game {
     if (gh) { this.ghost.set(gh, opts.ghost.name); this.ghostOf = opts.ghost; } else { this.ghost.off(); this.ghostOf = null; }
     this.rec.start();
     $('#wardS').hidden = true; this.wardOpen = false; this.wearNow();
-    $('#metaS').hidden = true; $('#dailyS').hidden = true; $('#profS').hidden = true;
+    $('#metaS').hidden = true; $('#dailyS').hidden = true; $('#profS').hidden = true; if (this.gshop.open) this.gshop.show(false);
     this.ms.startRun(); this.flyT = upTime('samosa');
     this.revived = false; this.runs++;
     this.mk = { st: 'off', t: 0, x: 0, y: 0, z: 4 }; this.monkey.visible = false; this.toMonkey = rand(550, 800);
@@ -560,6 +575,8 @@ class Game {
       this.headstart = false;
       if (buyHeadstart()) this.hsT = 0.8;
     }
+    this.beat = null; $('#beat').hidden = true;
+    this.mom.reset(); this.recordSaid = false;
     this.forceThief = false; this.story.begin(opts.story != null ? opts.story : null);
     P.gameplayStart();
   }
@@ -661,6 +678,16 @@ class Game {
     this.toastT = setTimeout(() => { t.className = ''; }, ms);
   }
 
+  // 📸 बेस्ट पल का कार्ड → WhatsApp स्टेटस (फ़ाइल शेयर), नहीं तो फ़ोन में सेव
+  async shareShot() {
+    const r = this.lastRun || {}, nm = this.lb && this.lb.name;
+    const line = `${T('score')} ${(r.score || 0).toLocaleString('en-IN')} · ${(r.dist || 0).toLocaleString('en-IN')} ${T('distU')}${nm ? ' · ' + nm : ''}`;
+    const blob = await this.mom.card({ line }); if (!blob) return;
+    const file = new File([blob], 'rasgulla-run.jpg', { type: 'image/jpeg' });
+    try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text: T('cardShare') }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'rasgulla-run.jpg'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+    this.toast(T('cardSaved'), 1600, 'gold');
+  }
   // 👻 चुनौती: इस दौड़ की परछाईं सर्वर पर → लिंक (?g=ID) WhatsApp पर. नाम न हो तो पहले नाम-ज़िला
   async shareGhost() {
     const r = this.lastRun;
@@ -711,7 +738,7 @@ class Game {
   takePu(p) {
     p.taken = true;
     if (p.kind === 'makhana') { this.got += 5; this.score += 50 * this.mult; this.world.parts.burst(p.x, p.y, p.z, 0xfaf6ea, 18, 3, 3, 0.7); this.sound.collect(3, 'rasgulla'); this.toast(T('makhanaT'), 700, 'gold'); this.msBump('sweets', this.got, true); return; }
-    if (p.kind === 'madhubani') { this.pu.madhu = 9; this.sound.power(); this.sound.levelUp(); vibrate([30, 40, 30]); this.cheer('madhubani', 1600, -1, true, 'gold'); this.msBump('power'); this.msBump('madhu'); this.camKick = 0.6; return; }
+    if (p.kind === 'madhubani') { this.mom.want(420, T('momMadhu'), 700); this.pu.madhu = 9; this.sound.power(); this.sound.levelUp(); vibrate([30, 40, 30]); this.cheer('madhubani', 1600, -1, true, 'gold'); this.msBump('power'); this.msBump('madhu'); this.camKick = 0.6; return; }
     if (p.kind === 'chakeva') { this.world.parts.burst(p.x, p.y, p.z, 0xfff4d6, 16, 3, 3, 0.7); this.world.parts.burst(p.x, p.y, p.z, 0xd1261c, 8, 3, 3, 0.7); this.fest.got(); return; }
     this.sound.power();
     vibrate(25);
@@ -732,6 +759,7 @@ class Game {
     this.cheer('fly', 1400, -1, true, 'rush');
     this.shake = 0.2;
     this.skyShow.start(FLY_Y, this.world.skyTrail(this.flyT, this.speed, FLY_Y, p.lane));
+    this.mom.want(350, T('momFly'), 900);
     this.msBump('samosa');
   }
   endFly() {
@@ -866,7 +894,7 @@ class Game {
     this.msBump('monkeyCatch'); this.msBump('sweets', this.got, true);
     this.cheer('monkeyCaught', 1700, -1, true, 'gold', `+${rw} 🍬`);
     this.sound.ring(); this.sound.power(); vibrate([30, 30, 60]);
-    this.emo.play('cool', 0.8); this.camKick = 0.5;
+    this.emo.play('cool', 0.8); this.camKick = 0.5; this.mom.want(600, T('momMonkey'));
     for (const c of [0xffffff, 0x9a3b1c, 0xf2b84b, 0xffd24d]) this.world.parts.burst(m.x, 1.2, m.z, c, 10, 4, 4, 0.8);
   }
   updateThief(dt, m, M, p) {
@@ -1034,6 +1062,7 @@ class Game {
     const ln = pickCheer(nb ? 'newBest' : 'over');
     setTimeout(() => { if (this.state === 'over') this.sayPair(ln, true); }, 500);
     $('#overLb').hidden = true; $('#overRw').hidden = true; this.dl.hide();
+    { const sh = $('#overShot'), th = LOCAL && this.mom.best ? this.mom.thumb() : null; sh.hidden = !th; if (th) { sh.querySelector('img').src = th; sh.querySelector('span').textContent = this.mom.best.label; } }
     this.rate.maybeAsk();
     if (this.goldMesh) this.goldMesh.visible = false; this.goldObj = null;
     this.show(['#over']);
@@ -1090,17 +1119,20 @@ class Game {
     this.update(rdt);
     this.sky.position.copy(this.cam.position);
     this.sky.material.uniforms.uTime.value += rdt;
+    if (this.wx) { this.wx.update(rdt, this.state === 'play' ? (this.lastDz || 0) : 0, this); if (this.baseExp) this.renderer.toneMappingExposure = this.baseExp * (1 + this.wx.flash * 0.9); }
     const mk = this.pu && this.state !== 'menu' && this.pu.madhu > 0 ? 1 : 0;
     this.madK = damp(this.madK || 0, mk, mk ? 5 : 3, rdt);
     if (this.madK > 0.01) this.mfx.render(this.scene, this.cam, this.madK, this.tier >= 2 ? 0.7 : 1);
     else this.renderer.render(this.scene, this.cam);
+    if (this.state === 'play' && this.mom) this.mom.afterRender(this.renderer.domElement);
     const fr = this.madK > 0.3; if (fr !== this.frOn) { this.frOn = fr; this.mfx.showFrame(fr); }
   }
 
   // शाम/रात — आसमान, धूप, कोहरा, चमक
   applyTod(eve, night) {
-    if (this.tod && Math.abs(this.tod.eve - eve) < 0.004 && Math.abs(this.tod.night - night) < 0.004) return;
-    this.tod = { eve, night };
+    const wk = this.wx ? this.wx.active : 'clear';
+    if (this.tod && this.tod.wk === wk && Math.abs(this.tod.eve - eve) < 0.004 && Math.abs(this.tod.night - night) < 0.004) return;
+    this.tod = { eve, night, wk };
     const u = this.sky.material.uniforms; u.uEve.value = eve; u.uNight.value = night;
     tri(TOD.hor, eve, night, this.scene.fog.color);
     tri(TOD.sun, eve, night, this.sun.color); this.sun.intensity = trin(TOD.sunI, eve, night);
@@ -1111,6 +1143,16 @@ class Game {
     if (this.lamp) this.lamp.intensity = 34 * night;
     this.scene.environment = this.envs[night > 0.5 ? 2 : eve > 0.5 ? 1 : 0];
     this.world.sweets.setTint(1 - 0.12 * eve * (1 - night) - 0.15 * night);
+    // 🌧️ मौसम: धूप/रोशनी/कोहरा/गीली सड़क
+    const m = this.wx && this.wx.mods();
+    if (m) {
+      this.sun.intensity *= m.sun; this.hemi.intensity *= m.hemi; this.renderer.toneMappingExposure *= m.exp;
+      this.scene.fog.far = fb[1] * m.fogFar; if (m.fogNear) this.scene.fog.near = fb[0] * m.fogNear;
+      if (wk === 'fog') this.scene.fog.color.lerp(new THREE.Color(0xdfe3e6), 0.55 * (1 - night));
+      if (m.tint) this.scene.fog.color.lerp(new THREE.Color(m.tint), 0.45 * (1 - night));
+    }
+    if (this.world.roadMat) this.world.roadMat.roughness = m ? m.rough : 0.93;
+    this.baseExp = this.renderer.toneMappingExposure;
   }
 
   update(rdt) {
@@ -1125,8 +1167,11 @@ class Game {
       // चौड़ी स्क्रीन पर गोलू बीच में, बटन दाईं ओर
       const wide = this.cam.aspect > 1.33 && !this.wardOpen ? 1.6 : 0;
       const wk = this.wardK = damp(this.wardK || 0, this.wardOpen ? 1 : 0, 6, rdt);
-      this.cam.position.set(Math.sin(t * 0.35) * 1.2 * (1 - wk) + wide, lerp(2.4, 1.9, wk), lerp(5.4, 4.3, wk));
-      this.cam.lookAt(wide, lerp(1.45, 0.35, wk), -1);
+      const sk = this.shopK = damp(this.shopK || 0, this.goShopOpen ? 1 : 0, 4, rdt); // 🏪 दुकान देखते समय कैमरा उधर
+      this.cam.position.set(lerp(Math.sin(t * 0.35) * 1.2 * (1 - wk) + wide, 0.3 + Math.sin(t * 0.3) * 0.5, sk), lerp(lerp(2.4, 1.9, wk), 2.5, sk), lerp(lerp(5.4, 4.3, wk), 4.6, sk));
+      this.cam.lookAt(lerp(wide, -0.7, sk), lerp(lerp(1.45, 0.35, wk), 1.2, sk), lerp(-1, -4.4, sk));
+      if (sk > 0.002) g.root.position.set(1.3 * sk, 0, -3.4 * sk); // दुकान के बगल में खड़ा गोलू
+      this.gshop.update(rdt);
       if (this.celebT > 0) { // नया कपड़ा — चमक और घूमना
         this.celebT -= rdt;
         g.root.rotation.y = Math.PI + Math.sin(this.celebT * 3) * 0.6;
@@ -1177,6 +1222,7 @@ class Game {
     this.speed = damp(this.speed, sp, 3, dt);
     this.sound.setTempo(112 + (this.speed - 14) * 1.1);
     const dz = this.speed * dt;
+    this.lastDz = dz;
     // खिलाड़ी
     p.laneT += dt;
     p.x = damp(p.x, p.tx, 16, dt);
@@ -1212,7 +1258,7 @@ class Game {
       if (p.fly <= 0 && p.ground) { p.vy = 7.5; p.ground = false; }
       this.world.parts.burst(p.x, WATER_Y + 0.1, -0.6, 0xe9fbff, 22, 3.5, 3, 0.7); this.world.parts.burst(p.x, WATER_Y + 0.1, -0.6, 0x5fb7c4, 12, 3, 2.5, 0.6);
       this.sound.splash();
-      if (inPond) { this.zoneBanner('🚣', T('pondZ')); this.cheer('pond', 1700, -1, true); } else this.cheer('pondOut', 1000);
+      if (inPond) { this.zoneBanner('🚣', T('pondZ')); this.cheer('pond', 1700, -1, true); this.mom.want(380, T('momPond'), 1100); } else this.cheer('pondOut', 1000);
     }
     if (p.boat && p.fly <= 0) this.msBump('pond', dz);
     if (p.roll > 0) p.roll -= dt;
@@ -1239,11 +1285,12 @@ class Game {
       else if (td.night < 0.2 && this.nightSaid) { this.nightSaid = false; this.zoneBanner('🌅', T('zDawn')); this.cheer('dawn', 1700, -1, true); }
       if (zn === 'jungle') this.msBump('jungle', dz);
     }
-    while (this.world.events.length) { const ev = this.world.events.shift(); if (ev === 'haat' || ev === 'mela') this.sound.levelUp(); else if (ev === 'baraat') this.sound.baraat(); else if (ev === 'rail') this.sound.train(); this.cheer(ev, 1800, -1, true); if (ev === 'haat') this.msBump('haat'); const ZB = { jungle: ['🌳', 'zJungle'], fields: ['🌼', 'zFields'], village: ['🏡', 'zVillage'] }; if (ZB[ev]) this.zoneBanner(ZB[ev][0], T(ZB[ev][1])); }
+    while (this.world.events.length) { const ev = this.world.events.shift(); if (ev === 'haat' || ev === 'mela') this.sound.levelUp(); else if (ev === 'baraat') { this.sound.baraat(); this.beatStart(); } else if (ev === 'rail') this.sound.train(); this.cheer(ev, 1800, -1, true); if (ev === 'haat') this.msBump('haat'); const ZB = { jungle: ['🌳', 'zJungle'], fields: ['🌼', 'zFields'], village: ['🏡', 'zVillage'] }; if (ZB[ev]) this.zoneBanner(ZB[ev][0], T(ZB[ev][1])); }
     this.collide();
     this.updateGold(dz);
     this.story.check();
     this.score += dz * (this.rushT > 0 ? 2 : 1) * this.mult;
+    if (!this.recordSaid && this.best > 500 && this.score > this.best) { this.recordSaid = true; this.mom.want(650, T('momRecord'), 300); this.cheer('newBest', 1300, -1, false, 'gold'); }
     this.msBump('score', Math.floor(this.score), true);
     // बिना टकराए लंबी दौड़ / हर 100 मिठाई पर शाबाशी
     this.clean += dz;
@@ -1314,6 +1361,7 @@ class Game {
     this.updateBees(dt);
     this.updateCam(rdt);
     this.updateEmo(rdt);
+    this.beatUpdate();
     this.rec.push(this.runT, this.world.dist, p.x, p.y, flagsOf(p));
     this.ghostGap = this.ghost.update(dt, this.runT, this.world.dist, WATER_Y);
     this.updateHud();
@@ -1364,6 +1412,7 @@ class Game {
           this.cheer('near', 800);
           this.msBump('near');
           this.score += 25 * this.mult;
+          this.mom.want(150, T('momNear'), 60);
         }
       }
       e.px = ox; e.pz = oz;
@@ -1439,6 +1488,34 @@ class Game {
     if (this.flyK > 0.01) this.cam.rotateZ((p.tx - p.x) * 0.035 * this.flyK);
   }
 
+  // 🥁 बारात: ढोल की ताल पर कूदो — सही थाप पर = बोनस, लगातार = और ज़्यादा
+  beatNow() { const b = this.beat; if (!b) return null; const now = b.ctx ? this.sound.ctx.currentTime : performance.now() / 1000; return (now - b.t0) * b.bpm / 60; }
+  beatStart() {
+    const bpm = 120, n = 18, t0 = this.sound.dhol(bpm, n);
+    this.beat = { t0: t0 != null ? t0 : performance.now() / 1000 + 0.3, ctx: t0 != null, bpm, n, streak: 0, best: 0 };
+    const el = $('#beat'); el.hidden = false; el.querySelector('span').textContent = T('beatHint');
+  }
+  beatJump() {
+    const b = this.beat, x = this.beatNow(); if (!b || x == null || x < -0.3 || x > b.n) return;
+    if (Math.abs(x - Math.round(x)) < 0.17) {
+      b.streak++; b.best = Math.max(b.best, b.streak);
+      this.score += 75 * b.streak * this.mult; this.got += 2;
+      this.floatText(T('beatOk', b.streak), 'tp'); this.sound.clap(); vibrate(15);
+      if (b.streak >= 3) this.mom.want(300 + 20 * b.streak, T('beatOk', b.streak));
+      this.world.parts.burst(this.p.x, 1.4, 0, [0xffd24d, 0xd1261c, 0xd8457f][b.streak % 3], 10, 3, 3, 0.6);
+    } else b.streak = 0;
+  }
+  beatUpdate() {
+    const b = this.beat; if (!b) return;
+    const x = this.beatNow(), el = $('#beat');
+    if (x == null || x > b.n + 0.5 || this.state !== 'play') {
+      this.beat = null; el.hidden = true;
+      if (b.best >= 3 && this.state === 'play') this.cheer('beat', 1400, -1, true, 'gold', `🥁 ×${b.best}`);
+      return;
+    }
+    const d = Math.abs(x - Math.round(x)), k = Math.max(0, 1 - d / 0.22);
+    el.style.setProperty('--k', k.toFixed(2)); el.querySelector('b').textContent = b.streak ? '×' + b.streak : '🥁';
+  }
   // भाव सिर के ऊपर (लुढ़कते समय नीचे, गिरने पर ज़मीन के पास)
   updateEmo(dt) {
     const p = this.p; if (!p) return;

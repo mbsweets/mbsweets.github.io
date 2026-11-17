@@ -97,7 +97,7 @@ export class Festival {
       this.done = true;
       g.got += 100; g.score += 1000 * g.mult; g.msBump('sweets', g.got, true);
       g.cheer('festDone', 1900, -1, true, 'gold', T('festDone'));
-      g.sound.levelUp(); if (g.emo) g.emo.play('love', 1.2);
+      g.sound.levelUp(); if (g.emo) g.emo.play('love', 1.2); if (g.mom) g.mom.want(450, T('momFest'), 200);
     } else g.toast(`🕊️ ${this.n}/${this.f.need}`, 700, 'gold');
   }
   // चुगला: ऊपर से कूदे या शुगर रश से तोड़ा

@@ -92,6 +92,7 @@ export class MetaUI {
       + row('🗣️ ' + T('sVoice'), tog('voice', SETTINGS.voice)) + row('📳 ' + T('sVib'), tog('vib', SETTINGS.vib))
       + `<div class="st col"><span>🖼️ ${T('sGfx')}</span><div class="seg sm2">${gfx}</div></div>`
       + `<div class="st col"><span>🌐 ${T('sLang')}</span><div class="seg sm2">${lang}</div></div>`
+      + (this.g.wx && this.g.wx.on ? row('🌧️ ' + T('sWx'), tog('wx', store('wxOff') !== '1')) + `<p class="lbnote">${T('wxCredit')}</p>` : '')
       + `<button class="sm howto" data-act="howto">${T('howTo')}</button>`
       + (this.g.rate && this.g.rate.on ? `<button class="sm howto" data-act="rate">${T('rateBtn')}</button>` : '');
   }
@@ -106,6 +107,7 @@ export class MetaUI {
     } else if (b.dataset.set) {
       const k = b.dataset.set;
       if (k === 'sound') g.sound.setMuted(!g.sound.muted);
+      else if (k === 'wx') { store('wxOff', store('wxOff') === '1' ? 0 : 1); g.tod = null; g.refreshMenu(); }
       else { SETTINGS[k] = !SETTINGS[k]; saveSettings(); g.applySettings(); }
     } else if (b.dataset.gfx) { SETTINGS.gfx = b.dataset.gfx; saveSettings(); g.applyGfx(); }
     else if (b.dataset.lang) { setLang(b.dataset.lang); }

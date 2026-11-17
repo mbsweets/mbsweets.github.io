@@ -55,6 +55,7 @@ export class Tricks {
       g.cheer('trick', 1100, Math.min(this.n - 1, 3), false, 'gold', `🤸 ×${this.n} +${pts.toLocaleString('en-IN')}`);
       g.sound.trickLand(this.n); vibrate(20);
       if (g.emo) g.emo.play('cool', 0.7);
+      if (g.mom) g.mom.want(200 + 100 * this.n, T('momTrick', this.n), 60);
       g.camKick = 0.5;
     } else if (!ok) {
       g.p.slowT = Math.max(g.p.slowT, 0.6);

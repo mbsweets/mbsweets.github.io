@@ -141,6 +141,7 @@ export class Story {
     g.cheer('chapter', 1800, -1, true, 'gold', first ? `+${c.reward} 🍬` : '⭐');
     g.sound.levelUp(); g.sound.power(); vibrate([40, 40, 80]);
     if (g.emo) g.emo.play('love', 1.4);
+    if (g.mom) g.mom.want(800, T('momChapter', r.i + 1), 200);
     for (let i = 0; i < 4; i++) g.world.parts.burst(g.p.x + (i - 1.5), 2 + i * 0.3, -1, [0xffd24d, 0xd1261c, 0x2e7b47, 0xd8457f][i], 14, 4, 4, 1.0, -4);
   }
   chip() {
