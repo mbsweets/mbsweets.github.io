@@ -28,6 +28,7 @@ import { Tricks } from './tricks.js';
 import { Festival } from './festivals.js';
 import { makeBoat, WATER_Y } from './pond.js';
 import { MadhubaniFX } from './madhubani.js';
+import { Recorder, GhostRunner, decode, flagsOf, istDay } from './ghost.js';
 
 const $ = (s) => document.querySelector(s);
 // ग्राफ़िक्स के दर्जे (0 = सबसे बढ़िया). ऑटो: पूरी दौड़ में हर 2 सेकंड रफ़्तार देखो, धीमा हो तो एक दर्जा नीचे; फ़ोन याद रखे
@@ -140,6 +141,7 @@ class Game {
     $('#loading').hidden = true;
     P.loadingStop();
     countOpen();
+    this.checkChallenge();
     this.clock = new THREE.Clock();
     this.frame();
   }
@@ -178,6 +180,7 @@ class Game {
     sc.add(dl); sc.add(dl.target);
     sc.add(makeSkyline());
     this.world = new World(sc);
+    this.world.speedAt = baseSpeed;
     this.world.sweets.camQ = this.cam.quaternion;
     this.golu = this.has3d ? new Golu3D() : new GoluCode();
     shadows(this.golu.root, true, false);
@@ -199,6 +202,7 @@ class Game {
     this.fest = new Festival(this, this.world); // 🪔 त्योहार (तारीख़ से)
     this.boat = makeBoat(); this.boat.visible = false; sc.add(this.boat); // 🚣 पोखर की नाव
     this.mfx = new MadhubaniFX(r); this.madK = 0; // 🎨 मधुबनी
+    this.rec = new Recorder(); this.ghost = new GhostRunner(sc, this.has3d); // 👻 परछाईं
     this.camKick = 0;
     // रात: लालटेन/खंभों की चमक + जुगनू; गोलू के आगे गरम रोशनी (भारी दर्जों में बंद)
     this.nfx = new NightFX(sc);
@@ -308,7 +312,7 @@ class Game {
   bindUI() {
     const click = (sel, fn) => { const el = $(sel); if (el) el.addEventListener('click', (e) => { e.preventDefault(); this.sound.init(); this.sound.click(); fn(); }); };
     click('#btnPlay', () => { this.goFull(); this.start(); });
-    click('#btnAgain', () => this.afterAd(() => this.start()));
+    click('#btnAgain', () => this.afterAd(() => this.start(this.lastOpts && this.lastOpts.daily ? { daily: true, ghost: this.dayTop } : this.lastOpts || {})));
     click('#btnHome', () => this.afterAd(() => this.toMenu()));
     click('#revAd', () => this.reviveAd());
     click('#revPay', () => this.revivePay());
@@ -347,6 +351,11 @@ class Game {
     this.rw.bind();
     this.rate = new Rate(this, this.lb.url, !PORTAL && this.lb.on); // ⭐ राय — सिर्फ़ अपनी वेबसाइट
     this.rate.bind();
+    // 📅 आज का रास्ता + 👻 दोस्त की चुनौती (सिर्फ़ अपनी वेबसाइट)
+    const db = $('#btnDaily');
+    if (db) { db.hidden = !(this.lb.on && !PORTAL); db.addEventListener('click', (e) => { e.preventDefault(); this.sound.init(); this.sound.click(); this.goFull(); this.start({ daily: true, ghost: this.dayTop }); }); }
+    $('#chalGo').addEventListener('click', (e) => { e.preventDefault(); this.sound.init(); this.sound.click(); $('#chalS').hidden = true; const c = this.chal; this.goFull(); this.start({ ghost: c, daily: !!(c && c.daily && c.today) }); });
+    $('#chalNo').addEventListener('click', (e) => { e.preventDefault(); $('#chalS').hidden = true; });
     const rb = $('#btnRate'); if (rb) { rb.hidden = !this.rate.on; rb.addEventListener('click', (e) => { e.preventDefault(); this.sound.init(); this.sound.click(); this.rate.open(); }); }
     for (const el of document.querySelectorAll('.local')) el.hidden = !LOCAL;
     const ol = $('#orderLink'); if (ol) ol.href = ORDER_URL;
@@ -373,7 +382,7 @@ class Game {
       if (this.leaving) return;
       if (this.leaveOpen) { this.leaveNow(1); return; } // दूसरा बैक — हमारा कदम पहले ही हट चुका
       // कोई खिड़की खुली हो (सेटिंग, कपड़े, रैंक, इनाम) तो बैक = वही बंद करो
-      const open = [['#profS', '#pfLater'], ['#rateS', '#rateX'], ['#wardS', '#wardClose'], ['#metaS', '#metaClose'], ['#lbS', '#lbClose'], ['#rwS', '#rwClose']].find(([w]) => $(w) && !$(w).hidden);
+      const open = [['#chalS', '#chalNo'], ['#profS', '#pfLater'], ['#rateS', '#rateX'], ['#wardS', '#wardClose'], ['#metaS', '#metaClose'], ['#lbS', '#lbClose'], ['#rwS', '#rwClose']].find(([w]) => $(w) && !$(w).hidden);
       if (open) { $(open[1]).click(); arm(); return; }
       if (this.state === 'play') this.pause();
       this.leaveOpen = true; $('#leaveS').hidden = false;
@@ -449,11 +458,35 @@ class Game {
     this.beeC.set(0, 2, 18);
     this.nightSaid = false; this.wild = 0; this.nfx.update(0, 0, 0, 0, this.world.chunks, this.cam.quaternion);
     if (this.mk) { this.mk.st = 'off'; this.monkey.visible = false; }
-    if (this.dl) { this.dl.reset(); this.tricks.reset(); this.emo.clear(); this.boat.visible = false; if (this.pu) this.pu.madhu = 0; }
+    if (this.dl) { this.dl.reset(); this.tricks.reset(); this.emo.clear(); this.boat.visible = false; if (this.pu) this.pu.madhu = 0; this.ghost.off(); this.world.setSeed(null); }
+    this.paintDaily();
     if (this.sound.ctx && !this.sound.playing) this.sound.startMusic();
     if (!PORTAL && store('lang3') == null) $('#langS').hidden = false; // पहली बार: भाषा चुनो (फिर रोज़ का इनाम)
     else if (this.needProfile()) this.lb.askProfile(() => { if (!skipDaily) this.meta.maybeDaily(); }); // पुराने खिलाड़ी: एक बार नाम-ज़िला
     else if (!skipDaily && (!PORTAL || this.runs > 0)) this.meta.maybeDaily(); // पोर्टल पर पहली बार सीधे खेल (एक क्लिक)
+  }
+  // 📅 मेन्यू का "आज का रास्ता" बटन — आज का टॉपर (दिन में एक बार सर्वर से)
+  paintDaily() {
+    const sub = $('#dailySub'); if (!sub || $('#btnDaily').hidden) return;
+    const t = this.dayTop;
+    sub.textContent = t && t.today ? T('dailySub', t.name, t.score.toLocaleString('en-IN')) : T('dailyFirst');
+    if (!this.dayTopAt || Date.now() - this.dayTopAt > 5 * 60e3) { this.dayTopAt = Date.now(); this.lb.topGhost().then((g) => { if (g) { this.dayTop = g; this.paintDaily(); } }); }
+  }
+  // 👻 ?g=ID वाला लिंक — दोस्त की चुनौती
+  async checkChallenge() {
+    const id = new URLSearchParams(location.search).get('g');
+    if (!id || PORTAL || !this.lb.on) return;
+    try { history.replaceState(null, '', location.pathname); } catch (e) { /* */ }
+    const g = await this.lb.getGhost(id);
+    if (!g || this.state !== 'menu') return;
+    this.chal = g;
+    // पहली बार आए दोस्त: पहले भाषा / नाम-ज़िला / रोज़ का इनाम, फिर चुनौती
+    const busy = () => ['#langS', '#profS', '#dailyS', '#unlockS'].some((q) => $(q) && !$(q).hidden);
+    while (busy()) await new Promise((r) => setTimeout(r, 400));
+    if (this.state !== 'menu') return;
+    $('#chalT').textContent = T('chalT', g.name);
+    $('#chalP').textContent = T('chalP', g.dist.toLocaleString('en-IN'), g.score.toLocaleString('en-IN'));
+    $('#chalS').hidden = false;
   }
   // पहली बार: भाषा → नाम और ज़िला (बाद में न पूछना पड़े) → रोज़ का इनाम
   needProfile() { return !PORTAL && this.lb && this.lb.on && !this.lb.name && store('profAsk') !== '1'; }
@@ -468,7 +501,14 @@ class Game {
   }
   sayKind(kind) { this.sayPair(pickCheer(kind), true); }
 
-  start() {
+  start(opts = {}) {
+    this.lastOpts = opts;
+    this.daily = !!opts.daily && this.tutDone && this.lb.on && !PORTAL; // 📅 आज का रास्ता
+    this.lb.daily = this.daily;
+    this.world.setSeed(this.daily ? 'rr-' + istDay() : null);
+    const gh = opts.ghost && opts.ghost.data ? decode(opts.ghost.data) : null; // 👻
+    if (gh) { this.ghost.set(gh, opts.ghost.name); this.ghostOf = opts.ghost; } else { this.ghost.off(); this.ghostOf = null; }
+    this.rec.start();
     $('#wardS').hidden = true; this.wardOpen = false; this.wearNow();
     $('#metaS').hidden = true; $('#dailyS').hidden = true; $('#profS').hidden = true;
     this.ms.startRun(); this.flyT = upTime('samosa');
@@ -476,6 +516,7 @@ class Game {
     this.mk = { st: 'off', t: 0, x: 0, y: 0, z: 4 }; this.monkey.visible = false; this.toMonkey = rand(550, 800);
     this.dl.reset(); this.tricks.reset(); this.emo.clear(); this.trickHint = false; this.camKick = 0;
     this.fest.start(); this.boat.visible = false; this.madK = 0;
+    if (this.daily) setTimeout(() => { if (this.state === 'play') this.zoneBanner('📅', T('dailyOn')); }, 900);
     this.sound.init();
     if (!this.sound.playing) this.sound.startMusic();
     this.world.reset(!this.tutDone);
@@ -601,8 +642,27 @@ class Game {
     this.toastT = setTimeout(() => { t.className = ''; }, ms);
   }
 
+  // 👻 चुनौती: इस दौड़ की परछाईं सर्वर पर → लिंक (?g=ID) WhatsApp पर. नाम न हो तो पहले नाम-ज़िला
+  async shareGhost() {
+    const r = this.lastRun;
+    if (!r || !r.data || !this.lb.on) return false;
+    if (!this.lb.name) { this.lb.askProfile(() => { if (this.lb.name) this.shareGhost(); }); return true; }
+    const btn = $('#btnShare'); if (btn) btn.disabled = true;
+    const id = r.id || await this.lb.putGhost(r);
+    if (btn) btn.disabled = false;
+    if (!id) return false;
+    r.id = id;
+    const url = GAME_URL + '?g=' + id, text = T('ghostShare', r.dist.toLocaleString('en-IN'), r.score.toLocaleString('en-IN'));
+    if (navigator.share) { navigator.share({ title: T('title'), text, url }).catch(() => {}); return true; }
+    window.open('https://wa.me/?text=' + encodeURIComponent(text + ' ' + url), '_blank', 'noopener');
+    return true;
+  }
   share() {
     if (!LOCAL) return;
+    if (this.state === 'over' && this.lastRun && this.lastRun.data && this.lb.on) { this.shareGhost().then((ok) => { if (!ok) this.shareText(); }); return; }
+    this.shareText();
+  }
+  shareText() {
     const s = Math.floor(this.score).toLocaleString('en-IN');
     const text = T('shareText', s);
     if (navigator.share) { navigator.share({ title: T('title'), text, url: GAME_URL }).catch(() => {}); return; }
@@ -940,6 +1000,7 @@ class Game {
     if (ms.setDone) parts.push(`🎉 ${T('msSet')} ${ms.setDone.set} ✔ → ×${this.ms.mult}`);
     if (ms.gain) parts.push(T('msGain', ms.gain));
     for (const b of bd) parts.push(`${b.icon} ${T('badgeNew')} ${L(b)} (+100)`);
+    if (this.ghost.on) { const my = Math.floor(this.world.dist), gd = Math.floor(this.ghost.endDist); parts.push(my >= gd ? T('ghostWin', this.ghost.name, my - gd) : T('ghostLose', this.ghost.name, gd - my)); }
     $('#overMs').hidden = !parts.length;
     $('#overMs').innerHTML = parts.join('<br>');
     if (ms.setDone && ms.setDone.item) setTimeout(() => { if (this.state === 'over') this.meta.showUnlocks([ms.setDone.item]); }, 1100);
@@ -957,6 +1018,12 @@ class Game {
     if (this.goldMesh) this.goldMesh.visible = false; this.goldObj = null;
     this.show(['#over']);
     this.lb.afterGame(sc, this.world.dist, this.runT, this.mult);
+    this.lastRun = { score: sc, dist: Math.floor(this.world.dist), secs: +this.runT.toFixed(1), data: this.rec.n > 10 ? this.rec.encode() : '', daily: this.daily };
+    // 📅 आज के रास्ते की अपनी सबसे अच्छी दौड़ — परछाईं सर्वर पर (आज का टॉपर उसी से)
+    if (this.daily && this.lastRun.data && this.lb.name) {
+      let best = {}; try { best = JSON.parse(store('dayBest') || '{}'); } catch (e) { /* */ }
+      if (best.day !== istDay() || sc > best.score) { store('dayBest', JSON.stringify({ day: istDay(), score: sc })); this.lb.putGhost({ ...this.lastRun, daily: 1 }); }
+    }
     if (this.rw) this.rw.afterGame({ gold: this.runGold, mission: this.runMission, distM: this.world.dist, score: sc, secs: this.runT, mult: this.mult });
   }
 
@@ -1225,6 +1292,8 @@ class Game {
     this.updateBees(dt);
     this.updateCam(rdt);
     this.updateEmo(rdt);
+    this.rec.push(this.runT, this.world.dist, p.x, p.y, flagsOf(p));
+    this.ghostGap = this.ghost.update(dt, this.runT, this.world.dist, WATER_Y);
     this.updateHud();
     this.autoQuality(rdt);
   }
@@ -1379,13 +1448,15 @@ class Game {
     }
     const rush = this.rushT > 0;
     if (h.rush !== rush) { h.rush = rush; document.body.classList.toggle('rushing', rush); }
+    const gg = this.ghost.on && this.ghostGap != null && !this.ghost.finished ? Math.round(this.ghostGap / 5) * 5 : null;
     const thief = this.mk && this.mk.st === 'thief' ? Math.ceil(this.mk.T) : 0, fc = this.fest && this.fest.on && !this.fest.done ? this.fest.n : -1;
-    const pu = (thief ? 'k' + thief : '') + (fc >= 0 ? 'c' + fc : '') + (this.pu.magnet > 0 ? 'm' + Math.ceil(this.pu.magnet) : '') + (this.pu.shoes > 0 ? 's' + Math.ceil(this.pu.shoes) : '') + (this.pu.shield ? 'L' : '') + (this.pu.thali > 0 ? 't' + Math.ceil(this.pu.thali) : '') + (this.pu.madhu > 0 ? 'b' + Math.ceil(this.pu.madhu) : '') + (this.p.fly > 0 ? 'f' + Math.ceil(this.p.fly) : '');
+    const pu = (gg != null ? 'g' + gg : '') + (thief ? 'k' + thief : '') + (fc >= 0 ? 'c' + fc : '') + (this.pu.magnet > 0 ? 'm' + Math.ceil(this.pu.magnet) : '') + (this.pu.shoes > 0 ? 's' + Math.ceil(this.pu.shoes) : '') + (this.pu.shield ? 'L' : '') + (this.pu.thali > 0 ? 't' + Math.ceil(this.pu.thali) : '') + (this.pu.madhu > 0 ? 'b' + Math.ceil(this.pu.madhu) : '') + (this.p.fly > 0 ? 'f' + Math.ceil(this.p.fly) : '');
     if (h.pu !== pu) {
       h.pu = pu;
       const box = $('#pu');
       box.innerHTML = '';
       const chip = (icon, name, sec) => { const d = document.createElement('div'); d.className = 'chip'; d.innerHTML = `<b>${icon}</b><span>${name}</span>${sec ? `<em>${sec}</em>` : ''}`; box.appendChild(d); };
+      if (gg != null) chip('👻', this.ghost.name, (gg > 0 ? '+' : '') + gg + 'm');
       if (thief) chip('🐒', T('thiefChip'), thief);
       if (fc >= 0) chip(this.fest.f.icon, T('festChip'), `${fc}/${this.fest.f.need}`);
       if (this.pu.magnet > 0) chip('🎁', T('magnet'), Math.ceil(this.pu.magnet));

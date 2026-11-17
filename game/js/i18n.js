@@ -54,7 +54,10 @@ const S = {
     ordLate: (who) => `Too late — ${who} is upset!`, ordGot: (n) => `Delivered! +${n} sweets`, ordWrong: 'Wrong sweet!',
     tutTrick: 'Tap in the air = trick!', trickFail: 'Oops! Land straight!',
     profT: 'Your name & district', profP: 'For the leaderboard and shop prizes. Only name and district are shown — no phone number.', profGo: "Let's play!", profLater: 'Later',
-    thiefChip: 'Catch him!', festSama: 'Sama-Chakeva!', festTag: '🪔 Sama-Chakeva special: collect 5 clay Chakeva birds in a run!', festDone: 'All 5 Chakeva! +100 sweets', festChip: 'Chakeva', chuglaBurn: 'Chugla burned! 🔥 +15', madhubani: 'Madhubani Magic!', madhuS: 'Madhubani', pondZ: 'Makhana pond! Boat ride!', makhanaT: '+5 Makhana!',
+    thiefChip: 'Catch him!', festSama: 'Sama-Chakeva!', festTag: '🪔 Sama-Chakeva special: collect 5 clay Chakeva birds in a run!', festDone: 'All 5 Chakeva! +100 sweets', festChip: 'Chakeva', chuglaBurn: 'Chugla burned! 🔥 +15', madhubani: 'Madhubani Magic!', madhuS: 'Madhubani', pondZ: 'Makhana pond! Boat ride!', makhanaT: '+5 Makhana!', dailyBtn: "📅 Today's Route", dailySub: (n, sc) => `Top today: ${n} · ${sc}`, dailyFirst: 'Same route for everyone — be first today!', dailyOn: "Today's Route",
+    chalT: (n) => `${n} challenged you!`, chalP: (d, sc) => `Beat ${d} m · ${sc} points — race the ghost!`, chalGo: "Let's beat it!",
+    ghostWin: (n, d) => `👻 You beat ${n} by ${d} m!`, ghostLose: (n, d) => `👻 ${n} was ${d} m ahead`,
+    ghostShare: (d, sc) => `I ran ${d} m (${sc} points) in Rasgulla Run — race my ghost and beat me!`, lbDay: 'Today', ghostAhead: 'ahead', ghostBehind: 'behind',
   },
   hi: { // हिंदी
     title: 'रसगुल्ला रन', sub: 'मिथिला की मीठी दौड़', play: 'खेलो', best: 'सबसे अच्छा', sweets: 'मिठाई', score: 'स्कोर',
@@ -108,7 +111,10 @@ const S = {
     ordLate: (who) => `देर हो गई — ${who} नाराज़!`, ordGot: (n) => `डिलीवरी! +${n} मिठाई`, ordWrong: 'ग़लत मिठाई!',
     tutTrick: 'हवा में टैप = करतब!', trickFail: 'उफ़! सीधा उतरो!',
     profT: 'आपका नाम और ज़िला', profP: 'लीडरबोर्ड और दुकान के इनाम के लिए। सिर्फ़ नाम और ज़िला दिखेगा — फ़ोन नंबर नहीं।', profGo: 'चलो खेलें!', profLater: 'बाद में',
-    thiefChip: 'पकड़ो!', festSama: 'सामा-चकेवा!', festTag: '🪔 सामा-चकेवा ख़ास: एक दौड़ में 5 चकेवा पंछी जमा करो!', festDone: 'पाँचों चकेवा! +100 मिठाई', festChip: 'चकेवा', chuglaBurn: 'चुगला दहन! 🔥 +15', madhubani: 'मधुबनी शक्ति!', madhuS: 'मधुबनी', pondZ: 'मखाना पोखर! नाव की सवारी!', makhanaT: '+5 मखाना!',
+    thiefChip: 'पकड़ो!', festSama: 'सामा-चकेवा!', festTag: '🪔 सामा-चकेवा ख़ास: एक दौड़ में 5 चकेवा पंछी जमा करो!', festDone: 'पाँचों चकेवा! +100 मिठाई', festChip: 'चकेवा', chuglaBurn: 'चुगला दहन! 🔥 +15', madhubani: 'मधुबनी शक्ति!', madhuS: 'मधुबनी', pondZ: 'मखाना पोखर! नाव की सवारी!', makhanaT: '+5 मखाना!', dailyBtn: '📅 आज का रास्ता', dailySub: (n, sc) => `आज के टॉपर: ${n} · ${sc}`, dailyFirst: 'सबके लिए एक जैसा रास्ता — आज पहले बनो!', dailyOn: 'आज का रास्ता',
+    chalT: (n) => `${n} ने चुनौती दी!`, chalP: (d, sc) => `${d} मी. · ${sc} अंक — परछाईं से रेस करो, हराओ!`, chalGo: 'चलो हराएँ!',
+    ghostWin: (n, d) => `👻 ${n} को ${d} मी. से हराया!`, ghostLose: (n, d) => `👻 ${n} ${d} मी. आगे रहे`,
+    ghostShare: (d, sc) => `रसगुल्ला रन में मैंने ${d} मीटर दौड़ा (${sc} अंक) — मेरी परछाईं से रेस करो और हराओ!`, lbDay: 'आज', ghostAhead: 'आगे', ghostBehind: 'पीछे',
   },
   mai: { // मैथिली (मिथिलाक बोली)
     title: 'रसगुल्ला रन', sub: 'मिथिलाक मीठ दौड़', play: 'खेलू', best: 'सबसँ नीक', sweets: 'मिठाइ', score: 'स्कोर',
@@ -162,7 +168,10 @@ const S = {
     ordLate: (who) => `देरी भ गेल — ${who} रूसि गेलाह!`, ordGot: (n) => `डिलीवरी! +${n} मिठाइ`, ordWrong: 'गलत मिठाइ!',
     tutTrick: 'हवा मे टैप = करतब!', trickFail: 'उफ़! सोझ उतरू!',
     profT: 'अहाँक नाम आ जिला', profP: 'लीडरबोर्ड आ दोकानक इनामक लेल। खाली नाम आ जिला देखाएत — फ़ोन नंबर नहि।', profGo: 'चलू खेली!', profLater: 'बाद मे',
-    thiefChip: 'पकड़ू!', festSama: 'सामा-चकेवा!', festTag: '🪔 सामा-चकेवा विशेष: एक दौड़ मे 5 टा चकेवा चिड़ै जमा करू!', festDone: 'पाँचो चकेवा! +100 मिठाइ', festChip: 'चकेवा', chuglaBurn: 'चुगला दहन! 🔥 +15', madhubani: 'मधुबनी शक्ति!', madhuS: 'मधुबनी', pondZ: 'मखाना पोखरि! नावक सवारी!', makhanaT: '+5 मखान!',
+    thiefChip: 'पकड़ू!', festSama: 'सामा-चकेवा!', festTag: '🪔 सामा-चकेवा विशेष: एक दौड़ मे 5 टा चकेवा चिड़ै जमा करू!', festDone: 'पाँचो चकेवा! +100 मिठाइ', festChip: 'चकेवा', chuglaBurn: 'चुगला दहन! 🔥 +15', madhubani: 'मधुबनी शक्ति!', madhuS: 'मधुबनी', pondZ: 'मखाना पोखरि! नावक सवारी!', makhanaT: '+5 मखान!', dailyBtn: '📅 आजुक रस्ता', dailySub: (n, sc) => `आजुक टॉपर: ${n} · ${sc}`, dailyFirst: 'सबहक लेल एक्के रस्ता — आइ पहिल बनू!', dailyOn: 'आजुक रस्ता',
+    chalT: (n) => `${n} चुनौती देलनि!`, chalP: (d, sc) => `${d} मी. · ${sc} अंक — परछाईं सँ रेस करू, हराउ!`, chalGo: 'चलू हराबी!',
+    ghostWin: (n, d) => `👻 ${n} केँ ${d} मी. सँ हरा देलहुँ!`, ghostLose: (n, d) => `👻 ${n} ${d} मी. आगू रहलाह`,
+    ghostShare: (d, sc) => `रसगुल्ला रन मे हम ${d} मीटर दौड़लहुँ (${sc} अंक) — हमर परछाईं सँ रेस करू आ हराउ!`, lbDay: 'आइ', ghostAhead: 'आगू', ghostBehind: 'पाछू',
   },
 };
 

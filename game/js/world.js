@@ -13,7 +13,10 @@ import { makeTrack, makeStation, ROOF, RAMP_L, COACH, GAP } from './rail.js';
 import { rand, randi, pick, chance, weighted, clamp, lerp } from './util.js';
 import { POND_LEN, WATER_Y, TILE, POND_OBST, makeWaterTile, makeGhat, makeMakhana, WATER } from './pond.js';
 import { makeMadhubaniPu } from './madhubani.js';
+import { seeded } from './ghost.js';
 Object.assign(OBST, JUNGLE_OBST, POND_OBST);
+const REAL_RANDOM = Math.random;
+const real = (fn) => { const r = Math.random; Math.random = REAL_RANDOM; try { return fn(); } finally { Math.random = r; } }; // नई चीज़ बनाते समय असली random (बीज वाली गिनती न बिगड़े)
 // अपने बनाए पावर-अप (मखाना, मधुबनी, त्योहार की चिड़िया…) — बाकी models.js का makePowerup
 export const PU_MAKERS = { makhana: makeMakhana, madhubani: makeMadhubaniPu };
 
@@ -89,9 +92,10 @@ class SweetSet {
   spawn(type, x, y, z) {
     const fr = this.free[type];
     if (fr.dirty) { fr.sort((a, b) => b - a); fr.dirty = false; }
+    const ph = Math.random() * 6; // पहले — ताकि जगह न हो तब भी random की गिनती एक जैसी (आज का रास्ता)
     const slot = fr.pop();
     if (slot == null) return null;
-    const it = { type, slot, x, y, z, ph: Math.random() * 6, mag: false, col: 0 };
+    const it = { type, slot, x, y, z, ph, mag: false, col: 0 };
     this.items.push(it);
     return it;
   }
@@ -304,11 +308,22 @@ export class World {
     this.ghats = [makeGhat(), makeGhat()]; for (const gh of this.ghats) { gh.visible = false; shadows(gh, true, true); this.scene.add(gh); }
     for (const t of Object.keys(OBST)) { this.oPool[t] = []; for (let i = 0; i < 3; i++) { const o = this.newObs(t); o.visible = false; this.oPool[t].push(o); } }
   }
-  newObs(t) { const o = OBST[t](); o.userData.type = t; shadows(o, true, true); this.scene.add(o); return o; }
-  newPu(k) { const o = (PU_MAKERS[k] || makePowerup)(k); o.visible = false; shadows(o, true, false); this.scene.add(o); return o; }
+  newObs(t) { const o = real(() => OBST[t]()); o.userData.type = t; shadows(o, true, true); this.scene.add(o); return o; }
+  newPu(k) { const o = real(() => (PU_MAKERS[k] || makePowerup)(k)); o.visible = false; shadows(o, true, false); this.scene.add(o); return o; }
 
+  // 📅 आज का रास्ता: दुनिया बनाते समय Math.random की जगह तारीख़ वाला बीज (बाकी — कण, आवाज़ — असली random)
+  // पंक्ति (रुकावट-मिठाई), किनारे के मकान और घटनाएँ — तीन अलग धाराएँ, ताकि खिलाड़ी की रफ़्तार से क्रम न बिगड़े
+  // हर पंक्ति / हर मकान का अपना बीज (क्रम-संख्या से) — एक जगह फ़र्क़ पड़े तो आगे का रास्ता न बिगड़े
+  setSeed(str) { this.seedStr = str || null; this.rngs = str ? { evt: seeded(str + ':evt') } : null; }
+  gen(fn, k = 'evt') {
+    if (!this.rngs) return fn();
+    const r = Math.random; Math.random = typeof k === 'string' ? this.rngs[k] : k;
+    try { return fn(); } finally { Math.random = r; }
+  }
   // ---------- नया खेल ----------
-  reset(tutorial) {
+  reset(tutorial) { return this.gen(() => this._reset(tutorial)); }
+  _reset(tutorial) {
+    this.rowN = 0; this.chunkN = { '-1': 0, '1': 0 };
     for (const o of this.obs) this.relObs(o);
     for (const p of this.pups) { p.obj.visible = false; this.pPool[p.kind].push(p.obj); }
     for (const g of this.gates) { g.visible = false; this.cPool[g.userData.key].push(g); }
@@ -335,6 +350,7 @@ export class World {
     this.tutRows = [];
     this.farZ = { '-1': 22, '1': 22 };
     for (const s of [-1, 1]) while (this.farZ[s] > SPAWN_Z - 20) this.spawnChunk(s);
+    if (this.fest) this.fest.reset();
   }
 
   // ---------- किनारे के मकान ----------
@@ -346,7 +362,8 @@ export class World {
     return o;
   }
   relChunk(o) { o.visible = false; this.cPool[o.userData.key].push(o); }
-  spawnChunk(side) {
+  spawnChunk(side) { if (!this.rngs) return this._spawnChunk(side); this.chunkN[side] = (this.chunkN[side] || 0) + 1; return this.gen(() => this._spawnChunk(side), seeded(`${this.seedStr}:c${side}:${this.chunkN[side]}`)); }
+  _spawnChunk(side) {
     const zc = this.farZ[side] - CHUNK / 2;
     const zone = zoneAt(this.dist - zc);
     let type;
@@ -455,8 +472,13 @@ export class World {
       ['pothole', d > 0.08 ? 1.3 : 0], ['kapda', d > 0.12 ? 1.0 : 0], ['taar', d > 0.2 ? 0.9 : 0]]);
   }
 
-  // एक "पंक्ति" — हमेशा कोई न कोई रास्ता खुला
+  // एक "पंक्ति" — हमेशा कोई न कोई रास्ता खुला. 📅 आज के रास्ते में कठिनाई 5% के कदमों में (सबका क्रम एक जैसा रहे)
   spawnRow(z) {
+    if (!this.rngs) return this._spawnRow(z);
+    const real = this.diff; this.diff = Math.round(real * 20) / 20; this.rowN++;
+    try { return this.gen(() => this._spawnRow(z), seeded(`${this.seedStr}:r${this.rowN}`)); } finally { this.diff = real; }
+  }
+  _spawnRow(z) {
     const d = this.diff;
     const lanes = [0, 1, 2];
     const others = (l) => lanes.filter((x) => x !== l);
@@ -711,6 +733,11 @@ export class World {
 
   // ---------- हर फ़्रेम ----------
   update(dt, dz, speed, ctx) {
+    this.gen(() => this._gen(dt, dz, speed));
+    this.sweets.update(dt, dz, ctx);
+    this.parts.update(dt, dz);
+  }
+  _gen(dt, dz, speed) {
     this.speed = Math.max(8, speed);
     this.dist += dz;
     const zn = zoneAt(this.dist);
@@ -821,7 +848,8 @@ export class World {
       const z = SPAWN_Z - this.toNext;
       const extra = this.spawnRow(z);
       const gapT = lerp(1.5, 0.65, Math.pow(this.diff, 0.85)) + extra;
-      this.toNext += Math.max(16, speed * gapT);
+      const sp = this.rngs && this.speedAt ? this.speedAt(this.dist) : speed; // 📅 आज के रास्ते में पंक्तियों की दूरी सिर्फ़ दूरी से (सबकी एक जैसी)
+      this.toNext += Math.max(16, sp * gapT);
     }
     // रुकावटें
     for (let i = this.obs.length - 1; i >= 0; i--) {
@@ -868,7 +896,5 @@ export class World {
       for (const ch of p.obj.userData.inner.children) if (ch.userData.wing) ch.rotation.y = ch.userData.wing * Math.sin(p.t * 14) * 0.5;
       if (p.z > DESPAWN_Z || p.taken) { p.obj.visible = false; this.pPool[p.kind].push(p.obj); this.pups.splice(i, 1); }
     }
-    this.sweets.update(dt, dz, ctx);
-    this.parts.update(dt, dz);
   }
 }

@@ -22,6 +22,11 @@
 #langS{z-index:55}
 #rateS{z-index:58}
 #profS{z-index:56}
+#chalS{z-index:57}
+.chalg{font-size:64px;line-height:1;animation:unbob 1.4s ease-in-out infinite alternate}
+.sm.daily{display:flex;flex-direction:column;align-items:center;gap:1px;background:linear-gradient(#cfe8ff,#8fc3f5);padding:6px 10px 5px}
+.sm.daily b{font:800 17px/1.1 var(--disp)}
+.sm.daily small{font:700 12px/1.2 var(--body);color:#1d3a6b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 /* 🎨 मधुबनी शक्ति का बॉर्डर */
 #mbFrame{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .45s;
   background:radial-gradient(circle at 0 0,#f2a91b 0 26px,#c4161c 26px 31px,#2a1511 31px 34px,transparent 35px),radial-gradient(circle at 100% 0,#f2a91b 0 26px,#c4161c 26px 31px,#2a1511 31px 34px,transparent 35px),
@@ -379,6 +384,7 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
     <div class="panel">
       <button id="btnPlay" class="big" data-t="play">PLAY</button>
       <button id="hsChip" class="hschip" aria-pressed="false"></button>
+      <button id="btnDaily" class="sm wide daily" hidden><b data-t="dailyBtn"></b><small id="dailySub"></small></button>
       <div class="stats">
         <div><small data-t="best"></small><b id="bestV">0</b></div>
         <div><small data-t="sweets"></small><b id="totalV">0</b></div>
@@ -445,7 +451,7 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
     <div class="card lbcard">
       <h2 data-t="lb"></h2>
       <div id="lbTabs" class="seg"><button data-s="city"></button><button data-s="india" data-t="lbIndia"></button><button data-s="world" data-t="lbWorld"></button></div>
-      <div id="lbPer" class="seg sm2"><button data-p="week" data-t="lbWeek"></button><button data-p="all" data-t="lbAll"></button></div>
+      <div id="lbPer" class="seg sm2"><button data-p="day" data-t="lbDay"></button><button data-p="week" data-t="lbWeek"></button><button data-p="all" data-t="lbAll"></button></div>
       <div id="lbForm" hidden>
         <label><span data-t="lbYourName"></span><input id="lbName" maxlength="16" autocomplete="nickname"></label>
         <label><span data-t="lbCityL"></span><select id="lbCity"></select></label>
@@ -521,6 +527,15 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
     </div>
   </section>
 
+  <section id="chalS" class="screen dim" hidden>
+    <div class="card">
+      <div class="chalg">👻</div>
+      <h2 id="chalT"></h2>
+      <p id="chalP" class="lbnote"></p>
+      <button id="chalGo" class="big" data-t="chalGo"></button>
+      <button id="chalNo" class="sm" data-t="profLater"></button>
+    </div>
+  </section>
   <section id="profS" class="screen dim" hidden>
     <div class="card">
       <h2 data-t="profT"></h2>

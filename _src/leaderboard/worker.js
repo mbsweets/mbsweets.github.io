@@ -10,6 +10,11 @@
 // POST /stamp  {pid, why:'gold'|'mission'|'dist', score, dist, secs}  — दिन में हर काम का 1 स्टैम्प (कुल 3); 10 = 1 रसगुल्ला मुफ़्त (हफ़्ते में 2 तक)
 // POST /reward {pid, score, dist, secs, mult} — एक दौड़ में 20,000+ → ₹200+ मिठाई/नमकीन पर ₹20 छूट (हफ़्ते में 1)
 // POST /coupon/check {key, code} · /coupon/use {key, code} · /coupon/undo {key, code} · /admin/config {key, cap}  — सिर्फ़ बिलिंग ऐप (ADMIN_KEY)
+// ---- 👻 परछाईं + 📅 आज का रास्ता (17 नवंबर 2026) ----
+// POST /submit में daily:1 = आज के रास्ते वाली दौड़ → period 'D'+तारीख़ (IST) भी; GET /top?period=day = आज का
+// POST /ghost {pid, name, score, dist, secs, mult, daily, data} — दौड़ की परछाईं (हर 0.2 से. गोलू की जगह; base64url, 9000 अक्षर तक) → {id}
+//      आज के रास्ते वाली: एक खिलाड़ी की दिन में एक (बेहतर स्कोर हो तो बदले); बाकी: एक फ़ोन से दिन में 20 तक. 30 दिन बाद अपने-आप हटें
+// GET  /ghost?id=ABC123  · GET /ghost/top — आज के रास्ते का सबसे अच्छा
 // POST /feedback {pid, stars 1-5, tags[], text, lang, src, dev, tier, runs, best, ver} — खिलाड़ी की राय (एक फ़ोन की दिन में 1; नाम/फ़ोन नहीं; लिखे में फ़ोन नंबर/गाली कटती)
 const ORIGINS = ['https://mbsweets.github.io', 'http://127.0.0.1:8766', 'http://localhost:8766'];
 const CITIES = ['darbhanga', 'madhubani', 'samastipur', 'sitamarhi', 'muzaffarpur', 'saharsa', 'supaul', 'patna', 'bihar', 'india', 'abroad'];
@@ -133,7 +138,10 @@ const SCHEMA = [
   `CREATE INDEX IF NOT EXISTS coupon_used ON coupon (used_day, kind)`,
   `CREATE TABLE IF NOT EXISTS cfg ( k TEXT PRIMARY KEY, v TEXT NOT NULL )`,
   `CREATE TABLE IF NOT EXISTS feedback ( pid TEXT NOT NULL, day TEXT NOT NULL, ts INTEGER NOT NULL, stars INTEGER NOT NULL, tags TEXT NOT NULL DEFAULT '', text TEXT NOT NULL DEFAULT '', lang TEXT NOT NULL DEFAULT '', src TEXT NOT NULL DEFAULT 'web', dev TEXT NOT NULL DEFAULT '', tier INTEGER NOT NULL DEFAULT -1, runs INTEGER NOT NULL DEFAULT 0, best INTEGER NOT NULL DEFAULT 0, country TEXT NOT NULL DEFAULT '', ver TEXT NOT NULL DEFAULT '', PRIMARY KEY (pid, day) )`,
-  `CREATE INDEX IF NOT EXISTS feedback_ts ON feedback (ts DESC)`
+  `CREATE INDEX IF NOT EXISTS feedback_ts ON feedback (ts DESC)`,
+  `CREATE TABLE IF NOT EXISTS ghost ( id TEXT PRIMARY KEY, pid TEXT NOT NULL, name TEXT NOT NULL, city TEXT NOT NULL DEFAULT '', day TEXT NOT NULL, daily INTEGER NOT NULL DEFAULT 0, score INTEGER NOT NULL, dist INTEGER NOT NULL, secs REAL NOT NULL, data TEXT NOT NULL, ts INTEGER NOT NULL )`,
+  `CREATE INDEX IF NOT EXISTS ghost_top ON ghost (daily, day, score DESC)`,
+  `CREATE INDEX IF NOT EXISTS ghost_pid ON ghost (pid, day)`
 ];
 let ready = null;
 function ensureSchema(env) {
@@ -242,11 +250,13 @@ export default {
         const country = (req.cf && req.cf.country) || '';
         const up = 'INSERT INTO best (pid,period,name,city,country,score,dist,ts) VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(pid,period) DO UPDATE SET name=excluded.name, city=excluded.city, country=excluded.country, ts=excluded.ts, score=MAX(best.score, excluded.score), dist=CASE WHEN excluded.score>best.score THEN excluded.dist ELSE best.dist END';
         const wk = weekKey(now);
-        await env.DB.batch([env.DB.prepare(up).bind(pid, wk, name, city, country, score, dist, now), env.DB.prepare(up).bind(pid, 'all', name, city, country, score, dist, now)]);
+        const ops = [env.DB.prepare(up).bind(pid, wk, name, city, country, score, dist, now), env.DB.prepare(up).bind(pid, 'all', name, city, country, score, dist, now)];
+        if (b.daily) ops.push(env.DB.prepare(up).bind(pid, 'D' + istDay(now), name, city, country, score, dist, now)); // 📅 आज का रास्ता
+        await env.DB.batch(ops);
         return json(req, { ok: true, week: wk });
       }
       if (url.pathname === '/top' && req.method === 'GET') {
-        const period = url.searchParams.get('period') === 'all' ? 'all' : weekKey();
+        const pq = url.searchParams.get('period'), period = pq === 'all' ? 'all' : pq === 'day' ? 'D' + istDay() : weekKey();
         const scope = url.searchParams.get('scope') || 'world';
         const city = CITIES.includes(url.searchParams.get('city')) ? url.searchParams.get('city') : 'darbhanga';
         let where = 'period=?', args = [period];
@@ -260,6 +270,43 @@ export default {
           if (mine) { const r = await env.DB.prepare(`SELECT COUNT(*) AS n FROM best WHERE ${where} AND score>?`).bind(...args, mine.score).first(); me = { rank: r.n + 1, score: mine.score }; }
         }
         return json(req, { ok: true, period, rows: rows.map((r) => ({ name: r.name, city: r.city, country: r.country, score: r.score, me: r.pid === pid })), me });
+      }
+      if (url.pathname === '/ghost' && req.method === 'POST') {
+        const b = await req.json(), now = Date.now(), day = istDay(now);
+        const pid = String(b.pid || '');
+        if (!okPid(pid)) return json(req, { ok: false, err: 'pid' }, 400);
+        const name = cleanName(b.name); if (!name) return json(req, { ok: false, err: 'name' }, 400);
+        const data = String(b.data || '');
+        if (data.length < 8 || data.length > 9000 || !/^[A-Za-z0-9_-]+$/.test(data)) return json(req, { ok: false, err: 'data' }, 400);
+        if (!plausible(b)) return json(req, { ok: false, err: 'check' }, 400);
+        const score = Math.floor(+b.score), dist = Math.floor(+b.dist || 0), secs = +b.secs || 0, daily = b.daily ? 1 : 0;
+        const city = CITIES.includes(b.city) ? b.city : '';
+        if (Math.random() < 0.02) await env.DB.prepare('DELETE FROM ghost WHERE ts<?').bind(now - 30 * 864e5).run(); // पुरानी परछाइयाँ हटें
+        if (daily) { // आज के रास्ते की: एक खिलाड़ी की एक
+          const old = await env.DB.prepare('SELECT id, score FROM ghost WHERE pid=? AND day=? AND daily=1').bind(pid, day).first();
+          if (old) {
+            if (score > old.score) await env.DB.prepare('UPDATE ghost SET name=?, city=?, score=?, dist=?, secs=?, data=?, ts=? WHERE id=?').bind(name, city, score, dist, secs, data, now, old.id).run();
+            return json(req, { ok: true, id: old.id, kept: score <= old.score });
+          }
+        } else {
+          const n = (await env.DB.prepare('SELECT COUNT(*) AS n FROM ghost WHERE pid=? AND day=?').bind(pid, day).first()).n;
+          if (n >= 20) return json(req, { ok: false, err: 'many' }, 429);
+        }
+        for (let i = 0; i < 5; i++) {
+          const id = newCode().replace('-', '');
+          try {
+            await env.DB.prepare('INSERT INTO ghost (id,pid,name,city,day,daily,score,dist,secs,data,ts) VALUES (?,?,?,?,?,?,?,?,?,?,?)').bind(id, pid, name, city, day, daily, score, dist, secs, data, now).run();
+            return json(req, { ok: true, id });
+          } catch (e) { /* id टकराया — फिर */ }
+        }
+        return json(req, { ok: false, err: 'id' }, 500);
+      }
+      if ((url.pathname === '/ghost' || url.pathname === '/ghost/top') && req.method === 'GET') {
+        const g = url.pathname === '/ghost/top'
+          ? await env.DB.prepare('SELECT id,name,city,day,daily,score,dist,secs,data FROM ghost WHERE daily=1 AND day=? ORDER BY score DESC, ts ASC LIMIT 1').bind(istDay()).first()
+          : await env.DB.prepare('SELECT id,name,city,day,daily,score,dist,secs,data FROM ghost WHERE id=?').bind(String(url.searchParams.get('id') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6)).first();
+        if (!g) return json(req, { ok: false, err: 'none' });
+        return json(req, { ok: true, ...g, today: g.day === istDay() });
       }
       if (url.pathname === '/ping' && req.method === 'POST') { // sendBeacon: text/plain
         const txt = (await req.text()).slice(0, 300);

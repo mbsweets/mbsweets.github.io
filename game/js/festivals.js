@@ -86,7 +86,6 @@ export class Festival {
   }
   swapObs(t, extra) { return this.on && t === 'barrier' && !extra.need && chance(0.35) ? 'chugla' : t; }
   start() {
-    this.reset();
     if (!this.on) return;
     setTimeout(() => { if (this.g.state === 'play') { this.g.zoneBanner('🪔', T('festSama')); this.g.cheer('fest', 1600, -1, true); } }, 1800);
   }

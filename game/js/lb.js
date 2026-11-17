@@ -36,10 +36,20 @@ export class Leaderboard {
   async submit(score, dist, secs) {
     if (!this.on || !this.name || score <= 0) return null;
     try {
-      const r = await fetch(this.url + '/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pid: this.pid, name: this.name, city: this.city, score: Math.floor(score), dist: Math.floor(dist), secs: +secs.toFixed(1), mult: this.mult || 1 }) });
+      const r = await fetch(this.url + '/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pid: this.pid, name: this.name, city: this.city, score: Math.floor(score), dist: Math.floor(dist), secs: +secs.toFixed(1), mult: this.mult || 1, daily: this.daily ? 1 : 0 }) });
       return await r.json();
     } catch (e) { return null; }
   }
+  // 👻 परछाईं: भेजो / लाओ
+  async putGhost(o) {
+    if (!this.on || !this.name) return null;
+    try {
+      const r = await fetch(this.url + '/ghost', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pid: this.pid, name: this.name, city: this.city, mult: this.mult || 1, ...o }) });
+      const d = await r.json(); return d.ok ? d.id : null;
+    } catch (e) { return null; }
+  }
+  async getGhost(id) { if (!this.on) return null; try { const d = await (await fetch(`${this.url}/ghost?id=${encodeURIComponent(id)}`)).json(); return d.ok ? d : null; } catch (e) { return null; } }
+  async topGhost() { if (!this.on) return null; try { const d = await (await fetch(`${this.url}/ghost/top`)).json(); return d.ok ? d : null; } catch (e) { return null; } }
   async top(scope, period) {
     const u = `${this.url}/top?scope=${scope}&city=${this.city}&period=${period}&pid=${this.pid}`;
     const r = await fetch(u); return r.json();
@@ -115,6 +125,7 @@ export class Leaderboard {
     const r = await this.submit(score, dist, secs);
     if (!r || !r.ok) { el.textContent = ''; el.hidden = true; return; }
     try {
+      if (this.daily) { const d = await this.top('world', 'day'); el.textContent = d.me ? `📅 ${T('dailyOn')} — ${T('lbMyRank')} #${d.me.rank}` : ''; return; }
       const d = await this.top('city', 'week');
       el.textContent = d.me ? `🏆 ${cityName(this.city)} — ${T('lbMyRank')} #${d.me.rank} (${T('lbWeek')})` : '';
     } catch (e) { el.hidden = true; }
