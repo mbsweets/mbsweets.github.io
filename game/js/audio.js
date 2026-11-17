@@ -238,6 +238,10 @@ export class Sound {
   plop() { if (!this.ok()) return; const t = this.now(); this.tone(520, t, 0.12, { vol: 0.05, type: 'sine', to: 180 }); this.hiss(t + 0.02, 0.12, { vol: 0.06, type: 'lowpass', fq: 1400, to: 500 }); }
   splash() { if (!this.ok()) return; this.hiss(this.now(), 0.3, { vol: 0.25, type: 'lowpass', fq: 900, to: 300 }); }
   // नया ऑर्डर — दरवाज़े की घंटी जैसा "डिंग-डोंग"
+  // रस्सी पर फिसलना — "स्स्स्सूऊ" ऊपर जाती आवाज़
+  zip() { if (!this.ok()) return; const t = this.now(); this.hiss(t, 0.9, { vol: 0.12, type: 'bandpass', fq: 1800, to: 3400 }); this.tone(330, t, 0.5, { vol: 0.05, type: 'triangle', to: 660 }); }
+  // स्कूटी चालू — "भ्रूँ-ऊँ"
+  scooty() { if (!this.ok()) return; const t = this.now(); this.tone(70, t, 0.55, { vol: 0.12, type: 'sawtooth', to: 140 }); this.tone(105, t + 0.05, 0.5, { vol: 0.07, type: 'square', to: 190 }); this.tone(1318, t + 0.55, 0.12, { vol: 0.05, type: 'triangle' }); this.tone(1318, t + 0.72, 0.12, { vol: 0.05, type: 'triangle' }); }
   order() { if (!this.ok()) return; const t = this.now(); this.tone(f(7, 659.25), t, 0.35, { vol: 0.13, type: 'triangle' }); this.tone(f(0, 659.25), t + 0.18, 0.5, { vol: 0.13, type: 'triangle' }); }
   // डिलीवरी — साइकिल की घंटी "ट्रिंग-ट्रिंग" + सिक्के
   deliver() {

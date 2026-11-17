@@ -1,4 +1,5 @@
-// 🏪 गोलू की अपनी दुकान — गेम की मिठाई से ठेले से मिठाई महल तक (MB Sweets की "सन 2000 से" वाली कहानी जैसी).
+// 🏪 गोलू की दुकान "माँ भगवती मिष्ठान भंडार" — गेम की मिठाई से ठेले से मिठाई महल तक (MB Sweets की "सन 2000 से" वाली कहानी जैसी).
+// यही दुकान दौड़ में डिलीवरी के समय सड़क किनारे आती है (delivery.js) — जितनी बड़ी बनाओ, उतनी बड़ी दिखे.
 // हर स्तर: रोज़ की कमाई (मेन्यू में एक बार लो). मेन्यू के 3D दृश्य में गोलू के बगल में दुकान बनती दिखती है.
 import * as THREE from './three.module.min.js';
 import { C, mat4, Merge } from './art.js';
@@ -30,7 +31,7 @@ function signTex(lv) {
   const c = document.createElement('canvas'); c.width = 512; c.height = 128; const x = c.getContext('2d');
   x.fillStyle = '#7a111a'; x.fillRect(0, 0, 512, 128); x.strokeStyle = '#f2a91b'; x.lineWidth = 10; x.strokeRect(6, 6, 500, 116);
   x.fillStyle = '#ffd24d'; x.font = '800 54px "Baloo 2",Mukta,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
-  x.fillText('गोलू मिष्ठान भंडार', 256, 58, 470);
+  x.fillText('माँ भगवती मिष्ठान भंडार', 256, 58, 480);
   x.fillStyle = '#fff3c4'; x.font = '700 24px Mukta,sans-serif'; x.fillText('★'.repeat(lv + 1) + '  ननौरा · मिथिला', 256, 104);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
 }
@@ -92,7 +93,7 @@ export class GoluShop {
   show(on) {
     this.open = on; this.g.goShopOpen = on;
     for (const m of this.models) if (m) m.visible = false;
-    if (on) { const m = this.model(this.lv); m.visible = true; m.position.set(-2.6, 0, -5.2); m.rotation.y = 0.32; } // सड़क पर गोलू के आगे-बाएँ (असली MB Sweets वाली दुकान से अलग)
+    if (on) { const m = this.model(this.lv); m.visible = true; m.position.set(-2.6, 0, -5.2); m.rotation.y = 0.32; m.scale.setScalar(1); } // सड़क पर गोलू के आगे-बाएँ
     document.querySelector('#gshopS').hidden = !on;
     if (this.g.state === 'menu') document.querySelector('#menu').hidden = on; // ऊपर का आधा 3D दुकान के लिए ख़ाली
     if (on) this.paint();

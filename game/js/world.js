@@ -14,7 +14,8 @@ import { rand, randi, pick, chance, weighted, clamp, lerp } from './util.js';
 import { POND_LEN, WATER_Y, TILE, POND_OBST, makeWaterTile, makeGhat, makeMakhana, makeFish, WATER } from './pond.js';
 import { makeMadhubaniPu } from './madhubani.js';
 import { seeded } from './ghost.js';
-Object.assign(OBST, JUNGLE_OBST, POND_OBST);
+import { ZIP_LEN, ZIP_H, ZIP_OBST, makeZipRig } from './zipline.js';
+Object.assign(OBST, JUNGLE_OBST, POND_OBST, ZIP_OBST);
 const REAL_RANDOM = Math.random;
 const real = (fn) => { const r = Math.random; Math.random = REAL_RANDOM; try { return fn(); } finally { Math.random = r; } }; // नई चीज़ बनाते समय असली random (बीज वाली गिनती न बिगड़े)
 // अपने बनाए पावर-अप (मखाना, मधुबनी, त्योहार की चिड़िया…) — बाकी models.js का makePowerup
@@ -307,6 +308,10 @@ export class World {
     for (let i = 0; i < Math.ceil(POND_LEN / TILE) + 2; i++) { const t = makeWaterTile(i); t.visible = false; this.scene.add(t); this.wPool.push(t); }
     this.fish = [makeFish(), makeFish()].map((o) => { this.scene.add(o); return { o, t: 1 }; }); this.toFish = 2;
     this.ghats = [makeGhat(), makeGhat()]; for (const gh of this.ghats) { gh.visible = false; shadows(gh, true, true); this.scene.add(gh); }
+    // 🌳 जंगल की रस्सी: रस्सियाँ-मचान + नीचे नदी (पोखर वाले पानी के टुकड़े, अलग)
+    this.zipRig = makeZipRig(); this.scene.add(this.zipRig);
+    this.zwPool = []; this.zwaters = [];
+    for (let i = 0; i < Math.ceil(ZIP_LEN / TILE) + 2; i++) { const t = makeWaterTile(i + 1); t.visible = false; this.scene.add(t); this.zwPool.push(t); }
     for (const t of Object.keys(OBST)) { this.oPool[t] = []; for (let i = 0; i < 3; i++) { const o = this.newObs(t); o.visible = false; this.oPool[t].push(o); } }
   }
   newObs(t) { const o = real(() => OBST[t]()); o.userData.type = t; shadows(o, true, true); this.scene.add(o); return o; }
@@ -337,6 +342,8 @@ export class World {
     for (const t of this.waters || []) { t.visible = false; this.wPool.push(t); }
     this.waters = []; for (const gh of this.ghats || []) gh.visible = false;
     this.pond = null; this.pondFirst = false; for (const f of this.fish || []) { f.t = 1; f.o.visible = false; } this.toPond = rand(1450, 1700); this.yOff = 0;
+    for (const t of this.zwaters || []) { t.visible = false; this.zwPool.push(t); }
+    this.zwaters = []; this.zip = null; this.toZip = rand(250, 420); if (this.zipRig) this.zipRig.visible = false;
     for (const s of ['-1', '1']) { for (const c of this.chunks[s]) this.relChunk(c); this.chunks[s] = []; }
     this.obs = []; this.pups = []; this.gates = [];
     this.sweets.clear(); this.parts.clear();
@@ -426,7 +433,7 @@ export class World {
     if (t === 'boulder' || t === 'haybale' || t === 'log') obj.rotation.y = chance(0.5) ? 0 : Math.PI;
     if (t === 'band' || t === 'ghodi') obj.rotation.y = Math.PI;
     if (t === 'cow') { obj.rotation.y = e.cross ? 0 : (chance(0.5) ? 0 : Math.PI); }
-    obj.position.set(e.x, this.inPond(z) ? WATER_Y * 0.85 : 0, z); // पोखर में चीज़ें पानी पर
+    obj.position.set(e.x, this.inZip(z) ? ZIP_H : this.inPond(z) ? WATER_Y * 0.85 : 0, z); // पोखर में चीज़ें पानी पर, रस्सी पर ऊपर
     this.obs.push(e);
     return e;
   }
@@ -501,6 +508,11 @@ export class World {
     if (this.railObs > 0) return this.railRow(z);
     // 🚣 पोखर: पंक्ति की सारी चीज़ें (z+8 … z-16) पानी के अंदर हों तभी पानी वाली पंक्ति; किनारे/घाट पर पड़े तो खाली;
     // पानी पर सड़क की चीज़ें (समोसा, ईंट, गाय…) कभी नहीं — पहले पोखर के शुरू/आख़िर में चढ़ जाती थीं
+    if (this.zip) { // 🌳 रस्सी वाला हिस्सा: पूरी पंक्ति रस्सी के ऊपर हो तभी रस्सी वाली पंक्ति, किनारे पर ख़ाली
+      const Z = this.zip, top = z + 9, bot = z - 20;
+      if (top < Z.a - 26 && bot > Z.b + 18) return this.zipRow(z);
+      if (bot < Z.a + 3 && top > Z.b - 24) return 0; // उतरने के बाद थोड़ी ख़ाली सड़क
+    }
     if (this.pond) {
       const P = this.pond, top = z + 9, bot = z - 20;
       if (top < P.a - 1 && bot > P.b + 1) return this.pondRow(z);
@@ -631,6 +643,20 @@ export class World {
   }
 
   inPond(z) { return !!this.pond && z < this.pond.a - 1 && z > this.pond.b + 1; }
+  inZip(z) { return !!this.zip && z < this.zip.a - 1 && z > this.zip.b + 1; }
+  // 🌳 रस्सी की एक पंक्ति — लटका लट्ठा (पैर उठाओ) / मधुमक्खी का छत्ता (रस्सी बदलो); हमेशा एक रस्सी खुली
+  zipRow(z) {
+    const lanes = [0, 1, 2], others = (l) => lanes.filter((x) => x !== l), d = this.diff;
+    this.yOff = ZIP_H;
+    let free = randi(0, 2);
+    const kind = weighted([['lattha', 1.4], ['chhatta', 1.3], ['mix', d > 0.25 ? 1.2 : 0.4], ['breather', 0.8]]);
+    if (kind === 'lattha') { const n = chance(0.5) ? 2 : 1, bl = others(free).slice(0, n); for (const l of bl) { this.addObs('lattha', l, z); this.arc(l, z); } this.line(free, z + 5, 5); if (n === 1) free = -1; }
+    else if (kind === 'chhatta') { for (const l of others(free)) this.addObs('chhatta', l, z); this.line(free, z + 6, 7); }
+    else if (kind === 'mix') { const [a, b] = others(free); this.addObs('chhatta', a, z); this.addObs('lattha', b, z); this.arc(b, z); this.line(free, z + 5, 5); }
+    else { let l = randi(0, 2); const tp = this.sweetType(); for (let i = 0; i < 12; i++) { if (i % 4 === 3) l = clamp(l + pick([-1, 1]), 0, 2); this.sweets.spawn(tp, LANES[l], 0.7 + ZIP_H, z + 8 - i * 2.0); } }
+    this.yOff = 0;
+    return 0.15;
+  }
   // 🚣 पोखर की एक पंक्ति — हमेशा एक रास्ता खुला
   pondRow(z) {
     const d = this.diff, lanes = [0, 1, 2], others = (l) => lanes.filter((x) => x !== l);
@@ -810,9 +836,28 @@ export class World {
     }
     this.railObs = Math.max(0, this.railObs - dz);
     for (let i = this.tracks.length - 1; i >= 0; i--) { const t = this.tracks[i]; t.position.z += dz; if (t.position.z > DESPAWN_Z + 12) { t.visible = false; this.tPool.push(t); this.tracks.splice(i, 1); } }
+    // 🌳 जंगल की रस्सी (नदी के ऊपर)
+    this.toZip -= dz;
+    if (this.toZip <= 0 && !this.zip && !this.pond && this.zone === 'jungle' && zoneAt(this.dist + ZIP_LEN + 160) === 'jungle' && this.railObs <= 0 && this.haatObs <= 0 && this.melaObs <= 0 && !this.baraatQ) {
+      let far = SPAWN_Z - 20;
+      for (const e of this.obs) if (!e.dead) far = Math.min(far, e.z - (e.halfL || 1) - 4);
+      for (const u of this.pups) far = Math.min(far, u.z - 4);
+      const a = far, b = a - ZIP_LEN;
+      for (let z = a + 8 - TILE / 2; z > b - 8 - TILE / 2 + 0.1; z -= TILE) { const t = this.zwPool.pop(); if (!t) break; t.visible = true; t.position.set(0, 0, z); this.zwaters.push(t); }
+      this.zipRig.visible = true; this.zipRig.position.set(0, 0, a);
+      this.zip = { a, b };
+      this.toZip = rand(900, 1300); this.toPond = Math.max(this.toPond, ZIP_LEN + 200);
+      this.events.push('zip');
+    }
+    if (this.zip) {
+      this.zip.a += dz; this.zip.b += dz; this.zipRig.position.z += dz;
+      for (let i = this.zwaters.length - 1; i >= 0; i--) { const t = this.zwaters[i]; t.position.z += dz; if (t.position.z - TILE / 2 > DESPAWN_Z) { t.visible = false; this.zwPool.push(t); this.zwaters.splice(i, 1); } }
+      if (WATER.nm && !this.pond) { WATER.nm.offset.y += dz / 13; WATER.nm.offset.x = Math.sin((this.time || 0) * 0.6) * 0.04; }
+      if (this.zip.b - 6 > DESPAWN_Z) { this.zipRig.visible = false; this.zip = null; }
+    }
     // 🚣 मखाना पोखर
     this.toPond -= dz;
-    if (this.toPond <= 0 && !this.pond && this.zone !== 'jungle' && zoneAt(this.dist + POND_LEN + 180) !== 'jungle' && this.haatObs <= 0 && this.melaObs <= 0 && this.railObs <= 0 && !this.baraatQ && this.shopDist > 40 && this.shopDist < SHOP_EVERY - 60) {
+    if (this.toPond <= 0 && !this.pond && !this.zip && this.zone !== 'jungle' && zoneAt(this.dist + POND_LEN + 180) !== 'jungle' && this.haatObs <= 0 && this.melaObs <= 0 && this.railObs <= 0 && !this.baraatQ && this.shopDist > 40 && this.shopDist < SHOP_EVERY - 60) {
       let far = SPAWN_Z - 20; // पिछली सड़क-पंक्ति की चीज़ों (सामने से आती बैलगाड़ी समेत) से आगे से शुरू
       for (const e of this.obs) if (!e.dead) far = Math.min(far, e.z - (e.halfL || 1) - 4);
       for (const u of this.pups) far = Math.min(far, u.z - 4);
@@ -883,6 +928,7 @@ export class World {
       const e = this.obs[i];
       e.z += dz + e.vz * dt;
       if (e.obj.userData.dance) e.obj.userData.dance(this.time || 0);
+      if ((e.type === 'chhatta' || e.type === 'lattha') && e.z > 2.5) e.obj.visible = false; // रस्सी वाली चीज़ें कैमरे से न टकराएँ
       if (e.cross && e.z > -38 && e.cross.t < 1) {
         e.cross.t = Math.min(1, e.cross.t + dt / e.cross.dur);
         const t = e.cross.t, k = t * t * (3 - 2 * t);

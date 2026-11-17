@@ -83,6 +83,8 @@ export class Golu {
     mesh.updateMatrixWorld(true);
     mesh.bind(new THREE.Skeleton(bones));
     this.headBase = B.head.scale.clone();
+    // दाहिना हाथ (कलाई) — झोला/डिब्बा पकड़ने की जगह (त्वचा के भार से नापा: कोहनी से (-0.02,-0.106,-0.11))
+    this.handR = new THREE.Object3D(); this.handR.position.set(-0.02, -0.106, -0.11); B.foreR.add(this.handR);
     // छाया + लड्डू कवच
     this.shadow = new THREE.Mesh(new THREE.CircleGeometry(0.62, 24), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: 0.28, depthWrite: false }));
     this.shadow.rotation.x = -PI / 2;
@@ -142,6 +144,21 @@ export class Golu {
       P.spX = 10 + 9 * s; P.hdX = -4 * s; P.by = -0.52; P.bx = 0.05;
     } else if (mode === 'duck') { // नाव में झुका (जाल के नीचे)
       P.tR = 88; P.tL = 88; P.kR = 105; P.kL = 105; P.aR = 70; P.aL = 70; P.oR = 30; P.oL = 30; P.eR = 70; P.eL = 70; P.spX = 42; P.hdX = 25; P.by = -0.78; P.sq = 0.9;
+    } else if (mode === 'ride' || mode === 'rideDuck') { // स्कूटी पर — हैंडल पकड़े
+      P.tR = 78; P.tL = 78; P.kR = 82; P.kL = 82; P.aR = 52; P.aL = 52; P.oR = 16; P.oL = 16; P.eR = 38; P.eL = 38;
+      P.spX = 12; P.hdX = -6; P.by = -0.5 + Math.sin(ph * 2) * 0.008; P.bx = 0.06; P.hdZ = 2 * s;
+      if (mode === 'rideDuck') { P.spX = 42; P.hdX = 22; P.by = -0.66; P.aR = 40; P.aL = 40; P.eR = 60; P.eL = 60; }
+    } else if (mode === 'carry') { // डिब्बा दोनों हाथ में, दौड़ते हुए
+      P.tR = 18.7 + 34 * s; P.tL = 18.7 - 34 * s; P.kR = 15 + 70 * Math.max(0, c); P.kL = 15 + 70 * Math.max(0, -c);
+      P.aR = 168; P.oR = 34; P.eR = 70; P.aL = -4 + 41 * s; P.oL = 8; P.hipY = 6 * s; P.by = Math.abs(c) * 0.06 - 0.03; P.bx = 0.1; // दाहिना हाथ ऊपर — कंधे पर डिब्बा
+    } else if (mode === 'wave') { // रुककर टाटा — बायाँ हाथ ऊपर हिलता
+      P.aR = -6; P.aL = 150; P.oL = 30 + 22 * Math.sin(ph * 3); P.eL = 25; P.tR = 2; P.tL = 2; P.kR = 4; P.kL = 4; P.hdZ = 6 * Math.sin(ph * 1.5);
+    } else if (mode === 'hang' || mode === 'hangUp') { // रस्सी के कुंडे से लटका — दोनों हाथ ऊपर
+      P.aR = 172; P.aL = 172; P.oR = 10; P.oL = 10; P.eR = 8; P.eL = 8; P.spX = 0; P.hdX = -8; P.bx = 0; P.by = 0;
+      P.tR = 12 + 10 * s; P.tL = 12 - 10 * s; P.kR = 18 + 8 * Math.max(0, s); P.kL = 18 + 8 * Math.max(0, -s); P.hdZ = 3 * s;
+      if (mode === 'hangUp') { P.tR = 98; P.tL = 98; P.kR = 115; P.kL = 115; P.spX = -6; }
+    } else if (mode === 'lunge') { // बंदर पर झपट्टा — दोनों हाथ आगे, झुककर लपका
+      P.tR = 55; P.tL = -10; P.kR = 40; P.kL = 20; P.aR = 100; P.aL = 95; P.oR = 18; P.oL = 18; P.eR = 5; P.eL = 5; P.spX = 28; P.hdX = -12; P.bx = 0.45; P.by = -0.05;
     } else if (mode === 'roll') {
       P.tR = 70; P.tL = 70; P.kR = 95; P.kL = 95; P.aR = 50; P.aL = 50; P.oR = 12; P.oL = 12; P.spX = 20; P.hdX = 15; P.by = -0.38; P.sq = 0.74;
     } else if (mode === 'dead') {
@@ -159,7 +176,7 @@ export class Golu {
     const k = (cur, tgt, spd = 16) => cur + (tgt - cur) * (1 - Math.exp(-spd * dt));
     const sp = o.speed || 14;
     const run = mode === 'run' || mode === 'stumble';
-    this.phase += dt * (run ? 8 + sp * 0.34 : mode === 'dance' ? 6.5 : mode === 'fly' ? 4 : mode === 'boat' ? 5 : 3);
+    this.phase += dt * (run || mode === 'carry' ? 8 + sp * 0.34 : mode === 'dance' ? 6.5 : mode === 'fly' ? 4 : mode === 'boat' ? 5 : 3);
     const P = this.pose(mode, this.phase, sp);
     if (!this.cur) this.cur = { ...P };
     const C = this.cur, spd = run ? 40 : 18;
