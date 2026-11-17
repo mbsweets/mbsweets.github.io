@@ -23,6 +23,23 @@
 #rateS{z-index:58}
 #profS{z-index:56}
 #chalS{z-index:57}
+.sm.story{background:linear-gradient(#ffe7b8,#f5b85a)}.sm.story small{color:#6b2a10}
+#menu{overflow-y:auto;overflow-x:hidden}
+@media (max-height: 720px) and (max-aspect-ratio: 1/1){#menu .titlewrap{margin-top:2px}#menu .ttl{font-size:clamp(40px,11.5vw,70px)}#menu .panel{gap:8px}#menu .big{padding:7px 14px 4px}#menu .stats b{font-size:20px}#menu .sub.fest{display:none}}
+#storyS{z-index:7}.stlist{align-self:stretch;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:2px}
+.stch{display:flex;align-items:center;gap:10px;text-align:left;background:#fff;border:2.5px solid var(--ink);border-radius:14px;padding:8px 10px;box-shadow:0 3px 0 var(--ink);font:800 17px/1.15 var(--disp);color:var(--ink)}
+.stch b{font-size:30px;width:40px;text-align:center}.stch span{flex:1;min-width:0}.stch em{display:block;font:700 12px var(--body);font-style:normal;color:var(--sindoor)}
+.stch small{display:block;font:600 13px/1.2 var(--body);color:#6b4a3a}.stch i{font:800 14px var(--disp);font-style:normal;color:var(--maroon);white-space:nowrap}
+.stch.done{background:#E9F8E4}.stch.lock{opacity:.5;box-shadow:none}
+#cutS{position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;justify-content:space-between;
+  padding:max(10px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));
+  background:linear-gradient(#000 0 7vh,transparent 7vh 62%,rgba(42,21,17,.5) 100%)}
+#cutS::after{content:'';position:absolute;left:0;right:0;bottom:0;height:0}
+.cuttop{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#FFE7A8;font:800 16px var(--disp)}
+#cutSkip{font:800 14px var(--disp);background:#fff3;color:#fff;border:2px solid #fff8;border-radius:99px;padding:4px 12px 2px}
+.cutbox{width:min(100%,520px);align-self:center;background:var(--cream);border:4px solid var(--ink);border-radius:18px;padding:10px 14px 12px;box-shadow:inset 0 0 0 3px var(--haldi),0 6px 0 var(--ink);display:flex;flex-direction:column;gap:6px;animation:pop .35s}
+#cutWho{font:800 18px var(--disp);color:var(--maroon)}#cutSay{font:600 clamp(16px,4.6vw,20px)/1.35 var(--body);min-height:3.9em}
+#cutNext{align-self:flex-end;width:auto}
 .bcrow{display:flex;gap:6px;margin-top:4px}.bcrow input{flex:1;min-width:0;font:800 20px var(--disp);letter-spacing:2px;text-transform:uppercase;padding:6px 10px;border:2px solid var(--ink);border-radius:10px;background:#fff8e6}
 .bcrow .sm{flex:none}.bcmsg{font:700 14px/1.3 var(--body);margin-top:6px}.bcmsg.ok{color:var(--leaf)}.bcmsg.bad{color:var(--sindoor)}
 .chalg{font-size:64px;line-height:1;animation:unbob 1.4s ease-in-out infinite alternate}
@@ -386,7 +403,7 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
     <div class="panel">
       <button id="btnPlay" class="big" data-t="play">PLAY</button>
       <button id="hsChip" class="hschip" aria-pressed="false"></button>
-      <button id="btnDaily" class="sm wide daily" hidden><b data-t="dailyBtn"></b><small id="dailySub"></small></button>
+      <div class="row"><button id="btnDaily" class="sm daily" hidden><b data-t="dailyBtn"></b><small id="dailySub"></small></button><button id="btnStory" class="sm daily story"><b data-t="storyBtnS"></b><small id="storySub"></small></button></div>
       <div class="stats">
         <div><small data-t="best"></small><b id="bestV">0</b></div>
         <div><small data-t="sweets"></small><b id="totalV">0</b></div>
@@ -529,6 +546,13 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
     </div>
   </section>
 
+  <section id="storyS" class="screen dim" hidden>
+    <div class="card lbcard"><h2 data-t="storyBtn"></h2><div id="storyList" class="stlist"></div><button id="storyClose" class="sm wide" data-t="lbClose"></button></div>
+  </section>
+  <section id="cutS" hidden>
+    <div class="cuttop"><span id="cutT"></span><button id="cutSkip" data-t="storySkip"></button></div>
+    <div class="cutbox"><b id="cutWho"></b><p id="cutSay"></p><button id="cutNext" class="big mini"></button></div>
+  </section>
   <section id="chalS" class="screen dim" hidden>
     <div class="card">
       <div class="chalg">👻</div>
