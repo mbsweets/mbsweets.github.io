@@ -5,7 +5,7 @@ import { buildRealTextures, makeSky, makeEnv, shadows, SUN, HORIZON } from './re
 import { makeBees, makeSkyline, makeSamosaMount, SWEETS } from './models.js';
 import { Golu as GoluCode } from './golu.js';
 import { Golu as Golu3D, loadGolu } from './golu3d.js';
-import { World, LANES } from './world.js';
+import { World, LANES, JUMP } from './world.js';
 import { SkyShow } from './skyshow.js';
 import { makeMonkey, animMonkey } from './extra.js';
 import { NightFX } from './jungle.js';
@@ -40,7 +40,7 @@ function startTier() {
   const m = navigator.deviceMemory || 8, c = navigator.hardwareConcurrency || 8;
   return m <= 2 ? 3 : m <= 3 ? 2 : (m <= 4 || c <= 4) ? 1 : 0;
 }
-const GRAV = -36, JUMP_V = 11.6, SHOE_V = 16.2, ROLL_T = 0.62, H_STAND = 1.75, H_ROLL = 0.9, HALF_W = 0.38;
+const GRAV = -JUMP.g, JUMP_V = JUMP.v, SHOE_V = 16.2, ROLL_T = 0.62, H_STAND = 1.75, H_ROLL = 0.9, HALF_W = 0.38;
 const REVIVE_COST = 300; // मिठाइ दय आगू खेलू
 const LOCAL = !PORTAL && /mbsweets\.github\.io$|^127\.0\.0\.1$|^localhost$/.test(location.hostname) || /[?&]shop=1/.test(location.search);
 const GAME_URL = 'https://mbsweets.github.io/game/';
@@ -59,10 +59,10 @@ function timeOfDay(d) {
   return { eve: r(x, 2900, 3500), night: r(x, 3500, 4000) };
 }
 const TOD = {
-  hor: [new THREE.Color(0.93, 0.82, 0.66), new THREE.Color(0.82, 0.48, 0.26), new THREE.Color(0.13, 0.1, 0.2)],
-  sun: [new THREE.Color(0xfff0d8), new THREE.Color(0xffad6a), new THREE.Color(0x8fa6ff)], sunI: [3.0, 2.2, 0.5],
-  sky: [new THREE.Color(0xcfe3ff), new THREE.Color(0xffc9a0), new THREE.Color(0x6a7ac0)], gnd: [new THREE.Color(0x9a7a5a), new THREE.Color(0x8a5a40), new THREE.Color(0x30283a)], hemiI: [0.6, 0.42, 0.55],
-  exp: [1.45, 1.22, 1.38],
+  hor: [new THREE.Color(0.93, 0.82, 0.66), new THREE.Color(0.82, 0.48, 0.26), new THREE.Color(0.2, 0.2, 0.34)],
+  sun: [new THREE.Color(0xfff0d8), new THREE.Color(0xffad6a), new THREE.Color(0xa8bcff)], sunI: [3.0, 2.2, 1.15],
+  sky: [new THREE.Color(0xcfe3ff), new THREE.Color(0xffc9a0), new THREE.Color(0x6a7ac0)], gnd: [new THREE.Color(0x9a7a5a), new THREE.Color(0x8a5a40), new THREE.Color(0x4a4560)], hemiI: [0.6, 0.42, 0.95],
+  exp: [1.45, 1.22, 1.55],
 };
 const tri = (arr, e, n, out) => out.copy(arr[0]).lerp(arr[1], e).lerp(arr[2], n);
 const trin = (arr, e, n) => (arr[0] + (arr[1] - arr[0]) * e) * (1 - n) + arr[2] * n;
@@ -308,7 +308,9 @@ class Game {
     $('#btnRush').addEventListener('click', () => { if (store('tutRush') !== '1') { store('tutRush', 1); $('#btnRush').classList.remove('teach'); this.bubble(null); } });
     $('#btnPause').addEventListener('click', () => { store('tutPause', 1); $('#btnPause').classList.remove('teach'); this.bubble(null); });
     this.backGuard();
-    click('#btnRush', () => this.startRush());
+    // शुगर रश: उँगली लगते ही (pointerdown) — click उँगली उठने तक रुकता था, तब तक टक्कर हो जाती
+    $('#btnRush').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); this.startRush(); }, { passive: false });
+    $('#btnRush').addEventListener('click', (e) => { e.preventDefault(); this.startRush(); });
     click('#hsChip', () => { this.headstart = !this.headstart; this.refreshMenu(); });
     click('#btnWard', () => this.meta.openWard());
     this.meta = new MetaUI(this);
@@ -916,10 +918,10 @@ class Game {
     tri(TOD.sky, eve, night, this.hemi.color); tri(TOD.gnd, eve, night, this.hemi.groundColor); this.hemi.intensity = trin(TOD.hemiI, eve, night);
     this.renderer.toneMappingExposure = trin(TOD.exp, eve, night);
     const fb = this.fogBase || [70, 155];
-    this.scene.fog.near = fb[0] * (1 - 0.3 * night); this.scene.fog.far = fb[1] * (1 - 0.18 * night);
-    if (this.lamp) this.lamp.intensity = 22 * night;
+    this.scene.fog.near = fb[0]; this.scene.fog.far = fb[1]; // रात में भी उतनी ही दूर तक साफ़
+    if (this.lamp) this.lamp.intensity = 34 * night;
     this.scene.environment = this.envs[night > 0.5 ? 2 : eve > 0.5 ? 1 : 0];
-    this.world.sweets.setTint(1 - 0.12 * eve * (1 - night) - 0.42 * night);
+    this.world.sweets.setTint(1 - 0.12 * eve * (1 - night) - 0.15 * night);
   }
 
   update(rdt) {

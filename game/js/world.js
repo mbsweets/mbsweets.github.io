@@ -26,6 +26,8 @@ export function zoneAt(d) {
 export const LANE_W = 2.5;
 export const LANES = [-LANE_W, 0, LANE_W];
 export const SPAWN_Z = -150;
+// कूद (game.js भी यही इस्तेमाल करता है): v = ऊपर की रफ़्तार, g = गुरुत्व. ऊँचाई ≈ v²/2g = 1.65 मी., हवा में ≈ 0.6 से.
+export const JUMP = { v: 10.9, g: 36 };
 const DESPAWN_Z = 14;
 const SHOP_EVERY = 430; // इतनी दूरी पर फिर दुकान (≈ 20–28 सेकंड)
 
@@ -127,7 +129,7 @@ class SweetSet {
         }
         const dx = Math.abs(it.x - ctx.px);
         const hit = it.mag ? (dx < 0.9 && Math.abs(it.z) < 1.0 && Math.abs(it.y - ctx.py - 0.9) < 1.4)
-          : (dx < 0.85 && it.z > -0.75 && it.z < 0.75 && it.y > ctx.py - 0.35 && it.y < ctx.py + ctx.ph + 0.25);
+          : (dx < 0.85 && it.z > -0.75 && it.z - dz < 0.75 && it.y > ctx.py - 0.4 && it.y < ctx.py + ctx.ph + 0.3); // इस फ़्रेम में z=0 पार किया? (धीमे फ़ोन/तेज़ रफ़्तार में मिठाई छूटे नहीं)
         if (hit) { it.col = 0.16; ctx.collect(it); }
         else if (it.z > 2.6) { this.release(it); continue; } // छूटी मिठाई कैमरे के सामने न आए
       }
@@ -314,7 +316,7 @@ export class World {
     this.dist = 0; this.diff = 0; this.speed = 14; this.zone = 'village';
     this.toNext = 60;
     this.toPu = rand(260, 380);
-    this.toSam = rand(800, 1100);
+    this.toSam = rand(420, 620); // उड़न समोसा जल्दी और ज़्यादा बार (मालिक: "बहुत कम आ रहा है")
     this.shopDist = SHOP_EVERY - 120; // पहली दुकान जल्दी
     this.shopSide = -1;
     this.lastType = { '-1': '', '1': '' };
@@ -410,13 +412,18 @@ export class World {
   line(lane, z, n, type = this.sweetType(), y = 0.7, gap = 2.0) {
     for (let i = 0; i < n; i++) this.sweets.spawn(type, LANES[lane], y, z - i * gap);
   }
+  // ऊपर की मिठाइयाँ ठीक उसी राह पर जिस पर गोलू कूदकर जाता है — रफ़्तार जितनी, छलाँग उतनी लंबी; एक कूद में पूरी पंक्ति
+  // (रुकावट से थोड़ा पहले उछलना = सही समय; top: 2.5 सामान्य, कम/ज़्यादा = थोड़ी नीची/ऊँची)
   arc(lane, zc, type = this.sweetType(), top = 2.5) {
-    const n = 7;
+    const v = JUMP.v, g = JUMP.g, air = 2 * v / g, sp = Math.max(10, this.speed);
+    const L = clamp(sp * air, 7, 28), d0 = clamp(sp * air * 0.32, 2.4, 8.5);
+    const n = clamp(Math.round(L / 1.6), 7, 14), hk = top / 2.5;
+    const mid = Math.floor(n / 2);
     for (let i = 0; i < n; i++) {
-      const t = i / (n - 1);
-      const z = zc + 5.2 - t * 10.4;
-      const y = 0.7 + top * 4 * t * (1 - t);
-      const tp = i === 3 && chance(0.28) ? 'rasmalai' : type;
+      const s = i / (n - 1), tt = s * air;
+      const z = zc + d0 - s * L;
+      const y = 0.8 + Math.max(0, v * tt - 0.5 * g * tt * tt) * hk;
+      const tp = i === mid && chance(0.28) ? 'rasmalai' : type;
       this.sweets.spawn(tp, LANES[lane], y, z);
     }
   }
@@ -567,7 +574,7 @@ export class World {
     // पावर-अप
     if (this.toSam <= 0 && freeLane >= 0) { // उड़न समोसा — कम मिलता है
       this.addPu('samosa', freeLane, z - 7);
-      this.toSam = rand(1800, 2400);
+      this.toSam = rand(850, 1250);
       this.toPu = Math.max(this.toPu, 200);
     } else if (this.toPu <= 0 && freeLane >= 0) {
       this.addPu(weighted([['magnet', 4], ['shoes', 3], ['shield', 2.6], ['thali', this.dist > 300 ? 2.4 : 0]]), freeLane, z - 7);
