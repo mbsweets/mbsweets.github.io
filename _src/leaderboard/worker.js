@@ -19,6 +19,10 @@
 // POST /admin/billcode {key, amt, bill} — बिलिंग ऐप बिल बनाते समय कोड माँगे (दिन में 500 तक); 7 दिन चलेगा, एक बार
 // GET  /weather — दरभंगा का अभी का मौसम (MET Norway Locationforecast; यहीं 30 मिनट cache, ताकि उनकी सीमा न टूटे) → {ok, sym, temp, ts}
 //      "Based on data from MET Norway" (CC BY 4.0 / NLOD) — गेम की सेटिंग्स में श्रेय लिखा है
+// ---- 🏘️ गाँव लीग (17 नवंबर 2026, मालिक: "कम से कम 50 हों तभी गिफ्ट, नहीं तो नुकसान") ----
+// POST /village {pid, vil} — खिलाड़ी का गाँव/मोहल्ला (जरूरी नहीं); /submit में vil भी चलता है
+// GET  /league?pid= — इस हफ़्ते गाँवों का कुल स्कोर (हर खिलाड़ी का हफ़्ते का सबसे अच्छा), खिलाड़ी गिनती; इनाम तभी जब जीतने वाले गाँव में 50+ खिलाड़ी
+//      इनाम: पिछले हफ़्ते जीते गाँव (50+ हों तो) के टॉप 10 को 1 रसगुल्ला मुफ़्त (कूपन 'vil', /mine से) — हफ़्ते में ज़्यादा से ज़्यादा 10
 // POST /billcode/redeem {pid, code} — गेम में डाला: कार्ड पर +2 स्टैम्प (रोज़ की सीमा से अलग) + "MB Sweets पाग" + 300 गेम-मिठाई; एक फ़ोन से दिन में 2 कोड तक
 // POST /feedback {pid, stars 1-5, tags[], text, lang, src, dev, tier, runs, best, ver} — खिलाड़ी की राय (एक फ़ोन की दिन में 1; नाम/फ़ोन नहीं; लिखे में फ़ोन नंबर/गाली कटती)
 const ORIGINS = ['https://mbsweets.github.io', 'http://127.0.0.1:8766', 'http://localhost:8766'];
@@ -58,6 +62,7 @@ async function stats(req, env, asJson) {
     rasToday: (await env.DB.prepare("SELECT COUNT(*) AS n FROM coupon WHERE kind='ras' AND used_day=?").bind(today).first()).n,
     cap: await getCap(env),
     cards: (await env.DB.prepare('SELECT COUNT(*) AS n FROM card').first()).n,
+    league: await leagueRows(env, weekKey(), 5),
     bill7: await env.DB.prepare('SELECT COUNT(*) AS made, SUM(CASE WHEN used>0 THEN 1 ELSE 0 END) AS used FROM billcode WHERE day>=?').bind(d7).first(),
     fb: await env.DB.prepare('SELECT COUNT(*) AS n, AVG(stars) AS avg FROM feedback').first(),
     fb30: await env.DB.prepare('SELECT COUNT(*) AS n, AVG(stars) AS avg FROM feedback WHERE day>=?').bind(d30).first(),
@@ -81,8 +86,8 @@ ${fbHtml(out, req)}
 <table><tr><th>कहाँ से</th><th>कुल खिलाड़ी</th><th>7 दिन में</th><th>गेम</th></tr>${out.bySrc.map((r) => row([SRC_HI[r.src] || r.src, n(r.players), n(r.users7), n(r.games)])).join('')}</table>
 <table><tr><th>देश (30 दिन)</th><th>खिलाड़ी</th></tr>${out.byCountry.map((r) => row([r.country === 'IN' ? '🇮🇳 भारत' : (r.country || '?'), n(r.users)])).join('')}</table>
 <table><tr><th>दिन</th><th>खिलाड़ी</th><th>नए</th><th>गेम</th></tr>${out.days.map((r) => row([r.day, n(r.users), n(r.newp), n(r.games)])).join('')}</table>
-<table><tr><th>🎮 दुकान इनाम (इस हफ़्ते)</th><th>बने</th><th>दुकान पर दिए</th></tr>${['ras', 'off', 'top3'].map((k) => { const r = out.coupons.find((x) => x.kind === k) || {}; return row([KIND_HI[k], n(r.made), n(r.used)]); }).join('')}
-<tr><td>आज दिए मुफ़्त रसगुल्ले</td><td colspan="2"><b>${n(out.rasToday)}</b> / ${n(out.cap)} (रोज़ की सीमा)</td></tr><tr><td>स्टैम्प कार्ड वाले खिलाड़ी</td><td colspan="2">${n(out.cards)}</td></tr><tr><td>🧾 बिल पर गेम कोड (7 दिन)</td><td>${n(out.bill7 && out.bill7.made)} बने</td><td>${n(out.bill7 && out.bill7.used)} गेम में डाले</td></tr></table>`;
+<table><tr><th>🎮 दुकान इनाम (इस हफ़्ते)</th><th>बने</th><th>दुकान पर दिए</th></tr>${['ras', 'off', 'top3', 'vil'].map((k) => { const r = out.coupons.find((x) => x.kind === k) || {}; return row([KIND_HI[k], n(r.made), n(r.used)]); }).join('')}
+<tr><td>आज दिए मुफ़्त रसगुल्ले</td><td colspan="2"><b>${n(out.rasToday)}</b> / ${n(out.cap)} (रोज़ की सीमा)</td></tr><tr><td>स्टैम्प कार्ड वाले खिलाड़ी</td><td colspan="2">${n(out.cards)}</td></tr>${out.league.map((r, i) => `<tr><td>🏘️ गाँव लीग #${i + 1}: ${esc(r.name)}</td><td>${n(r.players)} खिलाड़ी ${r.players >= LEAGUE.min ? '✅' : `(${LEAGUE.min} चाहिए)`}</td><td>${n(r.total)}</td></tr>`).join('')}<tr><td>🧾 बिल पर गेम कोड (7 दिन)</td><td>${n(out.bill7 && out.bill7.made)} बने</td><td>${n(out.bill7 && out.bill7.used)} गेम में डाले</td></tr></table>`;
   return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
 }
 
@@ -114,6 +119,22 @@ function cleanName(n) {
   if (n.length < 2 || BAD.some((b) => low.includes(b))) return null;
   if (/\d{6,}/.test(n.replace(/\s/g, ''))) return null; // फ़ोन नंबर जैसा नाम नहीं
   return n;
+}
+
+// गाँव/मोहल्ला: 2–24 अक्षर, सिर्फ़ अक्षर-मात्रा-जगह (अंक/फ़ोन नहीं), गाली नहीं; vkey = मिलान के लिए (छोटे अक्षर, बिना जगह)
+function cleanVillage(v) {
+  v = String(v || '').normalize('NFC').replace(/[^\p{L}\p{M}\s.-]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 24);
+  if (v.length < 2 || BAD.some((b) => v.toLowerCase().replace(/\s/g, '').includes(b))) return null;
+  return { village: v, vkey: v.toLowerCase().replace(/[\s.-]/g, '') };
+}
+async function setVillage(env, pid, vil) {
+  const c = cleanVillage(vil); if (!c) return null;
+  await env.DB.prepare('INSERT INTO vplayer (pid,village,vkey,ts) VALUES (?,?,?,?) ON CONFLICT(pid) DO UPDATE SET village=excluded.village, vkey=excluded.vkey, ts=excluded.ts').bind(pid, c.village, c.vkey, Date.now()).run();
+  return c;
+}
+// गाँवों की सूची (हफ़्ता) — नाम = उस vkey में सबसे ज़्यादा लिखा रूप
+async function leagueRows(env, wk, lim = 20) {
+  return (await env.DB.prepare(`SELECT v.vkey AS vkey, MAX(v.village) AS name, COUNT(*) AS players, SUM(b.score) AS total FROM best b JOIN vplayer v ON v.pid=b.pid WHERE b.period=? GROUP BY v.vkey ORDER BY total DESC LIMIT ${lim}`).bind(wk).all()).results || [];
 }
 
 // ---------------- खिलाड़ी की राय ----------------
@@ -150,7 +171,9 @@ const SCHEMA = [
   `CREATE INDEX IF NOT EXISTS ghost_pid ON ghost (pid, day)`,
   `CREATE TABLE IF NOT EXISTS billcode ( code TEXT PRIMARY KEY, created INTEGER NOT NULL, day TEXT NOT NULL, expires INTEGER NOT NULL, amt INTEGER NOT NULL DEFAULT 0, bill TEXT NOT NULL DEFAULT '', used INTEGER NOT NULL DEFAULT 0, pid TEXT NOT NULL DEFAULT '', used_day TEXT NOT NULL DEFAULT '' )`,
   `CREATE INDEX IF NOT EXISTS billcode_day ON billcode (day)`,
-  `CREATE INDEX IF NOT EXISTS billcode_pid ON billcode (pid, used_day)`
+  `CREATE INDEX IF NOT EXISTS billcode_pid ON billcode (pid, used_day)`,
+  `CREATE TABLE IF NOT EXISTS vplayer ( pid TEXT PRIMARY KEY, village TEXT NOT NULL, vkey TEXT NOT NULL, ts INTEGER NOT NULL )`,
+  `CREATE INDEX IF NOT EXISTS vplayer_key ON vplayer (vkey)`
 ];
 let ready = null;
 function ensureSchema(env) {
@@ -168,7 +191,8 @@ const RW = {
   topGram: 250, days: 7,                   // दरभंगा हफ़्ते के टॉप 3 → 250 ग्राम; हर कूपन 7 दिन
 };
 const WHY = { gold: 1, mission: 2, dist: 4 };
-const KIND_HI = { ras: '🍬 1 रसगुल्ला मुफ़्त', off: `💰 ₹${RW.offMin}+ मिठाई/नमकीन पर ₹${RW.offAmt} छूट`, top3: `🏆 ${RW.topGram} ग्राम मिठाई (दरभंगा टॉप 3)` };
+const LEAGUE = { min: 50, top: 10 };
+const KIND_HI = { vil: '🏘️ गाँव लीग: 1 रसगुल्ला मुफ़्त', ras: '🍬 1 रसगुल्ला मुफ़्त', off: `💰 ₹${RW.offMin}+ मिठाई/नमकीन पर ₹${RW.offAmt} छूट`, top3: `🏆 ${RW.topGram} ग्राम मिठाई (दरभंगा टॉप 3)` };
 const CODE_AB = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 function newCode() {
   const a = new Uint8Array(6); crypto.getRandomValues(a);
@@ -216,6 +240,15 @@ async function mine(env, pid, now) {
   const lastWk = weekKey(now - 7 * 864e5);
   const top = (await env.DB.prepare("SELECT pid FROM best WHERE period=? AND city='darbhanga' ORDER BY score DESC, ts ASC LIMIT 3").bind(lastWk).all()).results || [];
   if (top.some((x) => x.pid === pid) && !(await weekCount(env, pid, 'top3', lastWk))) out.got.push(await issue(env, pid, 'top3', lastWk, now));
+  // 🏘️ पिछले हफ़्ते का विजेता गाँव — 50+ खिलाड़ी हों तभी, उसके टॉप 10 को
+  const me = await env.DB.prepare('SELECT vkey FROM vplayer WHERE pid=?').bind(pid).first();
+  if (me && !(await weekCount(env, pid, 'vil', lastWk))) {
+    const lw = (await leagueRows(env, lastWk, 1))[0];
+    if (lw && lw.vkey === me.vkey && lw.players >= LEAGUE.min) {
+      const t10 = (await env.DB.prepare(`SELECT b.pid FROM best b JOIN vplayer v ON v.pid=b.pid WHERE b.period=? AND v.vkey=? ORDER BY b.score DESC, b.ts ASC LIMIT ${LEAGUE.top}`).bind(lastWk, me.vkey).all()).results || [];
+      if (t10.some((x) => x.pid === pid)) out.got.push(await issue(env, pid, 'vil', lastWk, now));
+    }
+  }
   const coupons = ((await env.DB.prepare('SELECT code,kind,expires,used FROM coupon WHERE pid=? AND (used=0 AND expires>? OR used>?) ORDER BY created DESC LIMIT 12').bind(pid, now, now - 2 * 864e5).all()).results || [])
     .map((x) => ({ ...x, label: KIND_HI[x.kind] || x.kind }));
   return {
@@ -261,6 +294,7 @@ export default {
         const wk = weekKey(now);
         const ops = [env.DB.prepare(up).bind(pid, wk, name, city, country, score, dist, now), env.DB.prepare(up).bind(pid, 'all', name, city, country, score, dist, now)];
         if (b.daily) ops.push(env.DB.prepare(up).bind(pid, 'D' + istDay(now), name, city, country, score, dist, now)); // 📅 आज का रास्ता
+        if (b.vil) await setVillage(env, pid, b.vil); // 🏘️
         await env.DB.batch(ops);
         return json(req, { ok: true, week: wk });
       }
@@ -309,6 +343,24 @@ export default {
           } catch (e) { /* id टकराया — फिर */ }
         }
         return json(req, { ok: false, err: 'id' }, 500);
+      }
+      if (url.pathname === '/village' && req.method === 'POST') {
+        const b = await req.json();
+        if (!okPid(b.pid)) return json(req, { ok: false, err: 'pid' }, 400);
+        if (!b.vil) { await env.DB.prepare('DELETE FROM vplayer WHERE pid=?').bind(b.pid).run(); return json(req, { ok: true, village: '' }); }
+        const c = await setVillage(env, b.pid, b.vil);
+        return c ? json(req, { ok: true, village: c.village }) : json(req, { ok: false, err: 'name' }, 400);
+      }
+      if (url.pathname === '/league' && req.method === 'GET') {
+        const wk = weekKey(), lastWk = weekKey(Date.now() - 7 * 864e5), pid = url.searchParams.get('pid') || '';
+        const rows = await leagueRows(env, wk, 20), last = (await leagueRows(env, lastWk, 1))[0] || null;
+        let me = null;
+        if (okPid(pid)) {
+          const v = await env.DB.prepare('SELECT village, vkey FROM vplayer WHERE pid=?').bind(pid).first();
+          if (v) { const all = await leagueRows(env, wk, 500); const i = all.findIndex((r) => r.vkey === v.vkey); me = { village: v.village, rank: i >= 0 ? i + 1 : null, players: i >= 0 ? all[i].players : 0 }; }
+        }
+        return json(req, { ok: true, week: wk, min: LEAGUE.min, top: LEAGUE.top, rows: rows.map((r) => ({ name: r.name, players: r.players, total: r.total, ok: r.players >= LEAGUE.min })), me,
+          last: last ? { name: last.name, players: last.players, ok: last.players >= LEAGUE.min } : null });
       }
       if (url.pathname === '/admin/billcode' && req.method === 'POST') {
         const b = await req.json(), now = Date.now(), day = istDay(now);

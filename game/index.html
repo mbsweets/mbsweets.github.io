@@ -231,10 +231,19 @@ button:focus-visible,a:focus-visible{outline:3px solid #fff;outline-offset:3px}
 #overLb{font:700 15px/1.3 var(--body);color:var(--maroon);margin:-2px 0 8px;text-align:center}
 .wide{width:100%;margin-top:8px}
 .lbcard{max-height:92vh;display:flex;flex-direction:column;gap:8px;width:min(94vw,420px)}
+#lbForm:not([hidden])~#lbList{display:none}
+.lbcard{overflow-y:auto}
 .seg{align-self:stretch;display:flex;gap:4px;background:rgba(0,0,0,.08);border-radius:12px;padding:3px}
 .seg button{flex:1;border:0;background:transparent;font:800 15px var(--disp);padding:8px 4px;border-radius:9px;color:var(--ink);white-space:nowrap}
 .seg button.on{background:var(--sindoor);color:#fff}
 .seg.sm2 button{font-size:13px;padding:5px 4px}
+#lbTabs button{font-size:14px;padding:8px 2px;overflow:hidden;text-overflow:ellipsis}
+#lbLeague{align-self:stretch;text-align:center}
+#lbLeague .lbnote{margin:4px 0}
+.vlast{font-weight:700!important;color:var(--maroon)!important}
+#lbList li.vl span{white-space:normal}
+.vbar{display:block;height:5px;margin-top:3px;border-radius:3px;background:rgba(0,0,0,.1);overflow:hidden}
+.vbar i{display:block;height:100%;background:linear-gradient(90deg,#f2a91b,#2e7b47)}
 #lbForm{align-self:stretch;display:flex;flex-direction:column;gap:8px}
 #lbForm label{display:flex;flex-direction:column;gap:3px;font:700 14px var(--body)}
 #lbForm input,#lbForm select{font:600 17px var(--body);padding:9px 10px;border:2px solid var(--ink);border-radius:10px;background:#fff}
@@ -486,14 +495,16 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
   <section id="lbS" class="screen dim" hidden>
     <div class="card lbcard">
       <h2 data-t="lb"></h2>
-      <div id="lbTabs" class="seg"><button data-s="city"></button><button data-s="india" data-t="lbIndia"></button><button data-s="world" data-t="lbWorld"></button></div>
+      <div id="lbTabs" class="seg"><button data-s="city"></button><button data-s="india" data-t="lbIndia"></button><button data-s="world" data-t="lbWorld"></button><button data-s="vil" data-t="lbVil"></button></div>
       <div id="lbPer" class="seg sm2"><button data-p="day" data-t="lbDay"></button><button data-p="week" data-t="lbWeek"></button><button data-p="all" data-t="lbAll"></button></div>
       <div id="lbForm" hidden>
         <label><span data-t="lbYourName"></span><input id="lbName" maxlength="16" autocomplete="nickname"></label>
         <label><span data-t="lbCityL"></span><select id="lbCity"></select></label>
+        <label><span data-t="vilL"></span><input id="lbVil" maxlength="24" list="vilList" autocomplete="off" data-ph="vilPh"></label>
         <p class="lbnote" data-t="lbPrivacy"></p><p id="lbMsg" class="lbnote warn"></p>
         <button id="lbSave" class="big" data-t="lbSave"></button>
       </div>
+      <div id="lbLeague" hidden><p id="vlRule" class="lbnote"></p><p id="vlLast" class="lbnote vlast"></p><button id="lbVilAdd" class="sm" data-t="vilAdd"></button></div>
       <ol id="lbList"></ol>
       <div id="lbMe"></div>
       <div class="row"><button id="lbEdit" class="sm" data-t="lbEdit"></button><button id="lbClose" class="sm" data-t="lbClose"></button></div>
@@ -588,6 +599,8 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
       <p class="lbnote" data-t="profP"></p>
       <label class="pf"><span data-t="lbYourName"></span><input id="pfName" maxlength="16" autocomplete="nickname" enterkeyhint="done"></label>
       <label class="pf"><span data-t="lbCityL"></span><select id="pfCity"></select></label>
+      <label class="pf"><span data-t="vilL"></span><input id="pfVil" maxlength="24" list="vilList" autocomplete="off" enterkeyhint="done" data-ph="vilPh"></label>
+      <datalist id="vilList"></datalist>
       <p id="pfMsg" class="lbnote warn"></p>
       <button id="pfGo" class="big" data-t="profGo"></button>
       <button id="pfLater" class="sm" data-t="profLater"></button>

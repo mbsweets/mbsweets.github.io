@@ -33,10 +33,24 @@ export class Leaderboard {
   }
   get name() { return store('lbname') || ''; }
   get city() { return store('lbcity') || 'darbhanga'; }
+  get vil() { return store('lbvil') || ''; }
+  // 🏘️ गाँव/मोहल्ला (जरूरी नहीं): 2–24 अक्षर, अंक नहीं — '' = हटाओ; false = गलत नाम
+  static cleanVil(v) { if (/[\d\u0966-\u096F]/.test(String(v || ''))) return false; v = String(v || '').replace(/[^\p{L}\p{M}\s.-]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 24); return !v ? '' : v.length < 2 ? false : v; }
+  async setVil(v) {
+    store('lbvil', v);
+    if (!this.on) return;
+    try { await fetch(this.url + '/village', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pid: this.pid, vil: v }) }); } catch (e) { /* अगले स्कोर के साथ चला जाएगा */ }
+  }
+  async league() { const r = await fetch(`${this.url}/league?pid=${this.pid}`); return r.json(); }
+  // गाँवों के नाम सुझाव (datalist) — एक ही गाँव अलग-अलग लिखा न जाए
+  async fillVilList() {
+    const dl = $('#vilList'); if (!dl || !this.on || this._vl) return;
+    try { const d = await this.league(); if (d.ok) { this._vl = 1; dl.innerHTML = d.rows.map((r) => `<option value="${esc(r.name)}">`).join(''); } } catch (e) { /* */ }
+  }
   async submit(score, dist, secs) {
     if (!this.on || !this.name || score <= 0) return null;
     try {
-      const r = await fetch(this.url + '/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pid: this.pid, name: this.name, city: this.city, score: Math.floor(score), dist: Math.floor(dist), secs: +secs.toFixed(1), mult: this.mult || 1, daily: this.daily ? 1 : 0 }) });
+      const r = await fetch(this.url + '/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pid: this.pid, name: this.name, city: this.city, score: Math.floor(score), dist: Math.floor(dist), secs: +secs.toFixed(1), mult: this.mult || 1, daily: this.daily ? 1 : 0, vil: this.vil || undefined }) });
       return await r.json();
     } catch (e) { return null; }
   }
@@ -60,6 +74,7 @@ export class Leaderboard {
     for (const b of document.querySelectorAll('.lbbtn')) b.hidden = !this.on;
     $('#lbClose').addEventListener('click', () => this.close());
     for (const t of document.querySelectorAll('#lbTabs button')) t.addEventListener('click', () => { this.scope = t.dataset.s; this.load(); });
+    if ($('#lbVilAdd')) $('#lbVilAdd').addEventListener('click', () => this.showForm());
     for (const t of document.querySelectorAll('#lbPer button')) t.addEventListener('click', () => { this.period = t.dataset.p; this.load(); });
     $('#lbSave').addEventListener('click', () => this.saveProfile());
     $('#lbEdit').addEventListener('click', () => this.showForm());
@@ -80,13 +95,18 @@ export class Leaderboard {
     $('#pfName').value = this.name; $('#pfMsg').textContent = '';
     $('#pfCity').innerHTML = CITIES.map((c) => `<option value="${c[0]}">${LANG === 'en' ? c[2] : hiCity(c[1])}</option>`).join('');
     $('#pfCity').value = this.city;
+    if ($('#pfVil')) $('#pfVil').value = this.vil;
+    this.fillVilList();
     s.hidden = false;
     const fin = () => { s.hidden = true; if (done) done(); };
     $('#pfGo').onclick = (e) => {
       e.preventDefault();
       const n = $('#pfName').value.replace(/\s+/g, ' ').trim().slice(0, 16);
       if (n.length < 2 || /\d{6,}/.test(n.replace(/\s/g, ''))) { $('#pfName').focus(); $('#pfMsg').textContent = T('lbNameErr'); return; }
+      const v = $('#pfVil') ? Leaderboard.cleanVil($('#pfVil').value) : '';
+      if (v === false) { $('#pfVil').focus(); $('#pfMsg').textContent = T('vilErr'); return; }
       store('lbname', n); store('lbcity', $('#pfCity').value);
+      if (v !== this.vil) this.setVil(v);
       fin();
     };
     $('#pfLater').onclick = (e) => { e.preventDefault(); fin(); };
@@ -94,11 +114,17 @@ export class Leaderboard {
   showForm() {
     $('#lbForm').hidden = false; $('#lbList').innerHTML = ''; $('#lbMe').textContent = '';
     $('#lbName').value = this.name; $('#lbCity').value = this.city;
+    if ($('#lbVil')) $('#lbVil').value = this.vil;
+    if ($('#lbLeague')) $('#lbLeague').hidden = true;
+    this.fillVilList();
   }
   saveProfile() {
     const n = $('#lbName').value.replace(/\s+/g, ' ').trim().slice(0, 16);
     if (n.length < 2 || /\d{6,}/.test(n.replace(/\s/g, ''))) { $('#lbName').focus(); $('#lbMsg').textContent = T('lbNameErr'); return; }
+    const v = $('#lbVil') ? Leaderboard.cleanVil($('#lbVil').value) : '';
+    if (v === false) { $('#lbVil').focus(); $('#lbMsg').textContent = T('vilErr'); return; }
     store('lbname', n); store('lbcity', $('#lbCity').value);
+    if (v !== this.vil) this.setVil(v);
     $('#lbMsg').textContent = '';
     $('#lbForm').hidden = true;
     if (this.pending) { const p = this.pending; this.pending = null; this.submit(p.score, p.dist, p.secs).then(() => this.load()); } else this.load();
@@ -108,12 +134,33 @@ export class Leaderboard {
     for (const t of document.querySelectorAll('#lbPer button')) t.classList.toggle('on', t.dataset.p === this.period);
     $('#lbTabs button[data-s="city"]').textContent = cityName(this.city);
     const list = $('#lbList'); list.innerHTML = `<p class="lbnote">${T('loading')}</p>`;
+    $('#lbPer').hidden = this.scope === 'vil';
+    if ($('#lbLeague')) $('#lbLeague').hidden = this.scope !== 'vil';
+    if (this.scope === 'vil') return this.loadLeague();
     try {
       const d = await this.top(this.scope, this.period);
       if (!d.ok) throw new Error('x');
       list.innerHTML = d.rows.length ? d.rows.map((r, i) => `<li class="${r.me ? 'me' : ''}"><b>${i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}</b><span>${esc(r.name)}<small>${esc(cityName(r.city))}${r.country && r.country !== 'IN' ? ' · ' + esc(r.country) : ''}</small></span><em>${r.score.toLocaleString('en-IN')}</em></li>`).join('') : `<p class="lbnote">${T('lbEmpty')}</p>`;
       $('#lbMe').textContent = d.me ? `${T('lbMyRank')}: #${d.me.rank}  (${d.me.score.toLocaleString('en-IN')})` : '';
     } catch (e) { list.innerHTML = `<p class="lbnote">${T('lbErr')}</p>`; }
+  }
+  // 🏘️ गाँव बनाम गाँव — हफ़्ते का कुल (हर खिलाड़ी का सबसे अच्छा). इनाम सिर्फ़ 50+ खिलाड़ी वाले विजेता गाँव को
+  async loadLeague() {
+    const list = $('#lbList'), me = $('#lbMe'), info = $('#lbLeague');
+    try {
+      const d = await this.league();
+      if (!d.ok) throw new Error('x');
+      $('#vlRule').textContent = T('vilRule', d.min, d.top);
+      $('#vlLast').textContent = d.last ? T('vilLast', d.last.name, d.last.ok) : '';
+      $('#vlLast').hidden = !d.last;
+      $('#lbVilAdd').hidden = !!this.vil;
+      list.innerHTML = d.rows.length ? d.rows.map((r, i) => {
+        const k = Math.min(1, r.players / d.min), mine = d.me && d.me.rank === i + 1;
+        return `<li class="vl${mine ? ' me' : ''}"><b>${i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}</b><span>${esc(r.name)}<small>${T('vilPlayers', r.players, d.min)}</small><i class="vbar"><i style="width:${(k * 100).toFixed(0)}%"></i></i></span><em>${r.total.toLocaleString('en-IN')}</em></li>`;
+      }).join('') : `<p class="lbnote">${T('vilEmpty')}</p>`;
+      me.textContent = d.me ? T('vilMe', d.me.village, d.me.rank, d.me.players, d.min) : '';
+      info.hidden = false;
+    } catch (e) { list.innerHTML = `<p class="lbnote">${T('lbErr')}</p>`; me.textContent = ''; }
   }
   // गेम ख़त्म: स्कोर भेजो (नाम हो तो), नहीं तो बाद में भेजने के लिए रखो
   async afterGame(score, dist, secs, mult = 1) {

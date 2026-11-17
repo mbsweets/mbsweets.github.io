@@ -133,7 +133,7 @@ export class Rewards {
       <p class="lbnote">${st.n >= st.need ? T('rwFull') : T('rwLeft', st.need - st.n)} · ${T('rwWeek', st.rasWeek, st.rasWeekMax)}</p>
       <div class="rwtoday"><b>${T('rwToday')}</b><ul>${task('gold', T('rwGold'))}${task('mission', T('rwMission'))}${task('dist', T('rwDist'))}</ul></div>
       <div class="rwbox"><b>${T('rwCoupons')}</b>${live.length ? `<p class="lbnote">${T('rwShow')}</p>` + live.map((c) => cp(c, false)).join('') : `<p class="lbnote">${T('rwNone')}</p>`}${used.map((c) => cp(c, true)).join('')}</div>
-      <div class="rwbox"><b>${T('rwMore')}</b><ul class="rwlist"><li>${T('rwOff', st.off.score.toLocaleString('en-IN'), st.off.amt, st.off.min)}${st.offWeek ? ' ✅' : ''}</li><li>${T('rwTop')}</li></ul></div>
+      <div class="rwbox"><b>${T('rwMore')}</b><ul class="rwlist"><li>${T('rwOff', st.off.score.toLocaleString('en-IN'), st.off.amt, st.off.min)}${st.offWeek ? ' ✅' : ''}</li><li>${T('rwTop')}</li><li>${T('rwVil')}</li></ul></div>
       <div class="rwbox bcbox"><b>${T('bcT')}</b><p class="lbnote">${T('bcNote')}</p><div class="bcrow"><input id="bcIn" maxlength="9" autocomplete="off" autocapitalize="characters" placeholder="${T('bcPh')}" value="${esc(this.bcCode || '')}"><button id="bcGo" class="sm">${T('bcGo')}</button></div>${this.bcMsg ? `<p class="bcmsg ${this.bcOk ? 'ok' : 'bad'}">${esc(this.bcMsg)}</p>` : ''}</div>
       <details class="rwrules"><summary>${T('rwRulesT')}</summary><ul>${T('rwRules').map((x) => `<li>${x}</li>`).join('')}</ul></details>`;
     const go = $('#bcGo'); if (go) go.onclick = () => { go.disabled = true; this.redeem($('#bcIn').value); };
