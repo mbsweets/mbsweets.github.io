@@ -278,7 +278,7 @@ export class Darshan {
     for (const b of m.userData.boards || []) b.scale.x = side; // नाम उल्टा न दिखे
     const far = Math.min(w.farZ['-1'], w.farZ['1']), len = m.userData.len || 12, z = far - len / 2 - 6;
     if (id === 'plane') { m.position.set(side * (ROAD_HALF + 1.2), 0, -150); const j = m.userData.jet; j.visible = false; }
-    else { m.position.set(side * (ROAD_HALF + 1.0), 0, z); w.openSide = { side, z0: z - len / 2 - 8, z1: z + len / 2 + 8 }; }
+    else { m.position.set(side * (ROAD_HALF + 1.0), 0, z); w.openSide = { side, z0: z - len / 2 - 8, z1: z + len / 2 + 8, type: id === 'kushe' ? 'pond' : 'fields' }; } // पक्षी विहार के पास पोखर-घाट, बाकी के पास खुले खेत
     if (m.userData.flock) { const f = m.userData.flock.o; f.position.set(12, 5.5, 0); f.rotation.y = PI / 2; f.visible = false; }
     this.act = { id, m, side, cap: false, done: false, t: 0, fly: -1 };
   }
