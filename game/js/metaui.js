@@ -63,7 +63,7 @@ export class MetaUI {
   // ---------- बैज ----------
   htmlBadges() {
     const got = badgesGot();
-    let h = `<p class="lbnote">${T('bdNote')}</p><div class="bgrid">`;
+    let h = (this.g.darshan ? this.g.darshan.html() : '') + `<p class="lbnote">${T('bdNote')}</p><div class="bgrid">`;
     for (const b of BADGES) { const on = got.includes(b.id); h += `<div class="bdg${on ? ' on' : ''}"><b>${on ? b.icon : '🔒'}</b><span>${nm(b)}</span></div>`; }
     return h + '</div>';
   }
@@ -99,6 +99,7 @@ export class MetaUI {
   onClick(e) {
     const b = e.target.closest('button'); if (!b) return;
     const g = this.g; g.sound.init(); g.sound.click();
+    if (b.dataset.pc) { g.darshan.open(b.dataset.pc); return; } // 📮 पोस्टकार्ड
     if (b.dataset.act === 'daily') { this.claim(); return; }
     if (b.dataset.act === 'howto') { this.g.replayTutorial(); return; }
     if (b.dataset.act === 'rate') { $('#metaS').hidden = true; this.g.rate.open(); return; }

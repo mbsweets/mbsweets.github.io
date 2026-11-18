@@ -73,6 +73,30 @@
 .pf input,.pf select{font:600 17px var(--body);padding:9px 10px;border:2px solid var(--ink);border-radius:10px;background:#fff;color:var(--ink)}
 #pfMsg:empty{display:none}
 /* 🛵 डिलीवरी का कार्ड */
+#pcard{position:absolute;left:10px;top:38%;width:min(62vw,250px);background:#fbf1dc;border:3px solid var(--ink);border-radius:14px;padding:7px 10px 8px;box-shadow:0 4px 0 var(--ink),inset 0 0 0 3px #f2a91b;pointer-events:none;z-index:3;display:flex;flex-direction:column;gap:2px}
+#pcard small{font:800 12px var(--disp);color:#8a5a34}
+#pcard b{font:800 17px/1.15 var(--disp);color:var(--maroon)}
+#pcard i{font:600 12.5px/1.3 var(--body);font-style:normal;color:#3a2416;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+#pcard em{position:absolute;right:8px;top:6px;font:800 13px var(--disp);font-style:normal;color:#2e7b47}
+#pcard.in{animation:pcin .5s cubic-bezier(.2,1.4,.4,1)}
+@keyframes pcin{from{transform:translateX(-120%) rotate(-6deg)}to{transform:none}}
+#pcS{z-index:58}
+#rgS{z-index:60;background:#3a1a10;padding:0}
+#rgC{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+.rgx{position:absolute;right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));width:44px;height:44px;border-radius:50%;border:3px solid var(--ink);background:#fff8ea;font:800 20px var(--disp);color:var(--ink);z-index:2}
+.gsrg{background:linear-gradient(#fff3c4,#ffd98a)!important}
+.pccard{width:min(92vw,440px);max-height:94vh;overflow-y:auto;gap:10px}
+.pccard img{width:100%;aspect-ratio:1080/1350;border-radius:10px;background:#f3e6c8;display:block}
+.pcal{background:#fbf1dc;border:3px solid var(--ink);border-radius:14px;padding:8px;margin-bottom:10px;box-shadow:inset 0 0 0 3px #f2a91b}
+.pch{display:flex;justify-content:space-between;align-items:center;font:800 18px var(--disp);color:var(--maroon)}
+.pch span{background:var(--haldi);border:2px solid var(--ink);border-radius:99px;padding:0 10px;font-size:15px;color:var(--ink)}
+.pcg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pci{display:flex;flex-direction:column;align-items:stretch;gap:3px;background:#fff;border:2px solid var(--ink);border-radius:10px;padding:4px;font:inherit;color:inherit;text-align:center}
+.pci img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:6px;display:block}
+.pci .pce{display:grid;place-items:center;aspect-ratio:4/3;background:#efe4cc;border-radius:6px;font-size:30px}
+.pci b{font:700 12.5px/1.2 var(--body);color:#5a3a24;min-height:2.4em;display:grid;place-items:center}
+.pci.on b{color:var(--maroon)}
+.pci:not(.on){opacity:.75}
 #order{position:absolute;left:50%;top:calc(max(10px,env(safe-area-inset-top)) + 100px);transform:translateX(-50%);width:min(66vw,280px);background:#fffaf0f2;border:3px solid var(--ink);border-radius:16px;
   padding:5px 9px 6px;box-shadow:0 4px 0 var(--ink);display:flex;flex-direction:column;gap:4px;pointer-events:none}
 #order .oh{display:flex;align-items:center;gap:6px}
@@ -405,6 +429,7 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
       </div>
     </div>
     <div id="order" hidden></div>
+    <div id="pcard" hidden></div>
     <div id="beat" hidden><b>🥁</b><span></span></div>
     <div id="combo" hidden></div>
     <div class="bottom">
@@ -576,6 +601,10 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
     </div>
   </section>
 
+  <section id="rgS" class="screen" hidden>
+    <canvas id="rgC"></canvas>
+    <button id="rgClose" class="rgx" aria-label="close">✕</button>
+  </section>
   <section id="gshopS" class="wardsheet" hidden>
     <div class="wcard"><div class="sh2"><b data-t="gsBtn"></b><button id="gshopClose" class="sm" data-t="lbClose"></button></div><div id="gshopBody"></div></div>
   </section>
@@ -593,6 +622,12 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
       <p id="chalP" class="lbnote"></p>
       <button id="chalGo" class="big" data-t="chalGo"></button>
       <button id="chalNo" class="sm" data-t="profLater"></button>
+    </div>
+  </section>
+  <section id="pcS" class="screen dim" hidden>
+    <div class="card pccard">
+      <img id="pcImg" alt="">
+      <div class="row"><button id="pcShare" class="big" data-t="pcShare"></button><button id="pcClose" class="sm" data-t="pcClose"></button></div>
     </div>
   </section>
   <section id="profS" class="screen dim" hidden>

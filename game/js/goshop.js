@@ -104,11 +104,13 @@ export class GoluShop {
     box.innerHTML = `<div class="gsh"><b>${L.icon}</b><span><em>${T('gsLv', lv + 1, LEVELS.length)}</em>${tx(L.t)}<small>${T('gsDay', L.day)}</small></span></div>`
       + (this.canCollect() ? `<button class="big mini" data-gs="get">🍬 ${T('gsGet', L.day)}</button>` : `<p class="lbnote">✅ ${T('gsGot')}</p>`)
       + (nx ? `<button class="sm wide gsup${wallet.v < nx.cost ? ' poor' : ''}" data-gs="up">${nx.icon} ${tx(nx.t)} — ${T('gsBuild')} <i class="rg"></i> ${nx.cost.toLocaleString('en-IN')}<small>${T('gsDay', nx.day)}</small></button>` : `<p class="lbnote">🏯 ${T('gsMax')}</p>`)
+      + `<button class="sm wide gsrg" data-gs="rg">🍮 ${T('rgBtn', this.g.rg ? this.g.rg.left() : 3)}</button>`
       + `<p class="lbnote">${T('gsNote')}</p>`;
   }
   click(k) {
     const g = this.g;
     if (k === 'get' && this.canCollect()) { const d = LEVELS[this.lv].day; wallet.add(d); store('gshopDay', istDay()); g.sound.power(); g.toast(`+${d} 🍬`, 900, 'gold'); vibrate(20); }
+    else if (k === 'rg') { if (g.rg) g.rg.open(); return; } // 🍮 रसगुल्ला बनाओ
     else if (k === 'up') {
       const nx = LEVELS[this.lv + 1]; if (!nx) return;
       if (wallet.v < nx.cost) { g.toast(T('noSweets'), 900, 'warn'); return; }

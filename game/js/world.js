@@ -375,7 +375,9 @@ export class World {
     const zc = this.farZ[side] - CHUNK / 2;
     const zone = zoneAt(this.dist - zc);
     let type;
-    if (this.pond && zc < this.pond.a + 12 && zc > this.pond.b - 12 && !(side === this.shopSide && this.shopDist >= SHOP_EVERY)) { // पोखर के किनारे: बाग़-खेत-मंदिर
+    const os = this.openSide; // 📮 मिथिला दर्शन की जगह के पास खुले खेत (मकान जगह से न टकराएँ)
+    if (os && String(os.side) === String(side) && zc < os.z1 && zc > os.z0 && this.cPool['fields' + side] && this.cPool['fields' + side].length) type = 'fields';
+    else if (this.pond && zc < this.pond.a + 12 && zc > this.pond.b - 12 && !(side === this.shopSide && this.shopDist >= SHOP_EVERY)) { // पोखर के किनारे: बाग़-खेत-मंदिर
       type = weighted([['pond', this.lastType[side] === 'pond' ? 0 : 2], ['fields', 2.5], ['temple', this.lastType[side] === 'temple' ? 0 : 0.8]]);
       if (!this.cPool[type + side].length) type = 'house';
     } else if (zone === 'jungle' && this.cPool['jungle' + side].length) {

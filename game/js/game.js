@@ -35,6 +35,8 @@ import { Moments } from './moment.js';
 import { GoluShop } from './goshop.js';
 import { makeJhola, makeMonkeyTree, placeTree, branchPos, SamosaDrops } from './monkeyscene.js';
 import { ZIP_H, ROPE_Y, makeTrolley } from './zipline.js';
+import { Darshan } from './darshan.js';
+import { RasgullaGame } from './rasgulla.js';
 
 const $ = (s) => document.querySelector(s);
 // ग्राफ़िक्स के दर्जे (0 = सबसे बढ़िया). ऑटो: पूरी दौड़ में हर 2 सेकंड रफ़्तार देखो, धीमा हो तो एक दर्जा नीचे; फ़ोन याद रखे
@@ -218,6 +220,8 @@ class Game {
     this.story = new Story(this); // 📖 कहानी
     this.mom = new Moments(); // 📸 बेस्ट पल
     this.gshop = new GoluShop(this); // 🏪 गोलू की दुकान
+    this.darshan = new Darshan(this); // 📮 मिथिला दर्शन
+    this.rg = new RasgullaGame(this); // 🍮 रसगुल्ला बनाओ
     this.camKick = 0;
     // रात: लालटेन/खंभों की चमक + जुगनू; गोलू के आगे गरम रोशनी (भारी दर्जों में बंद)
     this.nfx = new NightFX(sc);
@@ -562,7 +566,7 @@ class Game {
     this.revived = false; this.runs++;
     this.mk = { st: 'off', t: 0, x: 0, y: 0, z: 4 }; this.monkey.visible = false; this.toMonkey = rand(550, 800);
     this.monkeyTree.visible = false; this.samDrops.clear(); this.emoM.clear(); this.monkey.userData.snack.visible = false; this.jholaBack = 0; this.lungeT = 0; this.cineK = 0; this.cine = 0; this.slowTs = 0; this.holdJhola();
-    this.dl.reset(); this.tricks.reset(); this.emo.clear(); this.trickHint = false; this.camKick = 0;
+    this.dl.reset(); this.tricks.reset(); this.emo.clear(); this.trickHint = false; this.camKick = 0; this.darshan.reset(); this.pcPond = 0; this.pcPondDone = false;
     this.fest.start(); this.boat.visible = false; this.madK = 0;
     if (this.daily) setTimeout(() => { if (this.state === 'play') this.zoneBanner('📅', T('dailyOn')); }, 900);
     this.sound.init();
@@ -753,7 +757,7 @@ class Game {
   takePu(p) {
     p.taken = true;
     if (p.kind === 'makhana') { this.got += 5; this.score += 50 * this.mult; this.world.parts.burst(p.x, p.y, p.z, 0xfaf6ea, 18, 3, 3, 0.7); this.sound.collect(3, 'rasgulla'); this.toast(T('makhanaT'), 700, 'gold'); this.msBump('sweets', this.got, true); return; }
-    if (p.kind === 'madhubani') { this.mom.want(420, T('momMadhu'), 700); this.pu.madhu = 9; this.sound.power(); this.sound.levelUp(); vibrate([30, 40, 30]); this.cheer('madhubani', 1600, -1, true, 'gold'); this.msBump('power'); this.msBump('madhu'); this.camKick = 0.6; return; }
+    if (p.kind === 'madhubani') { this.mom.want(420, T('momMadhu'), 700); this.pu.madhu = 9; this.sound.power(); this.sound.levelUp(); vibrate([30, 40, 30]); this.cheer('madhubani', 1600, -1, true, 'gold'); this.msBump('power'); this.msBump('madhu'); this.camKick = 0.6; this.darshan.event('madhubani'); return; }
     if (p.kind === 'chakeva') { this.world.parts.burst(p.x, p.y, p.z, 0xfff4d6, 16, 3, 3, 0.7); this.world.parts.burst(p.x, p.y, p.z, 0xd1261c, 8, 3, 3, 0.7); this.fest.got(); return; }
     this.sound.power();
     vibrate(25);
@@ -1170,6 +1174,7 @@ class Game {
   frame() {
     requestAnimationFrame(() => this.frame());
     const rdt = Math.min(this.clock.getDelta(), 1 / 20);
+    if (this.rg && this.rg.on && this.state === 'menu') return; // 🍮 रसगुल्ला वाला खेल खुला — पीछे 3D नहीं बनाना (फ़ोन हल्का)
     this.update(rdt);
     this.sky.position.copy(this.cam.position);
     this.sky.material.uniforms.uTime.value += rdt;
@@ -1179,6 +1184,9 @@ class Game {
     if (this.madK > 0.01) this.mfx.render(this.scene, this.cam, this.madK, this.tier >= 2 ? 0.7 : 1);
     else this.renderer.render(this.scene, this.cam);
     if (this.state === 'play' && this.mom) this.mom.afterRender(this.renderer.domElement);
+    if (this.state === 'play' && this.darshan && this.darshan.afterRender(this.renderer.domElement)) { // पोस्टकार्ड की तस्वीर अलग कैमरे से खिंची — असली फ़्रेम फिर से
+      if (this.madK > 0.01) this.mfx.render(this.scene, this.cam, this.madK, this.tier >= 2 ? 0.7 : 1); else this.renderer.render(this.scene, this.cam);
+    }
     const fr = this.madK > 0.3; if (fr !== this.frOn) { this.frOn = fr; this.mfx.showFrame(fr); }
   }
 
@@ -1319,7 +1327,7 @@ class Game {
       this.sound.splash();
       if (inPond) { this.zoneBanner('🚣', T('pondZ')); this.cheer('pond', 1700, -1, true); this.mom.want(380, T('momPond'), 1100); } else this.cheer('pondOut', 1000);
     }
-    if (p.boat && p.fly <= 0) this.msBump('pond', dz);
+    if (p.boat && p.fly <= 0) { this.msBump('pond', dz); this.pcPond = (this.pcPond || 0) + dz; if (this.pcPond > 45 && !this.pcPondDone) { this.pcPondDone = true; this.darshan.event('makhana'); } } // 📮 मखाने का पोस्टकार्ड: नाव पर थोड़ा चलकर
     // 🌳 जंगल की रस्सी: मचान पार होते ही कुंडा पकड़कर ऊपर (धीमी गति), नदी पार होते ही कूदकर नीचे
     const zp = this.world.zip, inZip = !!zp && zp.a > 0.4 && zp.b < -0.4;
     if (inZip && !p.zip && p.fly <= 0 && !p.scooty) {
@@ -1351,6 +1359,7 @@ class Game {
     // दुनिया
     this.world.update(dt, dz, this.speed, this.ctx());
     this.dl.update(dt, dz);
+    this.darshan.update(dt, dz);
     this.tricks.update(dt);
     {
       const td = this.tod || { eve: 0, night: 0 }, zn = this.world.zone;

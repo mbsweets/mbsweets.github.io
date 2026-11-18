@@ -238,6 +238,8 @@ export class Sound {
   plop() { if (!this.ok()) return; const t = this.now(); this.tone(520, t, 0.12, { vol: 0.05, type: 'sine', to: 180 }); this.hiss(t + 0.02, 0.12, { vol: 0.06, type: 'lowpass', fq: 1400, to: 500 }); }
   splash() { if (!this.ok()) return; this.hiss(this.now(), 0.3, { vol: 0.25, type: 'lowpass', fq: 900, to: 300 }); }
   // नया ऑर्डर — दरवाज़े की घंटी जैसा "डिंग-डोंग"
+  // ✈️ ऊपर से गुज़रता हवाई जहाज़ — गड़गड़ाहट (धीरे तेज़, फिर धीमी)
+  plane() { if (!this.ok()) return; const t = this.now(); this.hiss(t, 3.6, { vol: 0.16, type: 'lowpass', fq: 380, to: 900 }); this.tone(92, t + 0.4, 2.6, { vol: 0.05, type: 'sawtooth', to: 70 }); }
   // रस्सी पर फिसलना — "स्स्स्सूऊ" ऊपर जाती आवाज़
   zip() { if (!this.ok()) return; const t = this.now(); this.hiss(t, 0.9, { vol: 0.12, type: 'bandpass', fq: 1800, to: 3400 }); this.tone(330, t, 0.5, { vol: 0.05, type: 'triangle', to: 660 }); }
   // स्कूटी चालू — "भ्रूँ-ऊँ"

@@ -7,7 +7,7 @@ import { C, toon, mat4, Merge } from './art.js';
 import { ROAD_HALF } from './models.js';
 import { LANES, zoneAt } from './world.js';
 import { T, LANG } from './i18n.js';
-import { rand, randi, pick, weighted, clamp, damp, lerp, vibrate } from './util.js';
+import { rand, randi, pick, weighted, clamp, damp, lerp, vibrate, store } from './util.js';
 
 const PI = Math.PI;
 const G = {
@@ -334,7 +334,8 @@ export class Delivery {
   finish() {
     const g = this.g;
     this.st = 'done'; this.streak++;
-    const tip = randi(5, 15), sw = 15 * this.stars + tip + 5 * Math.min(this.streak - 1, 4);
+    const tip = randi(5, 15); let sw = 15 * this.stars + tip + 5 * Math.min(this.streak - 1, 4);
+    if (store('freshStock') === '1') { sw *= 2; store('freshStock', 0); setTimeout(() => { if (g.state === 'play') g.toast('🔥 ' + T('freshUsed'), 1500, 'gold'); }, 900); } // 🍮 ताज़ा माल
     g.got += sw; g.score += 400 * this.stars * g.mult;
     g.meter = Math.min(1, g.meter + 0.25);
     g.msBump('deliver'); g.msBump('sweets', g.got, true);
