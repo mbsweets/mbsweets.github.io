@@ -400,7 +400,7 @@ class Game {
     $('#storyList').addEventListener('click', (e) => { const b = e.target.closest('[data-ch]'); if (!b || b.disabled) return; this.sound.init(); this.sound.click(); this.story.cut(+b.dataset.ch); });
     $('#cutSkip').addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); this.story.skip(); });
     $('#cutS').addEventListener('click', (e) => { if (e.target.closest('#cutSkip')) return; e.preventDefault(); this.story.tap(); });
-    const rb = $('#btnRate'); if (rb) { rb.hidden = !this.rate.on; rb.addEventListener('click', (e) => { e.preventDefault(); this.sound.init(); this.sound.click(); this.rate.open(); }); }
+    const rb = $('#btnRate'); if (rb) { rb.hidden = !this.rate.on; rb.classList.toggle('nudge', this.rate.on && !store('rated') && storeNum('plays') >= 2); rb.addEventListener('click', (e) => { e.preventDefault(); this.sound.init(); this.sound.click(); this.rate.open(); }); } // ⭐ अभी तक राय नहीं दी — लाल बिंदी
     for (const el of document.querySelectorAll('.local')) el.hidden = !LOCAL;
     const ol = $('#orderLink'); if (ol) ol.href = ORDER_URL;
   }
@@ -569,7 +569,7 @@ class Game {
     $('#metaS').hidden = true; $('#dailyS').hidden = true; $('#profS').hidden = true; if (this.gshop.open) this.gshop.show(false);
     this.ms.startRun(); this.flyT = upTime('samosa');
     this.revived = false; this.runs++;
-    this.mk = { st: 'off', t: 0, x: 0, y: 0, z: 4 }; this.monkey.visible = false; this.toMonkey = rand(550, 800);
+    this.mk = { st: 'off', t: 0, x: 0, y: 0, z: 4 }; this.monkey.visible = false; this.toMonkey = rand(700, 900);
     this.monkeyTree.visible = false; this.peels = []; this.samDrops.clear(); this.emoM.clear(); this.monkey.userData.snack.visible = false; this.jholaBack = 0; this.lungeT = 0; this.cineK = 0; this.cine = 0; this.slowTs = 0; this.holdJhola();
     this.dl.reset(); this.tricks.reset(); this.emo.clear(); this.trickHint = false; this.camKick = 0; this.darshan.reset(); this.pcPond = 0; this.pcPondDone = false; this.pcLook = 0; this.lookK = 0; this.dlK = 0; this.dlCam = null; this.runDeliv = 0;
     this.fest.start(); this.boat.visible = false; this.madK = 0;

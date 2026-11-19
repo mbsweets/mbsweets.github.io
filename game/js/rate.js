@@ -9,7 +9,7 @@ const $ = (s) => document.querySelector(s);
 const GOOD = ['fun', 'gfx', 'world', 'rewards', 'voice'], BAD = ['lag', 'hard', 'confusing', 'boring', 'bugs'];
 const TAG_IC = { fun: '😄', gfx: '🎨', world: '🌳', rewards: '🍬', voice: '🗣️', lag: '🐢', hard: '😣', confusing: '❓', boring: '😴', bugs: '🐞' };
 const VER = '2026-11-17';
-const ASK_AFTER = 3, ASK_GAP = 5, ASK_MAX = 3;
+const ASK_AFTER = 2, ASK_GAP = 4, ASK_MAX = 5; // 19 नवंबर: मालिक को पंक्ति दिखी ही नहीं — अब जल्दी, ज़्यादा बार और कार्ड में सबसे ऊपर (नई गिनती: rateAsk2)
 
 export class Rate {
   constructor(game, url, on) {
@@ -39,11 +39,11 @@ export class Rate {
   maybeAsk() {
     const row = $('#overRate');
     if (!this.on || store('rated')) { row.hidden = true; return; }
-    const plays = storeNum('plays'), asks = storeNum('rateAsk'), next = storeNum('rateNext', ASK_AFTER);
+    const plays = storeNum('plays'), asks = storeNum('rateAsk2'), next = storeNum('rateNext2', ASK_AFTER);
     if (plays < ASK_AFTER || plays < next || asks >= ASK_MAX) { row.hidden = true; return; }
-    store('rateAsk', asks + 1); store('rateNext', plays + ASK_GAP);
+    store('rateAsk2', asks + 1); store('rateNext2', plays + ASK_GAP);
     for (const b of row.querySelectorAll('.ost')) b.classList.remove('on');
-    row.hidden = false;
+    row.hidden = false; row.classList.remove('in'); void row.offsetWidth; row.classList.add('in');
   }
   open(stars = 0) {
     if (!this.on) return;
@@ -89,6 +89,7 @@ export class Rate {
     if (!this.stars) return;
     const b = this.body(), good = this.stars >= 4;
     store('rated', new Date().toISOString().slice(0, 10)); store('rateStars', this.stars);
+    { const rb = $('#btnRate'); if (rb) rb.classList.remove('nudge'); }
     $('#overRate').hidden = true;
     $('#rSend').disabled = true;
     let ok = true;

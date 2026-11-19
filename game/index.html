@@ -111,6 +111,7 @@
   padding:5px 9px 6px;box-shadow:0 4px 0 var(--ink);display:flex;flex-direction:column;gap:4px;pointer-events:none}
 #order .oh{display:flex;align-items:center;gap:6px}
 #order .oa{font-size:24px;line-height:1}
+#order .ologo{width:30px;height:auto;flex:none;filter:drop-shadow(0 1px 0 var(--ink))}
 #order .on{flex:1;min-width:0;font:800 15px/1.1 var(--disp);color:var(--maroon);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #order .os{font-size:12px;letter-spacing:-1px;white-space:nowrap}
 #order .oc{display:flex;gap:5px;flex-wrap:wrap;justify-content:center}
@@ -138,8 +139,15 @@ body.hasOrder #toast{top:33%}
 .ftxt{position:absolute;left:50%;top:52%;transform:translate(-50%,0);font:800 clamp(22px,6vw,30px) var(--disp);color:#FFE45C;-webkit-text-stroke:5px var(--ink);paint-order:stroke fill;pointer-events:none;z-index:4;animation:ftxt .9s ease-out forwards}
 @keyframes ftxt{0%{opacity:0;transform:translate(-50%,10px) scale(.6)}20%{opacity:1;transform:translate(-50%,0) scale(1.1)}100%{opacity:0;transform:translate(-50%,-60px) scale(1)}}
 /* ⭐ राय */
-.orate{display:flex;align-items:center;gap:8px;width:100%;background:#fff3cf;border:3px solid var(--ink);border-radius:14px;padding:6px 8px 4px 12px;font:800 15px/1.1 var(--disp)}
-.orate span{white-space:nowrap}
+.orate{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;width:100%;background:linear-gradient(#fff3cf,#ffe39a);border:3px solid var(--maroon);border-radius:16px;padding:7px 8px 6px 12px;font:800 16px/1.1 var(--disp);color:var(--maroon);box-shadow:0 4px 0 var(--ink);position:relative}
+.orate span{white-space:nowrap;flex:1}
+.orate .ostars{flex-basis:100%;order:3}
+.orate .ost{font-size:clamp(30px,9.5vw,40px);color:#e8d4a8;animation:ostw 1.6s ease-in-out infinite}
+.orate .ost:nth-child(2){animation-delay:.12s}.orate .ost:nth-child(3){animation-delay:.24s}.orate .ost:nth-child(4){animation-delay:.36s}.orate .ost:nth-child(5){animation-delay:.48s}
+@keyframes ostw{0%,70%,100%{transform:scale(1)}80%{transform:scale(1.22);color:#ffc21a}}
+.orate.in{animation:orin .45s}
+@keyframes orin{0%{transform:scale(.7);opacity:0}70%{transform:scale(1.05);opacity:1}100%{transform:scale(1)}}
+#btnRate.nudge{position:relative}#btnRate.nudge::after{content:'';position:absolute;right:6px;top:6px;width:10px;height:10px;border-radius:50%;background:var(--sindoor);border:2px solid #fff;animation:pulse .7s ease-in-out infinite alternate}
 .ostars{display:flex;gap:0;flex:1;min-width:0;justify-content:center}
 .orate .ox{flex:none;padding:4px 2px}
 .ost,.rst{background:none;border:0;color:#d8c7a2;font-size:clamp(22px,7.2vw,30px);line-height:1;padding:0 2px;cursor:pointer;text-shadow:0 2px 0 var(--ink);transition:transform .12s}
@@ -512,13 +520,13 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
         <div><small data-t="sweets"></small><b id="overSweets">0</b></div>
         <div><small data-t="best"></small><b id="overBest">0</b></div>
       </div>
+      <div id="overRate" class="orate" hidden><span data-t="rateAskBig"></span><div id="overStars" class="ostars"></div><button id="overRateX" class="ox" aria-label="close">✕</button></div>
       <div id="overMs" class="msgain" hidden></div>
       <div id="overLb" hidden></div>
       <div id="overRw" class="rwon" hidden></div>
       <div id="overPc" class="opc-box" hidden></div>
       <button id="overRg" class="rgbtn wide2" hidden><b>🍮 <span data-t="rgInvite"></span></b><small id="overRgSub"></small></button>
       <div id="overShot" class="oshot" hidden><img alt=""><div><span></span><button id="btnShot" class="sm" data-t="shotBtn"></button></div></div>
-      <div id="overRate" class="orate" hidden><span data-t="rateShort"></span><div id="overStars" class="ostars"></div><button id="overRateX" class="ox" aria-label="close">✕</button></div>
       <button id="btnAgain" class="big" data-t="again"></button>
       <div class="row"><button id="btnHome" class="sm" data-t="home"></button><button id="btnShare" class="sm local" data-t="share"></button><button id="btnLb2" class="sm lbbtn" data-t="lbShort" hidden></button></div>
     </div>

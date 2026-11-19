@@ -177,49 +177,76 @@ function drawSign(door, c) {
   x.fillStyle = '#fff3c4'; x.font = '800 36px "Baloo 2",Mukta,sans-serif'; x.fillText(cName(c), 78, 52, 166);
   sign.material.map.needsUpdate = true;
 }
-// ---------------- मिठाई का डिब्बा: खुला डिब्बा + 4 मिठाई + ढक्कन (कब्ज़े पर) + सुनहरा फ़ीता ----------------
-const BW = 0.56, BH = 0.3, BD = 0.44;
+// ---------------- दुकान की छाप (19 नवंबर 2026, मालिक: "स्कूटी पर MB Sweets का लोगो, डिब्बा भी MB Sweets का — दुकान का नाम ज़्यादा हाईलाइट हो") ----------------
+// असली फ़ाइनल D3 डिब्बे की छपाई (ढक्कन + बगल) और दुकान के बैनर/बिल्ले — img/ में पहले से बनी तस्वीरें
+const TL = new THREE.TextureLoader(), TX = {};
+function tex(n) { if (!TX[n]) { const t = TL.load('img/' + n); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; TX[n] = t; } return TX[n]; }
+const flat = (c) => new THREE.MeshStandardMaterial({ color: c, roughness: 0.75 });
+const printed = (n) => new THREE.MeshStandardMaterial({ map: tex(n), roughness: 0.55 });
+// गोल MB Sweets बिल्ला (स्कूटी, हेलमेट, हलवाई की बनियान)
+function badge(sz) { const m = new THREE.Mesh(new THREE.PlaneGeometry(sz, sz), new THREE.MeshStandardMaterial({ map: tex('dl_badge.webp'), transparent: true, alphaTest: 0.4, roughness: 0.5 })); m.renderOrder = 2; return m; }
+// लाल-सफ़ेद बटी सुतली (मिठाई के डिब्बे पर दुकान वाली)
+let threadMat = null;
+function threadM() {
+  if (threadMat) return threadMat;
+  const c = document.createElement('canvas'); c.width = 32; c.height = 8; const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, 32, 8);
+  x.fillStyle = '#d1261c'; for (let k = -8; k < 40; k += 8) { x.beginPath(); x.moveTo(k, 0); x.lineTo(k + 4, 0); x.lineTo(k + 8, 8); x.lineTo(k + 4, 8); x.fill(); }
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1, 30); t.colorSpace = THREE.SRGBColorSpace;
+  return (threadMat = new THREE.MeshStandardMaterial({ map: t, roughness: 0.8 }));
+}
+// ---------------- मिठाई का डिब्बा = MB Sweets का असली डिब्बा (D3): सादा मरून डिब्बा + छपा ढक्कन (ढक्कन की बगल पर नाम की तख़्ती) ----------------
+const BW = 0.64, BH = 0.13, BD = 0.48, SK = 0.072; // 8×6 इंच वाला अनुपात
 function makeBox() {
-  const g = new THREE.Group(), mg = new Merge(), t = 0.03;
-  mg.add(G.box(BW, t, BD), mat4(0, -BH / 2 + t / 2, 0), C.maroon);
-  for (const s of [-1, 1]) { mg.add(G.box(t, BH, BD), mat4(s * (BW / 2 - t / 2), 0, 0), C.maroon); mg.add(G.box(BW, BH, t), mat4(0, 0, s * (BD / 2 - t / 2)), C.maroon); }
-  mg.add(G.box(BW + 0.012, 0.05, BD + 0.012), mat4(0, -BH / 2 + 0.07, 0), C.gold);
-  mg.add(G.box(BW - 0.06, 0.01, BD - 0.06), mat4(0, -BH / 2 + 0.04, 0), 0xfff1d6); // अंदर का काग़ज़
-  const base = mg.mesh(0.012); base.castShadow = true; g.add(base);
+  const g = new THREE.Group(), t = 0.012, MR = flat(0x7a111a), CR = flat(0xfff1d6), GD = flat(0xe2b14a);
+  const base = new THREE.Group(); g.add(base);
+  const wall = (w, h, d, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), [MR, MR, MR, MR, MR, MR]); m.position.set(x, y, z); m.castShadow = true; base.add(m); return m; };
+  wall(BW, t, BD, 0, -BH / 2 + t / 2, 0);
+  for (const s of [-1, 1]) { wall(BW, BH, t, 0, 0, s * (BD / 2 - t / 2)); wall(t, BH, BD, s * (BW / 2 - t / 2), 0, 0); }
+  const liner = new THREE.Mesh(new THREE.BoxGeometry(BW - 0.03, 0.006, BD - 0.03), CR); liner.position.y = -BH / 2 + 0.016; base.add(liner); // अंदर का काग़ज़
+  for (const s of [-1, 1]) { const gl = new THREE.Mesh(new THREE.BoxGeometry(BW + 0.004, 0.012, 0.004), GD); gl.position.set(0, -BH / 2 + 0.025, s * (BD / 2 + 0.001)); base.add(gl); }
   const bm = new THREE.MeshStandardMaterial({ color: 0xfff8ea, roughness: 0.45 });
   const balls = [];
-  for (let i = 0; i < 4; i++) { const b = new THREE.Mesh(G.sph(0.088, 14, 10), bm); b.position.set(i % 2 ? 0.12 : -0.12, -BH / 2 + 0.12, i < 2 ? -0.09 : 0.09); b.visible = false; g.add(b); balls.push(b); }
+  for (let i = 0; i < 4; i++) { const b = new THREE.Mesh(G.sph(0.058, 14, 10), bm); b.position.set(i % 2 ? 0.13 : -0.13, -BH / 2 + 0.078, i < 2 ? -0.1 : 0.1); b.visible = false; g.add(b); balls.push(b); }
+  // ढक्कन: पीछे के किनारे पर कब्ज़ा; ऊपर D3 की पूरी छपाई, चारों बगल D3 की पट्टियाँ
   const lidP = new THREE.Group(); lidP.position.set(0, BH / 2, -BD / 2); g.add(lidP);
-  const lm = new Merge(); lm.add(G.box(BW + 0.02, 0.04, BD + 0.02), mat4(0, 0.02, BD / 2), C.maroon); lm.add(G.box(BW - 0.12, 0.012, BD - 0.14), mat4(0, 0.045, BD / 2), 0xe8b730);
-  const lid = lm.mesh(0.012); lid.castShadow = true; lidP.add(lid);
-  const rib = new THREE.Group(), rm = new Merge(), RC = 0xf2c230;
-  rm.add(G.box(BW + 0.035, 0.03, 0.05), mat4(0, BH / 2 + 0.05, 0), RC); rm.add(G.box(0.05, 0.03, BD + 0.035), mat4(0, BH / 2 + 0.05, 0), RC);
-  for (const s of [-1, 1]) { rm.add(G.box(0.03, BH + 0.06, 0.05), mat4(s * (BW / 2 + 0.012), 0.02, 0), RC); rm.add(G.box(0.05, BH + 0.06, 0.03), mat4(0, 0.02, s * (BD / 2 + 0.012)), RC); }
-  for (const s of [-1, 1]) rm.add(G.tor(0.075, 0.024, 6, 12), mat4(s * 0.075, BH / 2 + 0.13, 0, 0, 0, s * 0.55), RC);
-  rm.add(G.sph(0.038, 8, 6), mat4(0, BH / 2 + 0.1, 0), C.sindoor);
-  rib.add(rm.mesh(0.008)); g.add(rib);
+  const L = new THREE.Group(); L.position.z = BD / 2; lidP.add(L);
+  const top = new THREE.Mesh(new THREE.BoxGeometry(BW + 0.02, 0.016, BD + 0.02), [MR, MR, printed('box_top.webp'), MR, MR, MR]); top.position.y = 0.008; top.castShadow = true; L.add(top);
+  const lg = printed('box_long.webp'), sh = printed('box_short.webp');
+  for (const s of [-1, 1]) {
+    const f = new THREE.Mesh(new THREE.BoxGeometry(BW + 0.02, SK, 0.006), s > 0 ? [MR, MR, MR, MR, lg, MR] : [MR, MR, MR, MR, MR, lg]); f.position.set(0, 0.016 - SK / 2, s * (BD / 2 + 0.013)); L.add(f);
+    const e = new THREE.Mesh(new THREE.BoxGeometry(0.006, SK, BD + 0.02), s > 0 ? [sh, MR, MR, MR, MR, MR] : [MR, sh, MR, MR, MR, MR]); e.position.set(s * (BW / 2 + 0.013), 0.016 - SK / 2, 0); L.add(e);
+  }
+  // सुतली: ढक्कन के ऊपर + और चारों ओर नीचे तक, बीच में गाँठ
+  const rib = new THREE.Group(), TM = threadM(), r = 0.0065, H2 = BH + 0.03;
+  const seg = (len, x, y, z, rx, rz) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 5), TM); m.position.set(x, y, z); m.rotation.set(rx, 0, rz); rib.add(m); };
+  seg(BW + 0.05, 0, BH / 2 + 0.03, 0, 0, PI / 2); seg(BD + 0.05, 0, BH / 2 + 0.03, 0, PI / 2, 0);
+  for (const s of [-1, 1]) { seg(H2, s * (BW / 2 + 0.024), 0.012, 0, 0, 0); seg(H2, 0, 0.012, s * (BD / 2 + 0.024), 0, 0); }
+  for (const s of [-1, 1]) { const lp = new THREE.Mesh(G.tor(0.035, 0.007, 5, 12), TM); lp.position.set(s * 0.035, BH / 2 + 0.06, 0); lp.rotation.set(PI / 2 - 0.4, 0, s * 0.5); rib.add(lp); }
+  const kn = new THREE.Mesh(G.sph(0.014, 8, 6), TM); kn.position.y = BH / 2 + 0.035; rib.add(kn);
+  g.add(rib);
   g.userData = { base, balls, bm, lidP, rib };
   boxLook(g, 0, 4, 1);
   return g;
 }
-// open: 0 बंद … 1 खुला; fill: कितनी मिठाई दिखे; rib: फ़ीते का नाप (0 = नहीं)
+// open: 0 बंद … 1 खुला; fill: कितनी मिठाई दिखे; rib: सुतली (0 = नहीं)
 function boxLook(b, open, fill, rib) {
   const u = b.userData; u.lidP.rotation.x = -1.95 * open;
   u.balls.forEach((m, i) => { m.visible = i < fill; });
-  u.rib.visible = rib > 0.02; u.rib.scale.setScalar(Math.max(0.02, rib));
+  u.rib.visible = rib > 0.02; u.rib.scale.set(1, Math.max(0.02, rib), 1);
 }
 // दुकान के आगे काउंटर: लकड़ी की चौकी, सफ़ेद कपड़ा, हाँडी (रसगुल्ले), थाल
 function makeCounter() {
   const g = new THREE.Group(), mg = new Merge();
   for (const [x, z] of [[-0.6, -0.34], [0.6, -0.34], [-0.6, 0.34], [0.6, 0.34]]) mg.add(G.cyl(0.045, 0.045, 0.9, 6), mat4(x, 0.45, z), 0x6b4a2c);
   mg.add(G.box(1.34, 0.08, 0.84), mat4(0, 0.92, 0), 0x8a5a34); mg.add(G.box(1.36, 0.03, 0.86), mat4(0, 0.97, 0), 0xf6efe0);
-  for (let i = 0; i < 10; i++) mg.add(G.box(0.12, 0.2, 0.02), mat4(-0.62 + i * 0.138, 0.82, 0.43), i % 2 ? C.sindoor : C.haldi); // झालर
   mg.add(G.sph(0.24, 14, 10), mat4(0.4, 1.17, -0.12, 0, 0, 0, 1, 0.8, 1), C.terracotta); mg.add(G.cyl(0.17, 0.19, 0.08, 14), mat4(0.4, 1.34, -0.12), 0x9a4a2c);
   mg.add(G.cyl(0.16, 0.16, 0.02, 14), mat4(0.4, 1.36, -0.12), 0xe8a23a); // चाशनी
   for (let i = 0; i < 5; i++) mg.add(G.sph(0.06, 10, 8), mat4(0.4 + Math.cos(i * 1.3) * 0.08, 1.39, -0.12 + Math.sin(i * 1.3) * 0.08), 0xfff8ea);
   mg.add(G.cyl(0.3, 0.3, 0.03, 18), mat4(-0.4, 1.0, -0.1), 0xc0c4c8); // थाल
   for (let i = 0; i < 7; i++) mg.add(G.sph(0.055, 8, 6), mat4(-0.4 + Math.cos(i * 0.9) * 0.16, 1.05, -0.1 + Math.sin(i * 0.9) * 0.16), i % 2 ? 0x7a2a14 : 0xe8a447);
   const m = mg.mesh(0.02); m.castShadow = true; g.add(m);
+  // आगे लटका बैनर: MB Sweets लोगो + "माँ भगवती मिष्ठान भंडार" (दोनों ओर — जो सड़क की ओर हो वही दिखे)
+  for (const s of [-1, 1]) { const bn = new THREE.Mesh(new THREE.PlaneGeometry(1.32, 0.22), new THREE.MeshStandardMaterial({ map: tex('dl_banner.webp'), roughness: 0.6 })); bn.position.set(0, 0.8, s * 0.432); bn.rotation.y = s > 0 ? 0 : PI; g.add(bn); }
   g.visible = false;
   return g;
 }
@@ -230,18 +257,12 @@ function makeHelmet(r) {
   mg.add(G.tor(r * 0.98, r * 0.07, 6, 24), mat4(0, r * 0.06, 0, PI / 2, 0, 0), 0x2a2420);
   mg.add(G.tor(r * 1.005, r * 0.06, 6, 20, PI), mat4(0, 0, 0, 0, PI / 2, 0), 0xffffff); // बीच की धारी
   mg.add(new THREE.SphereGeometry(r * 1.02, 16, 8, PI * 0.2, PI * 0.6, PI * 0.28, PI * 0.22), mat4(0, 0, 0, 0, 0, 0), 0x2a3440); // शीशा (आगे)
-  mg.add(G.box(r * 0.45, r * 0.3, r * 0.05), mat4(r * 0.82, r * 0.38, 0, 0, PI / 2, 0.5), C.haldi); // बगल में पीला ठप्पा
   const m = mg.mesh(0.006); m.castShadow = true; g.add(m);
+  for (const s of [-1, 1]) { const b = badge(r * 0.85); b.position.set(s * r * 0.9, r * 0.38, -r * 0.05); b.rotation.set(0, s * PI / 2, -s * 0.38); g.add(b); } // दोनों ओर MB Sweets का बिल्ला
   return g;
 }
 
 // ---------------- स्कूटी (मुँह -z की ओर) ----------------
-function sideTex() {
-  const c = document.createElement('canvas'); c.width = 256; c.height = 96; const x = c.getContext('2d');
-  x.fillStyle = '#7a111a'; x.fillRect(0, 0, 256, 96); x.fillStyle = '#ffd24d'; x.font = '800 44px "Baloo 2",Mukta,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
-  x.fillText('MB Sweets', 128, 40, 236); x.fillStyle = '#fff3c4'; x.font = '700 22px Mukta,sans-serif'; x.fillText('डिलीवरी', 128, 76);
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
-}
 function makeScooty() {
   const g = new THREE.Group(), body = new THREE.Group(); g.add(body);
   const mg = new Merge(), RED = 0xb3121c, CREAM = 0xfff1d6;
@@ -263,8 +284,11 @@ function makeScooty() {
   }
   mg.add(G.sph(0.05, 6, 5), mat4(0.18, 0.6, 0.95), 0xff3030); mg.add(G.sph(0.05, 6, 5), mat4(-0.18, 0.6, 0.95), 0xff3030); // पीछे की बत्ती
   const m = mg.mesh(0.02); m.castShadow = true; body.add(m);
-  const st = sideTex();
-  for (const s of [-1, 1]) { const p = new THREE.Mesh(new THREE.PlaneGeometry(0.6, 0.22), new THREE.MeshBasicMaterial({ map: st, toneMapped: false })); p.position.set(s * 0.272, 0.6, 0.42); p.rotation.y = s * PI / 2; body.add(p); }
+  // दुकान की छाप: दोनों बगल लोगो + "माँ भगवती मिष्ठान भंडार" + MB Sweets डिलीवरी, आगे बड़ा बिल्ला, पीछे "MB SWEETS 8002010218"
+  const sm = new THREE.MeshBasicMaterial({ map: tex('dl_side.webp'), transparent: true, alphaTest: 0.4, toneMapped: false });
+  for (const s of [-1, 1]) { const p = new THREE.Mesh(new THREE.PlaneGeometry(0.66, 0.235), sm); p.position.set(s * 0.278, 0.6, 0.42); p.rotation.y = s * PI / 2; body.add(p); }
+  const fb = badge(0.34); fb.position.set(0, 0.74, -0.535); fb.rotation.set(-0.18, PI, 0); body.add(fb);
+  const rp = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.128), new THREE.MeshBasicMaterial({ map: tex('dl_rear.webp'), transparent: true, alphaTest: 0.4, toneMapped: false })); rp.position.set(0, 0.47, 0.985); body.add(rp);
   g.userData = { body, carrier: new THREE.Vector3(0, 1.12, 0.86) };
   g.visible = false;
   return g;
@@ -310,6 +334,7 @@ export class Delivery {
     this.g = game; this.scene = scene;
     this.cust = {}; for (const c of CUST) { const m = makeCustomer(c.id); m.visible = false; scene.add(m); this.cust[c.id] = m; }
     this.halwai = makeCustomer('halwai'); this.halwai.visible = false; scene.add(this.halwai);
+    { const hb = badge(0.2); hb.position.set(-0.11, 1.14, 0.335); this.halwai.userData.body.add(hb); } // बनियान पर MB Sweets बिल्ला
     this.counter = makeCounter(); scene.add(this.counter);
     this.home = makeHome(); scene.add(this.home);
     this.door = this.home.userData.gate; // पुराने कोड/कहानी के लिए
@@ -384,7 +409,7 @@ export class Delivery {
     this.boxT = -1; this.clearZone(z - 28, z + 34); this.quiet(1000);
     this.st = 'toShop'; this.callT = 1.7; this.fast = 1;
     const sw = swName(this.sw);
-    g.cheer('order', 2200, -1, true, 'gold', T('ordCall', cName(c), sw));
+    g.cheer('order', 2200, -1, true, 'gold', T('ordCallShop', cName(c), sw));
     g.say(T('ordCall', cName(c), sw), false);
     g.sound.order(); if (g.sound.phone) g.sound.phone(); vibrate([25, 40, 25, 40, 25]);
     if (g.emo) g.emo.play('phone', 1.7);
@@ -411,7 +436,7 @@ export class Delivery {
     g.meter = Math.min(1, g.meter + 0.25);
     g.msBump('deliver'); g.msBump('sweets', g.got, true);
     g.runDeliv = (g.runDeliv || 0) + 1;
-    g.cheer('deliver', 1900, -1, true, 'gold', `${'⭐'.repeat(this.stars)} ${T('ordGot', sw)}`);
+    g.cheer('deliver', 2100, -1, true, 'gold', T('ordDoneShop', '⭐'.repeat(this.stars), sw));
     g.say(T('ordThanks', cName(this.c)), false);
     if (g.emo) g.emo.play('love', 1.4);
     if (g.mom) g.mom.want(500 + 50 * this.stars, T('momDeliver', '⭐'.repeat(this.stars)), 50);
@@ -448,7 +473,7 @@ export class Delivery {
   turn() { return this.turnY; }
   // डिब्बा कंधे पर
   shoulder(out) { const p = this.g.p; return out.set(p.x + 0.42, p.y + 2.0, 0.05); }
-  carrier(out) { const S = this.scooty; return out.set(0, 1.12 + 0.17, 0.86).applyEuler(S.rotation).add(S.position); }
+  carrier(out) { const S = this.scooty; return out.set(0, 0.96 + BH / 2, 0.84).applyEuler(S.rotation).add(S.position); }
   update(dtReal, dz) {
     const g = this.g, p = g.p, B = this.box, S = this.scooty, H = this.halwai, U = B.userData;
     const dt = dtReal * (this.inScene() ? this.fast : 1); // रुके पलों में स्वाइप = जल्दी
@@ -480,7 +505,7 @@ export class Delivery {
       if (d < 0.08 || this.cap < 0.3) { this.cap = 0; this.go('pack'); this.boxT = -1; this.mark.visible = false; g.sound.order(); }
     }
     // ---- पैकिंग: 4 मिठाई डिब्बे में → ढक्कन → फ़ीता → डिब्बा गोलू को
-    if (this.boxOn === 'counter') { this.counter.updateMatrixWorld(); B.position.copy(this.v.set(0.15, 1.135, -this.side * 0.2).applyMatrix4(this.counter.matrixWorld)); B.rotation.set(0, 0, 0); }
+    if (this.boxOn === 'counter') { this.counter.updateMatrixWorld(); B.position.copy(this.v.set(0.15, 0.985 + BH / 2, -this.side * 0.2).applyMatrix4(this.counter.matrixWorld)); B.rotation.set(0, PI, 0); } // छपाई सामने वाले कैमरे की ओर
     if (this.st === 'pack') {
       this.cap = 0; this.turnTo = -this.side * 0.95;
       const t = this.t, n = Math.min(4, Math.floor(Math.max(0, t - 0.15) / 0.26));
@@ -496,7 +521,7 @@ export class Delivery {
       if (t > 1.85 && this.boxT < 0) { this.boxT = 0; this.boxOn = null; this.b0 = B.position.clone(); }
       if (this.boxT >= 0 && this.boxT < 1) {
         this.boxT = Math.min(1, this.boxT + dt / 0.42); const e = this.boxT, to = this.shoulder(this.v);
-        B.position.set(lerp(this.b0.x, to.x, e), lerp(this.b0.y, to.y, e) + Math.sin(e * PI) * 0.8, lerp(this.b0.z, to.z, e)); B.rotation.set(0, e * PI * 2, 0);
+        B.position.set(lerp(this.b0.x, to.x, e), lerp(this.b0.y, to.y, e) + Math.sin(e * PI) * 0.8, lerp(this.b0.z, to.z, e)); B.rotation.set(0, PI + e * PI, 0);
         if (e >= 1) { vibrate(20); if (g.emo) g.emo.play('cool', 0.8); this.turnTo = 0; }
       }
       if (this.boxT >= 1) { B.position.copy(this.shoulder(this.v)); B.rotation.set(0, 0, 0); if (this.t > 2.45) { this.go('walk'); this.tied = false; } }
@@ -578,12 +603,12 @@ export class Delivery {
       if (this.boxT >= 0) {
         this.boxT = Math.min(1, this.boxT + dt / 0.5); const k = this.boxT;
         const tx = cm.position.x - this.side2 * 0.3, tz = cm.position.z + 0.05, ty = 1.25 * (cm.userData.sc || 1);
-        B.position.set(lerp(this.box0.x, tx, k), lerp(this.box0.y, ty, k) + Math.sin(k * PI) * 0.4, lerp(this.box0.z, tz, k)); B.rotation.set(0, k * 1.5, 0);
+        B.position.set(lerp(this.box0.x, tx, k), lerp(this.box0.y, ty, k) + Math.sin(k * PI) * 0.4, lerp(this.box0.z, tz, k)); B.rotation.set(-0.95 * k, PI + this.side2 * 0.5 * k, 0); // ढक्कन (दुकान का नाम) सामने वाले कैमरे की ओर
         if (k >= 1) { this.boxT = -2; g.world.parts.burst(tx, ty + 0.3, tz, 0xffd24d, 22, 3, 3, 0.8); this.finish(); this.go('thank'); this.coinsGo(); }
       }
     }
     if (this.st === 'thank') { // ख़ुशी + टिप के सिक्के + 🙏 → फिर दौड़
-      const cm = this.cm; if (cm) B.position.set(cm.position.x - this.side2 * 0.3, 1.25 * (cm.userData.sc || 1) + Math.abs(Math.sin(this.t * 9)) * 0.3, cm.position.z + 0.05);
+      const cm = this.cm; if (cm) { B.position.set(cm.position.x - this.side2 * 0.3, 1.35 * (cm.userData.sc || 1) + Math.abs(Math.sin(this.t * 9)) * 0.22, cm.position.z + 0.05); B.rotation.set(-0.95, PI + this.side2 * 0.5, 0); } // ख़ुशी से डिब्बा ऊपर — नाम दिखे
       if (this.t > 1.35) { this.turnTo = 0; this.cap = (this.t - 1.35) * 28; p.tx = LANES[p.lane]; }
       else { this.cap = 0; p.tx = this.side2 * (ROAD_HALF + 0.15); }
       if (this.cap > 40) { this.cap = Infinity; this.st = 'done'; this.box.visible = false; }
@@ -637,7 +662,7 @@ export class Delivery {
     el.hidden = false; document.body.classList.add('hasOrder');
     const stars = `<span class="os">${'⭐'.repeat(this.stars)}</span>`;
     const item = `<div class="oc"><span><i style="background:${SW_CSS[this.sw]}"></i>📦 ${swName(this.sw)}</span><span>${this.c.icon} ${cName(this.c)}</span></div>`;
-    if (['toShop', 'brake', 'pack', 'walk'].includes(this.st)) el.innerHTML = `<div class="oh"><span class="oa">📞</span><span class="on">${SHOP_NAME}</span>${stars}</div>${item}<div class="od"><b>🏪 ${T('ordToShop')}</b><em></em></div>`;
+    if (['toShop', 'brake', 'pack', 'walk'].includes(this.st)) el.innerHTML = `<div class="oh"><img class="ologo" src="img/logo.webp" alt=""><span class="on">${SHOP_NAME}</span>${stars}</div>${item}<div class="od"><b>🏪 ${T('ordToShop')}</b><em></em></div>`;
     else el.innerHTML = `<div class="oh"><span class="oa">🛵</span><span class="on">${T('ordRide', cName(this.c))}</span>${stars}</div>${item}<div class="od"><b>🏠</b><em></em></div>`;
     this.dEl = el.querySelector('.od em'); this.dK = null;
     if (full) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
