@@ -257,8 +257,9 @@ export class Darshan {
   reset() {
     if (this.act) this.act.m.visible = false;
     this.act = null; this.want = null; this.toNext = rand(300, 480);
-    if (this.g.world) this.g.world.openSide = null;
+    if (this.g.world) { this.g.world.openSide = null; this.g.world.calm = 0; }
     if (this.el) this.el.hidden = true;
+    this.chip = null; this.runNew = []; // इस दौड़ में मिले नए पोस्टकार्ड (खेल ख़त्म होने पर पूरा कार्ड)
   }
   // कौन-सी जगह दिखाऊँ: जो अभी नहीं मिली (इलाक़े के हिसाब से) — सब मिल गईं तो कभी-कभी सजावट के लिए
   choose(zone) {
@@ -280,7 +281,8 @@ export class Darshan {
     if (id === 'plane') { m.position.set(side * (ROAD_HALF + 1.2), 0, -150); const j = m.userData.jet; j.visible = false; }
     else { m.position.set(side * (ROAD_HALF + 1.0), 0, z); w.openSide = { side, z0: z - len / 2 - 8, z1: z + len / 2 + 8, type: id === 'kushe' ? 'pond' : 'fields' }; } // पक्षी विहार के पास पोखर-घाट, बाकी के पास खुले खेत
     if (m.userData.flock) { const f = m.userData.flock.o; f.position.set(12, 5.5, 0); f.rotation.y = PI / 2; f.visible = false; }
-    this.act = { id, m, side, cap: false, done: false, t: 0, fly: -1 };
+    this.act = { id, m, side, cap: false, done: false, t: 0, fly: -1, look: false };
+    if (!w.rngs) w.calm = Math.max(w.calm || 0, len + 60); // जगह के सामने वाली सड़क पर सिर्फ़ मिठाई — कैमरा जगह की ओर मुड़े तो टक्कर का डर नहीं
   }
   update(dt, dz) {
     const g = this.g, w = g.world;
@@ -295,11 +297,13 @@ export class Darshan {
         j.position.set(-(ROAD_HALF + 1.2) + 1.8, lerp(15, 8.5, k), lerp(26, -170, k) - m.position.z); // (स्थानीय x: सड़क के ऊपर)
         j.rotation.set(0.06, 0, Math.sin(a.fly * 1.3) * 0.04);
         const wz = j.position.z + m.position.z;
+        if (!a.look && wz < 30 && wz > -10) { a.look = true; this.look(a.side, 1); } // ऊपर से गुज़रता जहाज़ — कैमरा ऊपर देखे
         if (!a.cap && wz < -22 && wz > -60) { a.cap = true; this.want = { id: a.id, at: performance.now() + 30 }; }
         if (k >= 1) j.visible = false;
         if (a.cap && !a.done && wz < -50) { a.done = true; this.award(a.id); }
       }
     } else {
+      if (!a.look && m.position.z > (m.userData.capZ || -16) - 8) { a.look = true; this.look(a.side, 0); } // 🎬 धीमी गति + कैमरा जगह की ओर
       if (!a.cap && m.position.z > (m.userData.capZ || -16)) { a.cap = true; this.want = { id: a.id, at: performance.now() + 30 }; }
       if (a.cap && !a.done && m.position.z > -3) { a.done = true; this.award(a.id); }
     }
@@ -311,6 +315,13 @@ export class Darshan {
     for (const b of m.userData.boards || []) b.visible = m.position.z < 3; // पास आकर कैमरे में बड़ा न दिखे
     if (m.position.z > 26 + (m.userData.len || 0) / 2 && (a.id !== 'plane' || a.fly > 4.3)) { m.visible = false; this.act = null; }
   }
+  // 🎬 1–2 सेकंड धीमी गति, कैमरा जगह की ओर घूमे (game.updateCam) — गोलू पर कोई रुकावट नहीं (w.calm)
+  look(side, up) {
+    const g = this.g, p = g.p; if (g.state !== 'play' || !p || g.world.rngs || p.fly > 0 || p.boat || p.zip || p.scooty || (g.mk && g.mk.st !== 'off')) return;
+    g.slowmo = Math.max(g.slowmo, 1.5); g.slowTs = 0.42; g.pcLook = 2.0; g.pcLookSide = side; g.pcLookUp = up;
+  }
+  // HUD के ऊपरी कोने की छोटी पट्टी (game.updateHud) — बीच की स्क्रीन ख़ाली रहे
+  chipNow() { const c = this.chip; return c && performance.now() < c.until ? c : null; }
   // पोखर/मधुबनी जैसे पल से (game.js)
   event(id) {
     if (this.data.got.includes(id)) return;
@@ -351,18 +362,23 @@ export class Darshan {
   award(id) {
     const g = this.g, d = this.data, p = PLACES.find((q) => q.id === id); if (!p) return;
     const fresh = !d.got.includes(id);
-    if (fresh) { d.got.push(id); this.save(d); wallet.add(50); stats.merge({ darshanN: 1 }); }
+    if (fresh) { d.got.push(id); this.save(d); wallet.add(50); stats.merge({ darshanN: 1 }); if (!this.runNew.includes(id)) this.runNew.push(id); }
     this.pop(p, fresh, d.got.length);
     if (fresh && d.got.length === PLACES.length && !d.all) { d.all = 1; this.save(d); wallet.add(1000); setTimeout(() => { if (g.state === 'play') g.cheer('darshanAll', 2000, -1, true, 'gold', '📮 8/8 +1000 🍬'); }, 1800); }
   }
+  // बीच में बड़ा कार्ड नहीं (मालिक, 18 नवंबर: "स्क्रीन के बीच में नहीं दिखना चाहिए") — ऊपर कोने में छोटी पट्टी;
+  // पूरा पोस्टकार्ड (बातों के साथ) खेल ख़त्म होने पर और एल्बम में
   pop(p, fresh, n) {
-    const g = this.g, el = this.el;
+    const g = this.g;
     g.sound.ring(); vibrate(25);
     if (g.mom && fresh) g.mom.want(330, `${p.icon} ${ptx(p.t)}`, 0);
-    if (!el) return;
-    el.innerHTML = `<small>📮 ${fresh ? T('pcNew') : T('pcAlbum')} · ${n}/${PLACES.length}</small><b>${p.icon} ${ptx(p.t)}</b><i>${ptx(p.f).split('।')[0].split('. ')[0]}</i>${fresh ? '<em>+50 🍬</em>' : ''}`;
-    el.hidden = false; el.classList.remove('in'); void el.offsetWidth; el.classList.add('in');
-    clearTimeout(this.pt); this.pt = setTimeout(() => { el.hidden = true; }, 3600);
+    this.chip = { id: p.id, icon: p.icon, name: ptx(p.t), sub: fresh ? '+50 🍬' : `${n}/${PLACES.length}`, until: performance.now() + 3200, k: (this.chipK = (this.chipK || 0) + 1) };
+  }
+  // खेल ख़त्म: इस दौड़ के नए पोस्टकार्ड (छोटी तस्वीर, दबाओ तो पूरा कार्ड)
+  overHtml() {
+    const d = this.data, ids = (this.runNew || []).filter((id) => d.got.includes(id));
+    if (!ids.length) return '';
+    return `<b>📮 ${T('pcRunNew', ids.length)}</b><div class="opcs">${ids.map((id) => { const p = PLACES.find((q) => q.id === id), im = d.img[id]; return `<button class="opc" data-pc="${id}">${im ? `<img src="${im}" alt="">` : `<span>${p.icon}</span>`}<i>${p.icon} ${ptx(p.t)}</i></button>`; }).join('')}</div>`;
   }
   // ---------- एल्बम (बैज वाले पन्ने में) ----------
   html() {

@@ -54,6 +54,16 @@ export function makeMonkeyTree() {
   return g;
 }
 // पेड़ को सड़क के किसी किनारे रखो: side=+1 → दाएँ (डाल बाएँ, सड़क की ओर)
+// 🐒 बंदर का परिवार (माँ + गोद में बच्चा) — पेड़ के तने पर नीची डाल; चोर के साथ चिढ़ाते, चोर पकड़ा जाए तो मुँह छिपाते
+export function addFamily(tree, makeMonkey) {
+  const mg = new Merge(); mg.add(G.cyl(0.06, 0.1, 1.4, 6), mat4(-0.55, 2.55, 0.35, 0, 0, 1.3), C.wood); // नीची डाल (सड़क की ओर)
+  const br = mg.mesh(0.02); br.castShadow = true; tree.add(br);
+  const mom = makeMonkey(), baby = makeMonkey();
+  mom.scale.setScalar(0.82); mom.position.set(-0.45, 2.62, 0.35); mom.rotation.y = -0.9;
+  baby.scale.setScalar(0.42); baby.position.set(-0.62, 2.7, 0.62); baby.rotation.y = -0.6;
+  for (const m of [mom, baby]) { m.userData.bag.visible = false; tree.add(m); }
+  tree.userData.fam = { mom, baby, mood: 'sit', t: 0 };
+}
 export function placeTree(t, side, z) {
   t.visible = true; t.scale.set(side, 1, 1); t.position.set(side * (ROAD_HALF + 2.3), 0, z);
 }

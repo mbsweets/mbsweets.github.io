@@ -81,6 +81,16 @@
 #pcard.in{animation:pcin .5s cubic-bezier(.2,1.4,.4,1)}
 @keyframes pcin{from{transform:translateX(-120%) rotate(-6deg)}to{transform:none}}
 #pcS{z-index:58}
+.chip.pcchip{background:#fbf1dc;border-color:var(--maroon);box-shadow:inset 0 0 0 2px #f2a91b;max-width:min(58vw,250px)}
+.chip.pcchip span{font:800 13.5px/1.15 var(--disp);color:var(--maroon);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.chip.pcchip em{background:#2e7b47;font-size:13px}
+.chip.pcchip.in{animation:pcin .45s cubic-bezier(.2,1.4,.4,1)}
+.opc-box{width:100%;background:#fbf1dc;border:3px solid var(--ink);border-radius:14px;padding:6px 8px;display:flex;flex-direction:column;gap:5px;box-shadow:inset 0 0 0 2px #f2a91b}
+.opc-box>b{font:800 15px var(--disp);color:var(--maroon)}
+.opcs{display:flex;gap:6px;overflow-x:auto}
+.opc{flex:none;width:96px;display:flex;flex-direction:column;gap:2px;align-items:stretch;background:#fff;border:2px solid var(--ink);border-radius:10px;padding:3px}
+.opc img{width:100%;height:60px;object-fit:cover;border-radius:7px}.opc span{height:60px;display:grid;place-items:center;font-size:34px}
+.opc i{font:700 11.5px/1.15 var(--body);font-style:normal;color:#3a2416;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #rgS{z-index:60;background:#3a1a10;padding:0}
 #rgC{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
 .rgx{position:absolute;right:max(12px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));width:44px;height:44px;border-radius:50%;border:3px solid var(--ink);background:#fff8ea;font:800 20px var(--disp);color:var(--ink);z-index:2}
@@ -205,6 +215,12 @@ button:focus-visible,a:focus-visible{outline:3px solid #fff;outline-offset:3px}
 .stats>div{flex:1;background:#fffaf0e8;border:3px solid var(--ink);border-radius:14px;padding:4px 8px 2px;text-align:center}
 .stats small{display:block;font:700 13px var(--body);color:var(--maroon)}
 .stats b{font:800 24px/1.1 var(--disp)}
+.stats.mst>div{flex:1}.stats.mst b{font-size:21px}
+.rgbtn{flex:1.55;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:linear-gradient(#ffd0de,#f07aa0);border:3px solid var(--ink);border-radius:14px;box-shadow:0 4px 0 var(--ink);padding:5px 6px 4px;color:var(--ink);position:relative;overflow:hidden}
+.rgbtn b{font:800 clamp(13.5px,4.1vw,17px)/1.1 var(--disp);white-space:nowrap}.rgbtn small{font:700 11.5px/1.2 var(--body);color:#6b1030;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.rgbtn::after{content:'';position:absolute;inset:0;background:linear-gradient(110deg,transparent 35%,#fff8 50%,transparent 65%);transform:translateX(-120%);animation:rgshine 3.2s ease-in-out infinite}
+@keyframes rgshine{0%,55%{transform:translateX(-120%)}85%,100%{transform:translateX(120%)}}
+.rgbtn.wide2{width:100%;flex:none;margin:2px 0}
 .tiny{font:700 13px var(--body);text-align:center;color:var(--ink);background:#fff9;border-radius:10px;padding:2px 10px}
 .card{width:min(100%,380px);background:var(--cream);border:4px solid var(--ink);border-radius:22px;padding:22px 18px 18px;display:flex;flex-direction:column;align-items:center;gap:12px;
   box-shadow:inset 0 0 0 6px var(--cream),inset 0 0 0 9px var(--sindoor),inset 0 0 0 11px var(--cream),inset 0 0 0 13px var(--haldi),0 8px 0 var(--ink);text-align:center}
@@ -456,9 +472,10 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
       <button id="btnPlay" class="big" data-t="play">PLAY</button>
       <button id="hsChip" class="hschip" aria-pressed="false"></button>
       <div class="row"><button id="btnDaily" class="sm daily" hidden><b data-t="dailyBtn"></b><small id="dailySub"></small></button><button id="btnStory" class="sm daily story"><b data-t="storyBtnS"></b><small id="storySub"></small></button></div>
-      <div class="stats">
+      <div class="stats mst">
         <div><small data-t="best"></small><b id="bestV">0</b></div>
         <div><small data-t="sweets"></small><b id="totalV">0</b></div>
+        <button id="btnRg" class="rgbtn"><b>🍮 <span data-t="rgMenu"></span></b><small id="rgSub"></small></button>
       </div>
       <div class="row"><button id="btnMs" class="sm" data-t="btnMs"></button><button id="btnWard" class="sm ward" data-t="btnWard"></button></div>
       <div class="row"><button id="btnUp" class="sm" data-t="btnUp"></button><button id="btnShop" class="sm gsbtn"></button></div>
@@ -498,6 +515,8 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
       <div id="overMs" class="msgain" hidden></div>
       <div id="overLb" hidden></div>
       <div id="overRw" class="rwon" hidden></div>
+      <div id="overPc" class="opc-box" hidden></div>
+      <button id="overRg" class="rgbtn wide2" hidden><b>🍮 <span data-t="rgInvite"></span></b><small id="overRgSub"></small></button>
       <div id="overShot" class="oshot" hidden><img alt=""><div><span></span><button id="btnShot" class="sm" data-t="shotBtn"></button></div></div>
       <div id="overRate" class="orate" hidden><span data-t="rateShort"></span><div id="overStars" class="ostars"></div><button id="overRateX" class="ox" aria-label="close">✕</button></div>
       <button id="btnAgain" class="big" data-t="again"></button>

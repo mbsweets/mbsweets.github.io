@@ -86,6 +86,16 @@ export const EXTRA_OBST = {
     g.userData = { kind: 'high', halfW: 1.05, halfL: 0.2, yMin: 1.2, yMax: 3.3, dance: (t) => { cloth.rotation.x = Math.sin(t * 2.4) * 0.05; } };
     return g;
   },
+  // 🍌 केले का छिलका (चोर बंदर फेंकता है) — कूदो, नहीं तो फिसलो (धीमे, बंदर दूर)
+  kela() {
+    const g = new THREE.Group(), mg = new Merge(), Y = 0xf5d33a, Y2 = 0xe8b923;
+    mg.add(G.sph(0.13, 10, 8), mat4(0, 0.08, 0, 0, 0, 0, 1, 0.55, 1.2), Y2);
+    for (let i = 0; i < 4; i++) { const a = i * PI / 2 + 0.4; mg.add(G.sph(0.11, 8, 6), mat4(Math.cos(a) * 0.24, 0.035, Math.sin(a) * 0.24, 0, -a, 0, 1.9, 0.22, 0.75), i % 2 ? Y : Y2); mg.add(G.sph(0.03, 6, 4), mat4(Math.cos(a) * 0.43, 0.04, Math.sin(a) * 0.43), 0x4a3a1a); }
+    mg.add(G.cyl(0.03, 0.04, 0.16, 6), mat4(0, 0.15, 0, 0.6, 0, 0), 0x6b5a2a); // डंठल
+    g.add(mg.mesh(0.012)); g.scale.setScalar(1.35);
+    g.userData = { kind: 'trip', halfW: 0.55, halfL: 0.4, yMin: 0, yMax: 0.32 };
+    return g;
+  },
   // झुका बिजली का तार (गौरैया बैठी) — लुढ़को
   taar() {
     const g = new THREE.Group();
@@ -177,7 +187,7 @@ export function animMonkey(mk, dt, mode, speed = 16) {
   u.ph += dt * (mode === 'run' || mode === 'flee' ? 9 + speed * 0.25 : 5);
   const s = Math.sin(u.ph), c = Math.cos(u.ph);
   if (mode === 'run' || mode === 'flee') { // चारों पैरों से उछलकर दौड़ (बंदर जैसा)
-    u.body.rotation.x = 0.5 + 0.12 * s; u.body.position.y = Math.abs(s) * 0.25 - 0.3;
+    u.body.rotation.x = 0.5 + 0.12 * s; u.body.position.y = Math.abs(s) * 0.25 - 0.3; u.armR.rotation.z = 0; u.armL.rotation.z = 0;
     u.armR.rotation.x = -1.1 + 0.9 * s; u.armL.rotation.x = -1.1 + 0.9 * s;
     u.legR.rotation.x = 0.4 - 0.9 * s; u.legL.rotation.x = 0.4 - 0.9 * s;
     u.head.rotation.x = -0.45 + 0.06 * c; u.head.rotation.z = 0.08 * s;
@@ -185,8 +195,18 @@ export function animMonkey(mk, dt, mode, speed = 16) {
     u.body.rotation.x = 0.2; u.body.position.y = 0; u.armR.rotation.x = -2.6; u.armL.rotation.x = -2.6; u.legR.rotation.x = 0.9; u.legL.rotation.x = 0.9; u.head.rotation.x = -0.2;
   } else if (mode === 'grab') {
     u.body.rotation.x = 0.1; u.armR.rotation.x = -1.6 + 0.6 * s; u.armL.rotation.x = -1.6 - 0.6 * s; u.head.rotation.z = 0.25 * s;
+  } else if (mode === 'tease') { // चिढ़ाना: डाल पर उछलकर सिर खुजाए, सिर मटकाए
+    u.body.rotation.x = 0; u.body.position.y = -0.35 + Math.abs(s) * 0.12; u.legR.rotation.x = -1.3; u.legL.rotation.x = -1.3;
+    u.armR.rotation.x = -2.9 + Math.sin(u.ph * 3) * 0.25; u.armR.rotation.z = -0.5; u.armL.rotation.x = -0.9 + 0.6 * s; u.armL.rotation.z = 0;
+    u.head.rotation.z = 0.3 * Math.sin(u.ph * 1.5); u.head.rotation.x = -0.1;
+  } else if (mode === 'throw') { // केले का छिलका फेंकना — दाहिना हाथ पीछे से ऊपर
+    u.body.rotation.x = 0.25; u.body.position.y = -0.1; u.armR.rotation.x = -3.0 + Math.min(1, u.thr || 0) * 2.4; u.armR.rotation.z = 0; u.armL.rotation.x = -0.6; u.legR.rotation.x = 0.3; u.legL.rotation.x = -0.2; u.head.rotation.x = -0.1;
+  } else if (mode === 'namaste') { // 🙏 माफ़ी: हाथ जोड़कर सिर झुकाए
+    u.body.rotation.x = 0.12; u.body.position.y = -0.35; u.legR.rotation.x = -1.3; u.legL.rotation.x = -1.3;
+    u.armR.rotation.x = -1.25; u.armR.rotation.z = 0.62; u.armL.rotation.x = -1.25; u.armL.rotation.z = -0.62;
+    u.head.rotation.x = 0.35 + Math.max(0, Math.sin(u.ph * 1.2)) * 0.25; u.head.rotation.z = 0;
   } else { // sit / हँसना
-    u.body.rotation.x = 0; u.body.position.y = -0.35; u.armR.rotation.x = -0.3 + 0.5 * Math.abs(s); u.armL.rotation.x = -0.3; u.legR.rotation.x = -1.3; u.legL.rotation.x = -1.3; u.head.rotation.z = 0.2 * s;
+    u.body.rotation.x = 0; u.body.position.y = -0.35; u.armR.rotation.z = 0; u.armL.rotation.z = 0; u.armR.rotation.x = -0.3 + 0.5 * Math.abs(s); u.armL.rotation.x = -0.3; u.legR.rotation.x = -1.3; u.legL.rotation.x = -1.3; u.head.rotation.z = 0.2 * s;
   }
   u.tail.forEach((t, i) => { t.rotation.x = (i ? 0.28 : -0.9) + Math.sin(u.ph * 0.8 + i * 0.7) * 0.18; t.rotation.z = Math.sin(u.ph * 0.6 + i * 0.5) * 0.12; });
 }

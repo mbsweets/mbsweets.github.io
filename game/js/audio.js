@@ -242,6 +242,22 @@ export class Sound {
   plane() { if (!this.ok()) return; const t = this.now(); this.hiss(t, 3.6, { vol: 0.16, type: 'lowpass', fq: 380, to: 900 }); this.tone(92, t + 0.4, 2.6, { vol: 0.05, type: 'sawtooth', to: 70 }); }
   // रस्सी पर फिसलना — "स्स्स्सूऊ" ऊपर जाती आवाज़
   zip() { if (!this.ok()) return; const t = this.now(); this.hiss(t, 0.9, { vol: 0.12, type: 'bandpass', fq: 1800, to: 3400 }); this.tone(330, t, 0.5, { vol: 0.05, type: 'triangle', to: 660 }); }
+  // रस्सी पर चलती घिरनी — हल्की "स्स्स्स" (हर ~0.75 से.)
+  zipHum() { if (!this.ok()) return; const t = this.now(); this.hiss(t, 0.85, { vol: 0.045, type: 'bandpass', fq: 2300, q: 3, to: 2700 }); this.tone(196, t, 0.8, { vol: 0.018, type: 'triangle', to: 208 }); }
+  // रस्सी पकड़ते ही धातु की "टन्न"
+  clank() { if (!this.ok()) return; const t = this.now(); this.tone(1480, t, 0.25, { vol: 0.06, type: 'triangle', to: 1400 }); this.tone(2210, t, 0.18, { vol: 0.035, type: 'sine' }); this.hiss(t, 0.06, { vol: 0.08, fq: 4000 }); }
+  // नीचे उतरकर "धप्प"
+  thud() { if (!this.ok()) return; const t = this.now(); this.tone(110, t, 0.18, { vol: 0.22, type: 'sine', to: 55 }); this.hiss(t, 0.14, { vol: 0.12, type: 'lowpass', fq: 700, to: 200 }); }
+  // दरवाज़ा खटखटाना "ठक-ठक"
+  knock() { if (!this.ok()) return; const t = this.now(); for (const d of [0, 0.16]) { this.tone(190, t + d, 0.09, { vol: 0.28, type: 'sine', to: 120 }); this.hiss(t + d, 0.05, { vol: 0.12, type: 'lowpass', fq: 1200 }); } }
+  // फ़ोन की घंटी (छोटी)
+  phone() { if (!this.ok()) return; const t = this.now(); for (let k = 0; k < 6; k++) this.tone(k % 2 ? 1046.5 : 1318.5, t + k * 0.07, 0.07, { vol: 0.06, type: 'square' }); }
+  // किक मारकर स्कूटी चालू: "खट-खट … भ्रूँ"
+  kick() { if (!this.ok()) return; const t = this.now(); for (const d of [0, 0.32]) { this.tone(140, t + d, 0.08, { vol: 0.16, type: 'square', to: 70 }); this.hiss(t + d, 0.08, { vol: 0.1, type: 'lowpass', fq: 900 }); } this.tone(55, t + 0.62, 0.7, { vol: 0.14, type: 'sawtooth', to: 120 }); this.tone(82, t + 0.66, 0.6, { vol: 0.07, type: 'square', to: 150 }); }
+  // सिक्के गिरना "छन-छन"
+  coins(n = 4) { if (!this.ok()) return; const t = this.now(); for (let k = 0; k < n; k++) { this.tone(f(12 + (k % 3) * 2, 659.25), t + k * 0.09, 0.12, { vol: 0.06, type: 'triangle' }); this.tone(f(19, 659.25), t + k * 0.09 + 0.02, 0.08, { vol: 0.03, type: 'sine' }); } }
+  // केले के छिलके पर फिसलना "स्स्वीप"
+  slip() { if (!this.ok()) return; const t = this.now(); this.tone(600, t, 0.35, { vol: 0.09, type: 'sine', to: 180 }); this.hiss(t, 0.25, { vol: 0.08, type: 'bandpass', fq: 2500, to: 800 }); }
   // स्कूटी चालू — "भ्रूँ-ऊँ"
   scooty() { if (!this.ok()) return; const t = this.now(); this.tone(70, t, 0.55, { vol: 0.12, type: 'sawtooth', to: 140 }); this.tone(105, t + 0.05, 0.5, { vol: 0.07, type: 'square', to: 190 }); this.tone(1318, t + 0.55, 0.12, { vol: 0.05, type: 'triangle' }); this.tone(1318, t + 0.72, 0.12, { vol: 0.05, type: 'triangle' }); }
   order() { if (!this.ok()) return; const t = this.now(); this.tone(f(7, 659.25), t, 0.35, { vol: 0.13, type: 'triangle' }); this.tone(f(0, 659.25), t + 0.18, 0.5, { vol: 0.13, type: 'triangle' }); }

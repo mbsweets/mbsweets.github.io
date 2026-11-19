@@ -16,45 +16,102 @@ const G = {
   tor: (r, t, s = 6, n = 14) => new THREE.TorusGeometry(r, t, s, n),
 };
 const LX = [-2.5, 0, 2.5];
-
-// रस्सियाँ + दोनों ओर बाँस के मचान (z=0 शुरू, z=-ZIP_LEN अंत)
+// 🚡 असली रोपवे (18 नवंबर 2026, मालिक: "रस्सी जैसी लगनी चाहिए, प्रॉपर रोपिंग सिस्टम"):
+// मोटी बटी हुई जूट की रस्सी, बीच में बाँस के खंभे, हर खंभे के बीच रस्सी हल्की झुकी (sag) — गोलू भी उसी झोल के साथ नीचे-ऊपर;
+// घिरनी (दो पहिये) रस्सी पर घूमती, बीच-बीच में चिंगारी. रुकावटें/मिठाई भी उसी झोल पर (world.zipSag).
+export const ZIP_TOW = [3, -43.5, -90, -136.5, -ZIP_LEN - 3]; // खंभे (स्थानीय z)
+const SAG = 0.55;
+export function zipSag(zl) {
+  for (let i = 0; i < ZIP_TOW.length - 1; i++) {
+    const a = ZIP_TOW[i], b = ZIP_TOW[i + 1];
+    if (zl <= a && zl >= b) { const u = (a - zl) / (a - b); return -SAG * 4 * u * (1 - u); }
+  }
+  return 0;
+}
+function ropeTex() { // बटी हुई रस्सी: तिरछी धारियाँ
+  const c = document.createElement('canvas'); c.width = 64; c.height = 32; const x = c.getContext('2d');
+  x.fillStyle = '#c9a25e'; x.fillRect(0, 0, 64, 32);
+  for (let k = -64; k < 128; k += 16) {
+    x.fillStyle = '#8a6630'; x.beginPath(); x.moveTo(k, 0); x.lineTo(k + 6, 0); x.lineTo(k + 6 + 32, 32); x.lineTo(k + 32, 32); x.fill();
+    x.fillStyle = 'rgba(255,240,200,0.55)'; x.beginPath(); x.moveTo(k + 9, 0); x.lineTo(k + 11, 0); x.lineTo(k + 43, 32); x.lineTo(k + 41, 32); x.fill();
+  }
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const ROPE_N = 150, ROPE_RAD = 8;
 export function makeZipRig() {
   const g = new THREE.Group(), mg = new Merge(), y = ZIP_H + ROPE_Y;
-  // रस्सियाँ अलग (हर फ़्रेम गोलू के ठीक पीछे तक काटी जाती हैं — कैमरे के पास मोटी कील जैसी न दिखें)
-  const rg = G.cyl(0.035, 0.035, 1, 6); rg.rotateX(PI / 2); const rm = new THREE.MeshStandardMaterial({ color: 0xd9c08a, roughness: 0.8 });
-  const ropes = LX.map((x) => { const r = new THREE.Mesh(rg, rm); r.position.set(x, y, -ZIP_LEN / 2); r.scale.z = ZIP_LEN + 6; g.add(r); return r; });
-  for (const z of [3, -ZIP_LEN - 3]) { // मचान
+  // रस्सियाँ: झोल वाली नली (tube) — पास वाला हिस्सा हर फ़्रेम drawRange से काटा जाता है (कैमरे के पास मोटी कील न दिखे)
+  const tex = ropeTex(); tex.repeat.set((ZIP_LEN + 6) / 0.3, 1);
+  const rm = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.9, color: 0xffffff });
+  const ropes = LX.map((x) => {
+    const pts = []; for (let i = 0; i <= 124; i++) { const z = 3 - (ZIP_LEN + 6) * i / 124; pts.push(new THREE.Vector3(x, y + zipSag(z), z)); }
+    const geo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), ROPE_N, 0.072, ROPE_RAD, false);
+    const r = new THREE.Mesh(geo, rm); r.castShadow = true; g.add(r); return r;
+  });
+  // बाँस के खंभे: दोनों किनारों पर दोहरे बाँस + ऊपर आड़ा बाँस, उससे लटकी "काठी" (रस्सी उस पर टिकी)
+  ZIP_TOW.forEach((z, ti) => {
+    const end = ti === 0 || ti === ZIP_TOW.length - 1, H = y + (end ? 1.6 : 1.1);
     for (const s of [-1, 1]) {
       const x = s * (ROAD_HALF + 0.6);
-      mg.add(G.cyl(0.14, 0.18, y + 1.6, 8), mat4(x, (y + 1.6) / 2, z), C.bamboo);
-      mg.add(G.cyl(0.14, 0.18, y + 1.6, 8), mat4(x, (y + 1.6) / 2, z - 1.4), C.bamboo);
-      for (let k = 0; k < 4; k++) mg.add(G.cyl(0.05, 0.05, 1.4, 6), mat4(x, 0.8 + k * 1.3, z - 0.7, PI / 2, 0, 0), 0x9c7a3c); // सीढ़ी
-      mg.add(G.box(1.4, 0.15, 1.8), mat4(x, ZIP_H - 0.1, z - 0.7), 0x8a5a34); // चबूतरा
+      for (const dz of end ? [0, -1.4] : [0.35, -0.35]) mg.add(G.cyl(0.14, 0.19, H, 8), mat4(x, H / 2, z + dz), C.bamboo);
+      for (let k = 1; k < H / 0.9; k++) mg.add(G.cyl(0.155, 0.155, 0.06, 8), mat4(x, k * 0.9, z), 0x9c7a3c); // गाँठें
+      mg.add(G.cyl(0.04, 0.04, H * 1.15, 5), mat4(x + s * 0.9, H * 0.48, z, 0, 0, -s * 0.42), 0x9c7a3c); // तिरछा सहारा
+      if (end) { for (let k = 0; k < 4; k++) mg.add(G.cyl(0.05, 0.05, 1.4, 6), mat4(x, 0.8 + k * 1.3, z - 0.7, PI / 2, 0, 0), 0x9c7a3c); mg.add(G.box(1.4, 0.15, 1.8), mat4(x, ZIP_H - 0.1, z - 0.7), 0x8a5a34); }
+      // रस्सी का खिंचाव: किनारे से ज़मीन तक तिरछी बँधी रस्सी (गाड़ा खूँटा)
+      if (end) { mg.add(G.cyl(0.03, 0.03, 6.2, 5), mat4(x + s * 1.6, H * 0.55, z + (ti === 0 ? 2.2 : -2.2), (ti === 0 ? -1 : 1) * 0.55, 0, -s * 0.25), 0xb08a4a); mg.add(G.cyl(0.07, 0.07, 0.5, 6), mat4(x + s * 2.6, 0.2, z + (ti === 0 ? 4.4 : -4.4)), C.wood); }
     }
-    mg.add(G.cyl(0.13, 0.13, (ROAD_HALF + 0.6) * 2 + 0.4, 8), mat4(0, y + 0.35, z - 0.7, 0, 0, PI / 2), C.bamboo); // ऊपर का बाँस
-    for (let i = 0; i < 9; i++) mg.add(G.cone(0.12, 0.4, 5), mat4(-3.2 + i * 0.8, y + 0.05, z - 0.7, PI, 0, 0), i % 2 ? 0xf5c542 : 0xf08a1c); // गेंदे-आम के पत्ते
-  }
+    const bz = end ? z - 0.7 : z;
+    mg.add(G.cyl(0.13, 0.13, (ROAD_HALF + 0.6) * 2 + 0.5, 8), mat4(0, H - 0.2, bz, 0, 0, PI / 2), C.bamboo); // ऊपर का आड़ा बाँस
+    for (const x of LX) { // काठी: छोटा लटकता डंडा + लकड़ी की गुटकी जिस पर रस्सी टिके
+      mg.add(G.cyl(0.025, 0.025, H - 0.2 - y - 0.12, 5), mat4(x, (H - 0.2 + y + 0.12) / 2, bz), 0xb08a4a);
+      mg.add(G.box(0.22, 0.12, 0.42), mat4(x, y + 0.11, bz), 0x6b4a2c);
+    }
+    if (!end) for (let i = 0; i < 7; i++) mg.add(G.cone(0.1, 0.32, 5), mat4(-3.2 + i * 1.07, H - 0.35, bz, PI, 0, 0), i % 2 ? 0xf5c542 : 0xf08a1c); // गेंदे की लड़ी
+    else for (let i = 0; i < 9; i++) mg.add(G.cone(0.12, 0.4, 5), mat4(-3.2 + i * 0.8, H - 0.35, bz, PI, 0, 0), i % 2 ? 0xf5c542 : 0xf08a1c);
+  });
   const m = mg.mesh(0.02); m.castShadow = true; g.add(m);
   // झंडियाँ (शुरू में)
   const fl = new Merge();
-  for (let i = 0; i < 11; i++) fl.add(G.cone(0.16, 0.3, 3), mat4(-4 + i * 0.8, y + 0.15 - Math.sin(PI * i / 10) * 0.35, 2.3, PI, 0, 0), [0xd1261c, 0xf2a91b, 0x2e7b47, 0xd8457f][i % 4]);
+  for (let i = 0; i < 11; i++) fl.add(G.cone(0.16, 0.3, 3), mat4(-4 + i * 0.8, y + 1.25 - Math.sin(PI * i / 10) * 0.35, 2.3, PI, 0, 0), [0xd1261c, 0xf2a91b, 0x2e7b47, 0xd8457f][i % 4]);
   g.add(fl.mesh(0));
   g.visible = false; g.userData.ropes = ropes;
   return g;
 }
-// रस्सी का पास वाला सिरा गोलू (z≈0) के ठीक पीछे तक
+// रस्सी का पास वाला सिरा गोलू (z≈0) के ठीक पीछे तक — नली के शुरू वाले टुकड़े न बनाओ
 export function trimRopes(rig) {
-  const a = rig.position.z, near = Math.min(3, 0.6 - a), far = -ZIP_LEN - 3; // स्थानीय z
-  for (const r of rig.userData.ropes) { const L = Math.max(0.01, near - far); r.scale.z = L; r.position.z = (near + far) / 2; r.visible = near > far; }
+  const a = rig.position.z, near = Math.min(3, 0.6 - a), L = ZIP_LEN + 6; // स्थानीय z
+  const j0 = Math.max(0, Math.min(ROPE_N, Math.floor((3 - near) / L * ROPE_N))), per = ROPE_RAD * 6;
+  for (const r of rig.userData.ropes) { r.geometry.setDrawRange(j0 * per, (ROPE_N - j0) * per); r.visible = j0 < ROPE_N; }
 }
-// गोलू के हाथ का कुंडा (रस्सी पर चलती घिरनी)
+// गोलू की घिरनी: रस्सी पर दो खाँचे वाले पहिये + दोनों ओर पट्टी; नीचे पट्टे से लटका लाल हत्था (हाथों तक, लंबाई बदलती)
 export function makeTrolley() {
-  const g = new THREE.Group(), mg = new Merge();
-  mg.add(G.tor(0.13, 0.04, 6, 14), mat4(0, 0, 0, 0, PI / 2, 0), 0x8a8f96);
-  mg.add(G.box(0.08, 0.5, 0.08), mat4(0, -0.3, 0), 0x6b4a2c);
-  mg.add(G.cyl(0.035, 0.035, 0.7, 6), mat4(0, -0.55, 0, 0, 0, PI / 2), 0xb3121c); // पकड़ने का डंडा
-  g.add(mg.mesh(0.015)); g.visible = false;
+  const g = new THREE.Group(), top = new THREE.Group(); g.add(top);
+  const mg = new Merge(), STEEL = 0x8a8f96, DARK = 0x4a4f56;
+  for (const s of [-1, 1]) { mg.add(G.box(0.03, 0.26, 0.5), mat4(s * 0.075, 0.05, 0), 0xb3121c); mg.add(G.cyl(0.02, 0.02, 0.18, 6), mat4(0, 0.06, s * 0.13, 0, 0, PI / 2), DARK); } // पट्टियाँ + धुरी
+  mg.add(G.box(0.18, 0.05, 0.12), mat4(0, -0.1, 0), DARK); // नीचे का जोड़
+  top.add(mg.mesh(0.012));
+  const wheels = [];
+  for (const s of [-1, 1]) { // पहिये (रस्सी के ऊपर)
+    const w = new THREE.Group(), wm = new Merge();
+    wm.add(G.cyl(0.085, 0.085, 0.07, 14), mat4(0, 0, 0, 0, 0, PI / 2), STEEL); wm.add(G.tor(0.085, 0.022, 6, 16), mat4(-0.03, 0, 0, 0, PI / 2, 0), DARK); wm.add(G.tor(0.085, 0.022, 6, 16), mat4(0.03, 0, 0, 0, PI / 2, 0), DARK);
+    wm.add(G.box(0.072, 0.03, 0.16), mat4(0, 0, 0), 0xc0c4c8); // तीली (घूमती दिखे)
+    w.add(wm.mesh(0.01)); w.position.set(0, 0.06 + 0.06, s * 0.13); top.add(w); wheels.push(w);
+  }
+  const strap = new THREE.Mesh(G.cyl(0.022, 0.022, 1, 5), new THREE.MeshStandardMaterial({ color: 0x6b4a2c, roughness: 0.9 })); g.add(strap);
+  const hm = new Merge(); hm.add(G.cyl(0.035, 0.035, 0.66, 8), mat4(0, 0, 0, 0, 0, PI / 2), 0xb3121c); for (const s of [-1, 1]) hm.add(G.cyl(0.045, 0.045, 0.16, 8), mat4(s * 0.24, 0, 0, 0, 0, PI / 2), 0x1d1210);
+  const handle = hm.mesh(0.01); g.add(handle);
+  g.userData = { top, wheels, strap, handle }; g.visible = false;
   return g;
+}
+// घिरनी को रस्सी (ry) और हाथ (hx, hy) के बीच रखो; roll = पहियों का घुमाव
+const _v = new THREE.Vector3();
+export function placeTrolley(t, x, ry, hx, hy, roll, tilt) {
+  const u = t.userData; t.position.set(0, 0, 0.02);
+  u.top.position.set(x, ry, 0); u.top.rotation.z = tilt * 0.4;
+  for (const w of u.wheels) w.rotation.x = roll;
+  u.handle.position.set(hx, hy, 0); u.handle.rotation.z = tilt;
+  const top = _v.set(x, ry - 0.12, 0), dx = hx - top.x, dy = hy - top.y, L = Math.max(0.05, Math.hypot(dx, dy));
+  u.strap.position.set((hx + top.x) / 2, (hy + top.y) / 2, 0); u.strap.scale.set(1, L, 1); u.strap.rotation.z = -Math.atan2(dx, dy);
 }
 // रुकावटें (मूल = "ज़मीन" जैसा; world इन्हें ZIP_H ऊपर रखता है)
 export const ZIP_OBST = {

@@ -153,6 +153,23 @@ export class Golu {
       P.aR = 168; P.oR = 34; P.eR = 70; P.aL = -4 + 41 * s; P.oL = 8; P.hipY = 6 * s; P.by = Math.abs(c) * 0.06 - 0.03; P.bx = 0.1; // दाहिना हाथ ऊपर — कंधे पर डिब्बा
     } else if (mode === 'wave') { // रुककर टाटा — बायाँ हाथ ऊपर हिलता
       P.aR = -6; P.aL = 150; P.oL = 30 + 22 * Math.sin(ph * 3); P.eL = 25; P.tR = 2; P.tL = 2; P.kR = 4; P.kL = 4; P.hdZ = 6 * Math.sin(ph * 1.5);
+    } else if (mode === 'runPhone') { // 📞 दौड़ते हुए फ़ोन कान पर (दाहिना हाथ)
+      P.tR = 18.7 + 34 * s; P.tL = 18.7 - 34 * s; P.kR = 15 + 72 * Math.max(0, c); P.kL = 15 + 72 * Math.max(0, -c);
+      P.aR = 128; P.oR = 58; P.eR = 128; P.aL = -4 + 38 * s; P.hipY = 7 * s; P.by = Math.abs(c) * 0.06 - 0.03; P.bx = 0.1; P.hdZ = -10;
+    } else if (mode === 'carryStand') { // डिब्बा कंधे पर, खड़ा
+      P.aR = 168; P.oR = 34; P.eR = 70; P.aL = -8; P.oL = 8; P.tR = 2; P.tL = 2; P.kR = 4; P.kL = 4; P.by = Math.sin(ph) * 0.01;
+    } else if (mode === 'rideHelmet') { // स्कूटी पर बैठकर हेलमेट पहनना — दोनों हाथ सिर पर
+      P.tR = 78; P.tL = 78; P.kR = 82; P.kL = 82; P.aR = 150; P.aL = 150; P.oR = 38; P.oL = 38; P.eR = 105; P.eL = 105; P.spX = 4; P.hdX = 6; P.by = -0.5; P.bx = 0.06;
+    } else if (mode === 'rideKick') { // किक मारकर चालू — दाहिना पैर नीचे-ऊपर, हाथ हैंडल पर
+      const kk = Math.abs(Math.sin(ph * 2.2));
+      P.tR = 78 - 52 * kk; P.kR = 82 - 60 * kk; P.tL = 78; P.kL = 82; P.aR = 52; P.aL = 52; P.oR = 16; P.oL = 16; P.eR = 38; P.eL = 38;
+      P.spX = 12 + 8 * kk; P.hdX = -6; P.by = -0.5 + kk * 0.12; P.bx = 0.06; P.bz = -0.04 * kk;
+    } else if (mode === 'knock') { // दरवाज़ा खटखटाना — डिब्बा दाएँ कंधे पर, बायाँ हाथ ठक-ठक
+      P.aR = 168; P.oR = 34; P.eR = 70; P.aL = 82; P.oL = 14; P.eL = 30 + 55 * Math.abs(Math.sin(ph * 3)); P.tR = 4; P.tL = 4; P.kR = 6; P.kL = 6; P.spX = 6; P.hdX = -4;
+    } else if (mode === 'give') { // दोनों हाथ आगे — डिब्बा देना
+      P.aR = 78; P.aL = 78; P.oR = 12; P.oL = 12; P.eR = 28; P.eL = 28; P.tR = 6; P.tL = -4; P.kR = 10; P.kL = 6; P.spX = 14; P.hdX = 4;
+    } else if (mode === 'namaste') { // 🙏 हाथ जोड़कर, सिर थोड़ा झुका
+      P.aR = 42; P.aL = 42; P.oR = -14; P.oL = -14; P.eR = 112; P.eL = 112; P.tR = 2; P.tL = 2; P.kR = 4; P.kL = 4; P.spX = 12 + 6 * Math.max(0, Math.sin(ph * 1.5)); P.hdX = 14;
     } else if (mode === 'hang' || mode === 'hangUp') { // रस्सी के कुंडे से लटका — दोनों हाथ ऊपर
       P.aR = 172; P.aL = 172; P.oR = 10; P.oL = 10; P.eR = 8; P.eL = 8; P.spX = 0; P.hdX = -8; P.bx = 0; P.by = 0;
       P.tR = 12 + 10 * s; P.tL = 12 - 10 * s; P.kR = 18 + 8 * Math.max(0, s); P.kL = 18 + 8 * Math.max(0, -s); P.hdZ = 3 * s;
@@ -176,7 +193,7 @@ export class Golu {
     const k = (cur, tgt, spd = 16) => cur + (tgt - cur) * (1 - Math.exp(-spd * dt));
     const sp = o.speed || 14;
     const run = mode === 'run' || mode === 'stumble';
-    this.phase += dt * (run || mode === 'carry' ? 8 + sp * 0.34 : mode === 'dance' ? 6.5 : mode === 'fly' ? 4 : mode === 'boat' ? 5 : 3);
+    this.phase += dt * (run || mode === 'carry' || mode === 'runPhone' ? (o.walk ? 6.5 : 8 + sp * 0.34) : mode === 'dance' ? 6.5 : mode === 'fly' ? 4 : mode === 'boat' ? 5 : 3);
     const P = this.pose(mode, this.phase, sp);
     if (!this.cur) this.cur = { ...P };
     const C = this.cur, spd = run ? 40 : 18;

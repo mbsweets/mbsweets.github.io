@@ -11,10 +11,10 @@ import { makeHaat, makeHaatGate } from './haat.js';
 import { makeMela, makeMelaGate } from './events.js';
 import { makeTrack, makeStation, ROOF, RAMP_L, COACH, GAP } from './rail.js';
 import { rand, randi, pick, chance, weighted, clamp, lerp } from './util.js';
-import { POND_LEN, WATER_Y, TILE, POND_OBST, makeWaterTile, makeGhat, makeMakhana, makeFish, WATER } from './pond.js';
+import { POND_LEN, WATER_Y, TILE, POND_OBST, makeWaterTile, makeGhat, makeMakhana, makeFish, WATER, POND_TYPES, makePondDeco } from './pond.js';
 import { makeMadhubaniPu } from './madhubani.js';
 import { seeded } from './ghost.js';
-import { ZIP_LEN, ZIP_H, ZIP_OBST, makeZipRig, trimRopes } from './zipline.js';
+import { ZIP_LEN, ZIP_H, ZIP_OBST, makeZipRig, trimRopes, zipSag } from './zipline.js';
 Object.assign(OBST, JUNGLE_OBST, POND_OBST, ZIP_OBST);
 const REAL_RANDOM = Math.random;
 const real = (fn) => { const r = Math.random; Math.random = REAL_RANDOM; try { return fn(); } finally { Math.random = r; } }; // नई चीज़ बनाते समय असली random (बीज वाली गिनती न बिगड़े)
@@ -110,6 +110,8 @@ class SweetSet {
     this.items.length = 0;
     this.flush();
   }
+  // इस हिस्से की मिठाइयाँ हटाओ (डिलीवरी के रुके पल में सामने वाला कैमरा — मिठाई कैमरे के मुँह पर न आए)
+  drop(z0, z1) { let n = 0; this.items = this.items.filter((it) => { if (it.col <= 0 && it.z > z0 && it.z < z1) { this.release(it); n++; return false; } return true; }); if (n) this.flush(); }
   flush() {
     const top = {};
     for (const t in this.meshes) top[t] = 0;
@@ -308,6 +310,7 @@ export class World {
     for (let i = 0; i < Math.ceil(POND_LEN / TILE) + 2; i++) { const t = makeWaterTile(i); t.visible = false; this.scene.add(t); this.wPool.push(t); }
     this.fish = [makeFish(), makeFish()].map((o) => { this.scene.add(o); return { o, t: 1 }; }); this.toFish = 2;
     this.ghats = [makeGhat(), makeGhat()]; for (const gh of this.ghats) { gh.visible = false; shadows(gh, true, true); this.scene.add(gh); }
+    this.pondDeco = {}; for (const t of POND_TYPES) { const d = makePondDeco(t); this.scene.add(d); this.pondDeco[t] = d; } // 🪷/🐟/🪔 तीन तरह के पोखर
     // 🌳 जंगल की रस्सी: रस्सियाँ-मचान + नीचे नदी (पोखर वाले पानी के टुकड़े, अलग)
     this.zipRig = makeZipRig(); this.scene.add(this.zipRig);
     this.zwPool = []; this.zwaters = [];
@@ -341,13 +344,15 @@ export class World {
     this.tracks = []; this.toRail = rand(950, 1150); this.railObs = 0; this.stationN = 0;
     for (const t of this.waters || []) { t.visible = false; this.wPool.push(t); }
     this.waters = []; for (const gh of this.ghats || []) gh.visible = false;
-    this.pond = null; this.pondFirst = false; for (const f of this.fish || []) { f.t = 1; f.o.visible = false; } this.toPond = rand(1450, 1700); this.yOff = 0;
+    this.pond = null; this.pondFirst = false; for (const f of this.fish || []) { f.t = 1; f.o.visible = false; } this.yOff = 0;
+    this.toPond = rand(560, 640); this.pondN = 0; this.pondType = null; this.lastPondType = null; this.afterWater = 0; this.flying = false; // पहला पोखर जल्दी (मालिक: "बहुत दूर दौड़ने के बाद आता है")
+    for (const k in this.pondDeco || {}) this.pondDeco[k].visible = false;
     for (const t of this.zwaters || []) { t.visible = false; this.zwPool.push(t); }
     this.zwaters = []; this.zip = null; this.toZip = rand(250, 420); if (this.zipRig) this.zipRig.visible = false;
     for (const s of ['-1', '1']) { for (const c of this.chunks[s]) this.relChunk(c); this.chunks[s] = []; }
     this.obs = []; this.pups = []; this.gates = [];
     this.sweets.clear(); this.parts.clear();
-    this.dist = 0; this.diff = 0; this.speed = 14; this.zone = 'village';
+    this.dist = 0; this.diff = 0; this.speed = 14; this.zone = 'village'; this.calm = 0;
     this.toNext = 60;
     this.toPu = rand(260, 380);
     this.toSam = rand(420, 620); // उड़न समोसा जल्दी और ज़्यादा बार (मालिक: "बहुत कम आ रहा है")
@@ -436,7 +441,7 @@ export class World {
     if (t === 'boulder' || t === 'haybale' || t === 'log') obj.rotation.y = chance(0.5) ? 0 : Math.PI;
     if (t === 'band' || t === 'ghodi') obj.rotation.y = Math.PI;
     if (t === 'cow') { obj.rotation.y = e.cross ? 0 : (chance(0.5) ? 0 : Math.PI); }
-    obj.position.set(e.x, this.inZip(z) ? ZIP_H : this.inPond(z) ? WATER_Y * 0.85 : 0, z); // पोखर में चीज़ें पानी पर, रस्सी पर ऊपर
+    obj.position.set(e.x, this.inZip(z) ? ZIP_H + zipSag(z - this.zip.a) : this.inPond(z) ? WATER_Y * 0.85 : 0, z); // पोखर में चीज़ें पानी पर, रस्सी पर ऊपर
     this.obs.push(e);
     return e;
   }
@@ -534,7 +539,7 @@ export class World {
       this.events.push('baraat');
       return 1.0;
     }
-    const kind = weighted([
+    const kind = this.calm > 0 ? 'breather' : weighted([ // 📮 मिथिला दर्शन की जगह के सामने: सिर्फ़ मिठाई
       ['single', lerp(4, 1.6, d)], ['double', lerp(0.9, 3.2, d)], ['jumpAll', 1.1], ['rollAll', lerp(0.6, 1.3, d)],
       ['mixed', lerp(0.3, 2.2, d)], ['moving', d > 0.15 ? lerp(0.5, 1.5, d) : 0], ['cow', d > 0.1 ? 0.8 : 0], ['breather', lerp(1.3, 0.35, d)],
       ['jumpLane', d > 0.22 ? lerp(0.6, 1.7, d) : 0], ['zigzag', d > 0.35 ? lerp(0.5, 1.6, d) : 0], ['rollJump', d > 0.3 ? lerp(0.5, 1.4, d) : 0],
@@ -633,7 +638,7 @@ export class World {
       if (chance(0.35)) this.addObs('bricks', pick(others(l)), z - 6);
     }
     // पावर-अप
-    if (this.toSam <= 0 && freeLane >= 0) { // उड़न समोसा — कम मिलता है
+    if (this.toSam <= 0 && freeLane >= 0 && !this.waterSoon()) { // उड़न समोसा — पोखर/रस्सी के पास नहीं (उड़ते-उड़ते पानी पार न हो)
       this.addPu('samosa', freeLane, z - 7);
       this.toSam = rand(850, 1250);
       this.toPu = Math.max(this.toPu, 200);
@@ -646,17 +651,19 @@ export class World {
   }
 
   inPond(z) { return !!this.pond && z < this.pond.a - 1 && z > this.pond.b + 1; }
+  // पोखर/रस्सी अभी है, जल्दी आने वाली है, या अभी-अभी ख़त्म हुई (100 मी.) — तब उड़न समोसा नहीं
+  waterSoon() { return !!this.pond || !!this.zip || this.afterWater > 0 || (this.toPond < 450 && this.zone !== 'jungle') || (this.toZip < 450 && this.zone === 'jungle'); }
   inZip(z) { return !!this.zip && z < this.zip.a - 1 && z > this.zip.b + 1; }
   // 🌳 रस्सी की एक पंक्ति — लटका लट्ठा (पैर उठाओ) / मधुमक्खी का छत्ता (रस्सी बदलो); हमेशा एक रस्सी खुली
   zipRow(z) {
     const lanes = [0, 1, 2], others = (l) => lanes.filter((x) => x !== l), d = this.diff;
-    this.yOff = ZIP_H;
+    this.yOff = ZIP_H + zipSag(z - this.zip.a); // रस्सी के झोल पर
     let free = randi(0, 2);
     const kind = weighted([['lattha', 1.4], ['chhatta', 1.3], ['mix', d > 0.25 ? 1.2 : 0.4], ['breather', 0.8]]);
     if (kind === 'lattha') { const n = chance(0.5) ? 2 : 1, bl = others(free).slice(0, n); for (const l of bl) { this.addObs('lattha', l, z); this.arc(l, z); } this.line(free, z + 5, 5); if (n === 1) free = -1; }
     else if (kind === 'chhatta') { for (const l of others(free)) this.addObs('chhatta', l, z); this.line(free, z + 6, 7); }
     else if (kind === 'mix') { const [a, b] = others(free); this.addObs('chhatta', a, z); this.addObs('lattha', b, z); this.arc(b, z); this.line(free, z + 5, 5); }
-    else { let l = randi(0, 2); const tp = this.sweetType(); for (let i = 0; i < 12; i++) { if (i % 4 === 3) l = clamp(l + pick([-1, 1]), 0, 2); this.sweets.spawn(tp, LANES[l], 0.7 + ZIP_H, z + 8 - i * 2.0); } }
+    else { let l = randi(0, 2); const tp = this.sweetType(); for (let i = 0; i < 12; i++) { if (i % 4 === 3) l = clamp(l + pick([-1, 1]), 0, 2); this.sweets.spawn(tp, LANES[l], 0.7 + ZIP_H + zipSag(z + 8 - i * 2.0 - this.zip.a), z + 8 - i * 2.0); } }
     this.yOff = 0;
     return 0.15;
   }
@@ -665,7 +672,8 @@ export class World {
     const d = this.diff, lanes = [0, 1, 2], others = (l) => lanes.filter((x) => x !== l);
     this.yOff = WATER_Y;
     let freeLane = randi(0, 2), extra = 0;
-    const kind = !this.pondFirst ? 'breather' : weighted([['nets', 1.2], ['logs', 1.5], ['boats', 1.6], ['ducks', 1.0], ['mixed', d > 0.3 ? 1.2 : 0.3], ['breather', 0.9]]);
+    const ty = this.pondType, fsh = ty === 'machh', dp = ty === 'deep';
+    const kind = !this.pondFirst ? 'breather' : weighted([['nets', fsh ? 2.2 : 1.2], ['logs', dp ? 1.0 : 1.5], ['boats', fsh ? 2.4 : 1.6], ['ducks', dp ? 1.8 : 1.0], ['mixed', d > 0.3 ? 1.2 : 0.3], ['breather', dp ? 1.4 : 0.9]]);
     this.pondFirst = true;
     if (kind === 'nets') { for (const l of lanes) this.addObs('jaal', l, z); this.line(freeLane, z + 4, 6, this.sweetType(), 0.5); }
     else if (kind === 'logs') {
@@ -681,7 +689,7 @@ export class World {
       this.addObs('naav', perm[0], z); this.addObs('log', perm[1], z); this.addObs('jaal', perm[2], z);
       this.arc(perm[1], z); freeLane = -1; extra = 0.25;
     } else { let l = randi(0, 2); const tp = this.sweetType(); for (let i = 0; i < 12; i++) { if (i % 4 === 3) l = clamp(l + pick([-1, 1]), 0, 2); this.sweets.spawn(tp, LANES[l], 0.7 + WATER_Y, z + 8 - i * 2.0); } freeLane = l; }
-    if (freeLane >= 0 && chance(0.35)) this.addPu('makhana', freeLane, z - 6);
+    if (freeLane >= 0 && chance(ty === 'makhana' ? 0.5 : 0.25)) this.addPu('makhana', freeLane, z - 6);
     this.yOff = 0;
     if (this.fest) this.fest.row(z, freeLane);
     return extra;
@@ -780,6 +788,7 @@ export class World {
     if (zn !== this.zone) { this.zone = zn; this.events.push(zn); } // जंगल / खेत / गाँव — घोषणा
     this.diff = clamp(this.dist / 2400, 0, 1);
     this.shopDist += dz;
+    this.calm = Math.max(0, (this.calm || 0) - dz);
     this.toPu -= dz;
     this.toSam -= dz;
     // सड़क खिसकाओ
@@ -799,6 +808,7 @@ export class World {
     for (let i = this.gates.length - 1; i >= 0; i--) {
       const g = this.gates[i];
       g.position.z += dz;
+      g.visible = g.position.z < 5.2; // कैमरे के ठीक सामने गेट की लटकती लड़ी पूरी स्क्रीन न ढके
       if ((g.userData.type === 'haatgate' || g.userData.type === 'melagate') && !g.userData.said && g.position.z > -6) { g.userData.said = true; this.events.push(g.userData.type === 'haatgate' ? 'haat' : 'mela'); }
       if (g.position.z > DESPAWN_Z + 6) { g.visible = false; this.cPool[g.userData.key].push(g); this.gates.splice(i, 1); }
     }
@@ -841,7 +851,7 @@ export class World {
     for (let i = this.tracks.length - 1; i >= 0; i--) { const t = this.tracks[i]; t.position.z += dz; if (t.position.z > DESPAWN_Z + 12) { t.visible = false; this.tPool.push(t); this.tracks.splice(i, 1); } }
     // 🌳 जंगल की रस्सी (नदी के ऊपर)
     this.toZip -= dz;
-    if (this.toZip <= 0 && !this.zip && !this.pond && this.zone === 'jungle' && zoneAt(this.dist + ZIP_LEN + 160) === 'jungle' && this.railObs <= 0 && this.haatObs <= 0 && this.melaObs <= 0 && !this.baraatQ) {
+    if (this.toZip <= 0 && !this.zip && !this.pond && !this.flying && !this.busy && this.zone === 'jungle' && zoneAt(this.dist + ZIP_LEN + 160) === 'jungle' && this.railObs <= 0 && this.haatObs <= 0 && this.melaObs <= 0 && !this.baraatQ) {
       let far = SPAWN_Z - 20;
       for (const e of this.obs) if (!e.dead) far = Math.min(far, e.z - (e.halfL || 1) - 4);
       for (const u of this.pups) far = Math.min(far, u.z - 4);
@@ -856,11 +866,13 @@ export class World {
       this.zip.a += dz; this.zip.b += dz; this.zipRig.position.z += dz; trimRopes(this.zipRig);
       for (let i = this.zwaters.length - 1; i >= 0; i--) { const t = this.zwaters[i]; t.position.z += dz; if (t.position.z - TILE / 2 > DESPAWN_Z) { t.visible = false; this.zwPool.push(t); this.zwaters.splice(i, 1); } }
       if (WATER.nm && !this.pond) { WATER.nm.offset.y += dz / 13; WATER.nm.offset.x = Math.sin((this.time || 0) * 0.6) * 0.04; }
-      if (this.zip.b - 6 > DESPAWN_Z) { this.zipRig.visible = false; this.zip = null; }
+      if (this.zip.b - 6 > DESPAWN_Z) { this.zipRig.visible = false; this.zip = null; this.afterWater = 100; }
     }
     // 🚣 मखाना पोखर
     this.toPond -= dz;
-    if (this.toPond <= 0 && !this.pond && !this.zip && this.zone !== 'jungle' && zoneAt(this.dist + POND_LEN + 180) !== 'jungle' && this.haatObs <= 0 && this.melaObs <= 0 && this.railObs <= 0 && !this.baraatQ && this.shopDist > 40 && this.shopDist < SHOP_EVERY - 60) {
+    this.afterWater = Math.max(0, this.afterWater - dz);
+    if (!this.pondN && this.dist > 650 && this.toPond > 220 && !this.busy) this.toPond = 220; // पहला पोखर जल्दी (डिलीवरी ने आगे खिसकाया हो तब भी)
+    if (this.toPond <= 0 && !this.pond && !this.zip && !this.flying && !this.busy && this.zone !== 'jungle' && zoneAt(this.dist + POND_LEN + 180) !== 'jungle' && this.haatObs <= 0 && this.melaObs <= 0 && this.railObs <= 0 && !this.baraatQ && this.shopDist > 40 && this.shopDist < SHOP_EVERY - 60) {
       let far = SPAWN_Z - 20; // पिछली सड़क-पंक्ति की चीज़ों (सामने से आती बैलगाड़ी समेत) से आगे से शुरू
       for (const e of this.obs) if (!e.dead) far = Math.min(far, e.z - (e.halfL || 1) - 4);
       for (const u of this.pups) far = Math.min(far, u.z - 4);
@@ -868,15 +880,19 @@ export class World {
       for (let z = a - TILE / 2; z > b - TILE / 2 + 0.1; z -= TILE) { const t = this.wPool.pop(); if (!t) break; t.visible = true; t.position.set(0, 0, z); this.waters.push(t); }
       const [g1, g2] = this.ghats; g1.visible = true; g1.position.set(0, 0, a); g1.rotation.y = 0; g2.visible = true; g2.position.set(0, 0, b); g2.rotation.y = Math.PI;
       this.pond = { a, b }; this.pondFirst = false;
-      this.toPond = rand(2600, 3400); this.toRail = Math.max(this.toRail, POND_LEN + 150); this.toHaat = Math.max(this.toHaat, POND_LEN + 120); this.toMela = Math.max(this.toMela, POND_LEN + 120); this.toBaraat = Math.max(this.toBaraat, POND_LEN + 120);
+      // किस्म: पहला हमेशा मखाना (पोस्टकार्ड), फिर बदल-बदलकर
+      const ty = this.pondType = this.pondN++ === 0 ? 'makhana' : pick(POND_TYPES.filter((t) => t !== this.lastPondType)); this.lastPondType = ty;
+      const dc = this.pondDeco[ty]; dc.visible = true; dc.position.set(0, 0, a);
+      this.toPond = rand(1000, 1300); this.toRail = Math.max(this.toRail, POND_LEN + 150); this.toHaat = Math.max(this.toHaat, POND_LEN + 120); this.toMela = Math.max(this.toMela, POND_LEN + 120); this.toBaraat = Math.max(this.toBaraat, POND_LEN + 120); // हर ~1–1.3 किमी पर (जंगल छोड़कर)
       this.events.push('pond');
     }
     if (this.pond) {
       this.pond.a += dz; this.pond.b += dz;
       for (const gh of this.ghats) if (gh.visible) gh.position.z += dz;
+      { const dc = this.pondDeco[this.pondType]; if (dc) { dc.position.z += dz; if (dc.userData.anim) dc.userData.anim(this.time || 0); } }
       for (let i = this.waters.length - 1; i >= 0; i--) { const t = this.waters[i]; t.position.z += dz; if (t.position.z - TILE / 2 > DESPAWN_Z) { t.visible = false; this.wPool.push(t); this.waters.splice(i, 1); } }
       if (this.ghats[0].position.z > DESPAWN_Z + 4) this.ghats[0].visible = false;
-      if (this.pond.b > DESPAWN_Z + 4) { this.ghats[1].visible = false; this.pond = null; }
+      if (this.pond.b > DESPAWN_Z + 4) { this.ghats[1].visible = false; this.pond = null; this.afterWater = 100; const dc = this.pondDeco[this.pondType]; if (dc) dc.visible = false; }
       if (WATER.nm) { WATER.nm.offset.y += dz / 13; WATER.nm.offset.x = Math.sin((this.time || 0) * 0.6) * 0.04; }
       // 🐟 मछली उछलती — पानी का एहसास (सजावट, टक्कर नहीं)
       this.toFish -= dt;
@@ -887,7 +903,7 @@ export class World {
           real(() => { const sd = chance(0.5) ? 1 : -1; f.x = sd * (chance(0.5) ? 1.25 : ROAD_HALF + rand(0.5, 1.6)); f.z = fz; f.dir = chance(0.5) ? 1 : -1; f.h = rand(1.0, 1.6); });
           f.t = 0; f.o.visible = true; this.parts.burst(f.x, WATER_Y + 0.05, f.z, 0xe9fbff, 10, 2.2, 2.4, 0.5); this.events.push('fish');
         }
-        this.toFish = real(() => rand(1.1, 2.6));
+        this.toFish = real(() => (this.pondType === 'machh' ? rand(0.45, 1.1) : rand(1.1, 2.6))); // मछुआरों के घाट पर ज़्यादा मछलियाँ
       }
     }
     for (const f of this.fish) {
