@@ -1,5 +1,6 @@
 // मिशन सेट / बैज / अपग्रेड / सेटिंग्स वाली खिड़की + अलमारी + नई चीज़ खुलने का जश्न + रोज़ का इनाम
 import { T, LANG, setLang, L } from './i18n.js';
+import { VER, errs, clearErrs } from './errlog.js';
 import { SETTINGS, saveSettings, wallet, UPG, UPG_COST, upLevel, upTime, buyUp, DAILY, dailyState, claimDaily,
   ITEMS, SLOTS, itemById, wardrobe, MAX_SET, BADGES, badgesGot } from './meta.js';
 import { store } from './util.js';
@@ -94,7 +95,15 @@ export class MetaUI {
       + `<div class="st col"><span>🌐 ${T('sLang')}</span><div class="seg sm2">${lang}</div></div>`
       + (this.g.wx && this.g.wx.on ? row('🌧️ ' + T('sWx'), tog('wx', store('wxOff') !== '1')) + `<p class="lbnote">${T('wxCredit')}</p>` : '')
       + `<button class="sm howto" data-act="howto">${T('howTo')}</button>`
-      + (this.g.rate && this.g.rate.on ? `<button class="sm howto" data-act="rate">${T('rateBtn')}</button>` : '');
+      + (this.g.rate && this.g.rate.on ? `<button class="sm howto" data-act="rate">${T('rateBtn')}</button>` : '')
+      + this.htmlErrs();
+  }
+  // 🐞 संस्करण + हाल की गड़बड़ियाँ (हों तो) — screenshot भेजने लायक
+  htmlErrs() {
+    const L = errs(), esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+    let h = `<p class="lbnote verln">${T('verLbl')}: ${esc(VER)}</p>`;
+    if (L.length) h += `<div class="errbox"><b>🐞 ${T('errT')}</b>${L.map((x) => `<p>${new Date(x.t).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} · ${esc(x.v)} · ${esc(x.w)}<br>${esc(x.m)}</p>`).join('')}<button class="sm" data-act="errclr">${T('errClr')}</button></div>`;
+    return h;
   }
   onClick(e) {
     const b = e.target.closest('button'); if (!b) return;
@@ -102,6 +111,7 @@ export class MetaUI {
     if (b.dataset.pc) { g.darshan.open(b.dataset.pc); return; } // 📮 पोस्टकार्ड
     if (b.dataset.act === 'daily') { this.claim(); return; }
     if (b.dataset.act === 'howto') { this.g.replayTutorial(); return; }
+    if (b.dataset.act === 'errclr') { clearErrs(); this.show('set'); return; }
     if (b.dataset.act === 'rate') { $('#metaS').hidden = true; this.g.rate.open(); return; }
     if (b.dataset.up) {
       if (buyUp(b.dataset.up)) { g.sound.power(); g.toast(T('upDone'), 900, 'gold'); } else if (upLevel(b.dataset.up) < 5) g.toast(T('noSweets'), 900, 'warn');

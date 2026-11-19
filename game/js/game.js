@@ -17,6 +17,7 @@ import { Rate } from './rate.js';
 import { Voice } from './voice.js';
 import { Sound } from './audio.js';
 import { T, LANG, setLang, applyLang, L } from './i18n.js';
+import { logErr } from './errlog.js';
 import { clamp, lerp, damp, rand, randi, pick, store, storeNum, vibrate, VIB } from './util.js';
 import { SETTINGS, loadSettings, Missions, wallet, upTime, wardrobe, stats, checkBadges, buyHeadstart, HEADSTART_COST } from './meta.js';
 import { P, PORTAL } from './platform.js';
@@ -39,6 +40,8 @@ import { Darshan } from './darshan.js';
 import { RasgullaGame } from './rasgulla.js';
 
 const $ = (s) => document.querySelector(s);
+// बटन का लिखा कटे नहीं: जगह से बड़ा हो तो अक्षर छोटे करो (न्यूनतम min px)
+function fitText(el, min = 11) { if (!el || !el.clientWidth) return; el.style.fontSize = ''; let f = parseFloat(getComputedStyle(el).fontSize); while (el.scrollWidth > el.clientWidth + 1 && f > min) { f -= 0.5; el.style.fontSize = f + 'px'; } }
 // ग्राफ़िक्स के दर्जे (0 = सबसे बढ़िया). ऑटो: पूरी दौड़ में हर 2 सेकंड रफ़्तार देखो, धीमा हो तो एक दर्जा नीचे; फ़ोन याद रखे
 const DPR = Math.min(window.devicePixelRatio || 1, 2);
 const TIERS = [
@@ -206,6 +209,7 @@ class Game {
     this.monkey = makeMonkey(); this.monkey.visible = false; sc.add(this.monkey);
     // 🐒 बंदर का सीन: पेड़, गोलू का समोसे वाला झोला, गिरे समोसे, बंदर के सिर पर तारे
     this.monkeyTree = makeMonkeyTree(); sc.add(this.monkeyTree); addFamily(this.monkeyTree, makeMonkey); // 🐒 माँ + बच्चा पेड़ पर
+    { const R = this.mkRing = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.78, 28), new THREE.MeshBasicMaterial({ color: 0xff3b30, transparent: true, opacity: 0.7, depthWrite: false, toneMapped: false })); R.rotation.x = -Math.PI / 2; R.renderOrder = 2; R.visible = false; sc.add(R); } // चोर बंदर के नीचे लाल घेरा — किस लेन में है
     this.jhola = makeJhola(); this.samDrops = new SamosaDrops(sc); this.emoM = new Emotes(sc);
     { const sm = new THREE.Mesh(this.jhola.userData.sams[0].geometry, this.jhola.userData.sams[0].material); sm.scale.setScalar(1.5); sm.position.set(0, -0.6, 0.06); sm.visible = false; this.monkey.userData.armR.add(sm); this.monkey.userData.snack = sm; }
     this.jholaBack = 0; this.holdJhola();
@@ -254,6 +258,7 @@ class Game {
 
   resize() {
     const w = window.innerWidth, h = window.innerHeight;
+    fitText($('#btnRg b'), 11);
     this.renderer.setSize(w, h, false);
     this.cam.aspect = w / h;
     const t = clamp((w / h - 0.45) / (1.35 - 0.45), 0, 1);
@@ -413,6 +418,7 @@ class Game {
     $('#bestV').textContent = Math.floor(this.best).toLocaleString('en-IN');
     $('#totalV').textContent = Math.floor(wallet.v).toLocaleString('en-IN');
     { const rs = $('#rgSub'); if (rs && this.rg) rs.textContent = T('rgLeft', this.rg.left()); } // 🍮 मिठाई बनाओ — आज कितने इनाम बाकी
+    requestAnimationFrame(() => fitText($('#btnRg b'), 11)); // छोटे फ़ोन पर "मिठाई बनाओ" कटे नहीं
     const hs = $('#hsChip'); hs.textContent = this.headstart ? T('hsOn', HEADSTART_COST) : T('hs', HEADSTART_COST);
     hs.classList.toggle('on', !!this.headstart); hs.setAttribute('aria-pressed', this.headstart ? 'true' : 'false');
     hs.hidden = !this.headstart && wallet.v < HEADSTART_COST;
@@ -928,11 +934,11 @@ class Game {
   // 🐒 चोर बंदर: झोला लेकर आगे सड़क पर; उसी लेन में रहो तो दूरी घटे; पास पहुँचे = पकड़ा
   thiefStart(loot, z0, from = null) {
     const side = from && from.side ? from.side : Math.random() < 0.5 ? -1 : 1, lane = randi(0, 2), M = this.monkey;
-    this.mk = { st: 'thiefIn', t: 0, side, lane, loot, bonus: loot > 0 ? 25 : 40, gap: 8, T: 15, lt: rand(1.2, 1.8), drop: 0.7, dropN: Math.min(6, Math.max(3, Math.floor(loot / 5))), vy: 0, peelT: rand(1.1, 1.5), peelN: 0, wind: 0,
+    this.mk = { st: 'thiefIn', t: 0, side, lane, loot, bonus: loot > 0 ? 25 : 40, gap: 10, T: 16, lt: rand(1.2, 1.8), drop: 0.7, dropN: Math.min(6, Math.max(3, Math.floor(loot / 5))), vy: 0, peelT: rand(1.1, 1.5), peelN: 0, wind: 0,
       x0: from ? from.x : side * 6.8, y0: from ? from.y : 5.2, z0, x: from ? from.x : side * 6.8, y: from ? from.y : 5.2, z: z0 };
     M.visible = true; M.userData.bag.visible = false;
     if (this.jhola.parent !== M.userData.armL) this.holdJhola(M.userData.armL);
-    setTimeout(() => { if (this.state === 'play') this.cheer('thief', 1600, -1, true, 'warn', T('thiefChip') + ' 🐒'); }, 900);
+    setTimeout(() => { if (this.state === 'play') this.cheer('thief', 2000, -1, true, 'warn', T('thiefHow')); }, 900);
   }
   thiefCaught() {
     const m = this.mk, rw = m.loot + m.bonus;
@@ -976,10 +982,12 @@ class Game {
     const fl = this.world.groundAt(m.x, m.z);
     if (near && m.y <= fl + 0.05) m.vy = 9;
     m.vy -= 26 * dt; m.y = Math.max(fl, m.y + m.vy * dt); if (m.y <= fl) m.vy = 0;
+    // पीछा: उसी लेन में रहो तो दूरी घटे (~4–5 सेकंड), दूसरी लेन में रहो तो बंदर दूर भागे; 18.5 मी. = छूट गया
     const same = Math.abs(p.x - m.x) < 1.25;
-    let rate = this.rushT > 0 ? 6.5 : same ? 2.7 : 0.4;
-    if (p.stumT > 0) rate = -2.5; else if (p.slowT > 0) rate *= 0.5;
-    m.gap = clamp(m.gap - rate * dt, 1.2, 17); m.z = -m.gap;
+    let rate = this.rushT > 0 ? 6 : same ? 1.9 : -0.9;
+    if (p.stumT > 0) rate = -2.5; else if (p.slowT > 0) rate = Math.min(rate, 0.6);
+    m.gap = clamp(m.gap - rate * dt, 1.2, 19); m.z = -m.gap;
+    if (this.mkRing) { const R = this.mkRing; R.visible = true; R.position.set(m.x, 0.05, m.z); R.scale.setScalar(1 + Math.sin(m.t * 9) * 0.12); R.material.opacity = 0.55 + Math.sin(m.t * 9) * 0.25; }
     if (m.dropN > 0 && (m.drop -= dt) <= 0) { m.dropN--; m.drop = 0.8; this.samDrops.drop(m.x, m.y + 0.9, m.z + 0.6); } // झोले से गिरे समोसे — उठाओ
     // 🍌 केले का छिलका: मुड़कर हाथ उठाए (चेतावनी), सिर के ऊपर से आगे उछाले — सड़क पर गिरकर गोलू की ओर आए; बंदर ख़ुद कूदकर पार, गोलू भी कूदे
     m.peelT -= dt;
@@ -993,7 +1001,7 @@ class Game {
     M.rotation.y = damp(M.rotation.y, tz || m.wind > 0 ? 0.35 * (m.side || 1) : Math.PI + Math.sin(m.t * 5) * 0.08, 10, dt);
     if (tz && !m.tz) this.sound.monkey(true); m.tz = tz;
     if (m.gap <= 1.7 && same && p.y < 2.6 && p.fly <= 0) { this.thiefCaught(); return; }
-    if (m.T <= 0 || p.fly > 0) { // छूट गया — आगे के पेड़ पर चढ़कर समोसा खाएगा
+    if (m.T <= 0 || p.fly > 0 || m.gap >= 18.5) { // छूट गया — आगे के पेड़ पर चढ़कर समोसा खाएगा
       const Tr = this.monkeyTree, v = this._mv || (this._mv = new THREE.Vector3());
       placeTree(Tr, m.side, m.z - 58); branchPos(Tr, v);
       m.st = 'escape'; m.t = 0; m.fx = m.x; m.fy = m.y; m.fz = m.z;
@@ -1019,6 +1027,7 @@ class Game {
     const th = m.st === 'thief' || m.st === 'thiefIn' || m.st === 'caught';
     M.scale.setScalar(damp(M.scale.x, th || m.st === 'perch' || m.st === 'escape' ? 1.4 : 1.15, 6, dt)); // चोर बंदर आगे दूर — थोड़ा बड़ा, साफ़ दिखे
     this.emoM.update(dt, m.x, m.y + 1.95 * M.scale.x, m.z, M.scale.x);
+    if (this.mkRing && !(m.st === 'thief' && this.state === 'play')) this.mkRing.visible = false;
     if (th && this.state === 'play') { this.updateThief(dt, m, M, p); M.position.set(m.x, m.y, m.z); return; }
     const sp = this.speed || 16, v = this._mv || (this._mv = new THREE.Vector3());
     if (this.state === 'dying' || this.state === 'over' || this.state === 'revive') { // गोलू गिरा — बंदर बैठकर हँसे
@@ -1036,10 +1045,8 @@ class Game {
       animMonkey(M, dt, k > 0.75 ? 'grab' : 'leap'); M.rotation.set(0, 0, 0);
       if (k > 0.22 && !m.slow) {
         m.slow = true; this.slowmo = 2.4; this.slowTs = 0.2; this.cine = 1.2; this.cineSide = m.side;
-        if (!m.force && storeNum('tutMonkeyDuck') < 3) { store('tutMonkeyDuck', storeNum('tutMonkeyDuck') + 1); this.toast('⬇ ' + T('monkeyDuck'), 1400, 'gold'); }
       }
-      if (k > 0.2 && !m.force && (p.roll > 0 || p.rollQ)) m.dodge = true;
-      if (k >= 1) { if (m.dodge || this.pu.shield) this.monkeyMiss(); else this.monkeySnatch(); }
+      if (k >= 1) this.monkeySnatch(); // 19 नवंबर (मालिक): बंदर हर बार झोला छीने और भागे — झुककर बचना नहीं, असली पीछा-पकड़ना
     } else if (m.st === 'miss') { // ऊपर से निकलकर पीछे गिरा
       const k = Math.min(1, m.t / 0.8);
       m.x = m.fx; m.z = lerp(m.fz, 5, k); m.y = Math.max(0, lerp(m.fy, 0, k) + Math.sin(k * Math.PI) * 0.6);
@@ -1206,7 +1213,7 @@ class Game {
     requestAnimationFrame(() => this.frame());
     const rdt = Math.min(this.clock.getDelta(), 1 / 20);
     if (this.rg && this.rg.on && this.state === 'menu') return; // 🍮 रसगुल्ला वाला खेल खुला — पीछे 3D नहीं बनाना (फ़ोन हल्का)
-    this.update(rdt);
+    try { this.update(rdt); } catch (e) { logErr(e, 'update ' + this.state + (this.dl ? ' dl=' + this.dl.st : '') + (this.mk ? ' mk=' + this.mk.st : '')); } // 🐞 गलती डायरी में, फ़्रेम फिर भी बने
     this.sky.position.copy(this.cam.position);
     this.sky.material.uniforms.uTime.value += rdt;
     if (this.wx) { this.wx.update(rdt, this.state === 'play' ? (this.lastDz || 0) : 0, this); if (this.baseExp) this.renderer.toneMappingExposure = this.baseExp * (1 + this.wx.flash * 0.9); }
@@ -1699,7 +1706,7 @@ class Game {
     const rush = this.rushT > 0;
     if (h.rush !== rush) { h.rush = rush; document.body.classList.toggle('rushing', rush); }
     const gg = this.ghost.on && this.ghostGap != null && !this.ghost.finished ? Math.round(this.ghostGap / 5) * 5 : null;
-    const thief = this.mk && this.mk.st === 'thief' ? Math.ceil(this.mk.T) : 0, fc = this.fest && this.fest.on && !this.fest.done ? this.fest.n : -1;
+    const thief = this.mk && this.mk.st === 'thief' ? Math.max(1, Math.round(this.mk.gap - 1.5)) : 0, fc = this.fest && this.fest.on && !this.fest.done ? this.fest.n : -1;
     const sc = this.story.chip(), pc = this.darshan.chipNow();
     const pu = (pc ? 'P' + pc.k : '') + (sc ? 's' + sc.txt : '') + (gg != null ? 'g' + gg : '') + (thief ? 'k' + thief : '') + (fc >= 0 ? 'c' + fc : '') + (this.pu.magnet > 0 ? 'm' + Math.ceil(this.pu.magnet) : '') + (this.pu.shoes > 0 ? 's' + Math.ceil(this.pu.shoes) : '') + (this.pu.shield ? 'L' : '') + (this.pu.thali > 0 ? 't' + Math.ceil(this.pu.thali) : '') + (this.pu.madhu > 0 ? 'b' + Math.ceil(this.pu.madhu) : '') + (this.p.fly > 0 ? 'f' + Math.ceil(this.p.fly) : '');
     if (h.pu !== pu) {
@@ -1710,7 +1717,7 @@ class Game {
       if (pc) { const d = chip('📮', `${pc.icon} ${pc.name}`, pc.sub, 'pcchip'); if (h.pcK !== pc.k) { h.pcK = pc.k; d.classList.add('in'); } } // मिथिला दर्शन — ऊपर कोने में छोटी पट्टी
       if (sc) chip('📖', T('storyChip'), sc.txt);
       if (gg != null) chip('👻', this.ghost.name, (gg > 0 ? '+' : '') + gg + 'm');
-      if (thief) chip('🐒', T('thiefChip'), thief);
+      if (thief) chip('🐒', T('thiefChip'), thief + T('mUnit'));
       if (fc >= 0) chip(this.fest.f.icon, T('festChip'), `${fc}/${this.fest.f.need}`);
       if (this.pu.magnet > 0) chip('🎁', T('magnet'), Math.ceil(this.pu.magnet));
       if (this.pu.shoes > 0) chip('🌀', T('shoes'), Math.ceil(this.pu.shoes));

@@ -67,6 +67,7 @@ html = html[:m.end()] + '\n' + patch + html[m.end():]
 # 5) मॉड्यूल
 old = '<script type="module" src="js/main.js"></script>'
 assert old in html
+html = re.sub(r'<!--vmap-->.*?<!--/vmap-->\n?', '', html, flags=re.S)  # एक फ़ाइल में सब — वर्ज़न map की ज़रूरत नहीं
 html = html.replace(old, '<script type="module">\n' + js + '\n</script>')
 
 # 6) लाइसेंस/श्रेय (CREDITS.md) एक टिप्पणी में

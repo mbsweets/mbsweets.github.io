@@ -195,7 +195,7 @@ function threadM() {
   return (threadMat = new THREE.MeshStandardMaterial({ map: t, roughness: 0.8 }));
 }
 // ---------------- मिठाई का डिब्बा = MB Sweets का असली डिब्बा (D3): सादा मरून डिब्बा + छपा ढक्कन (ढक्कन की बगल पर नाम की तख़्ती) ----------------
-const BW = 0.64, BH = 0.13, BD = 0.48, SK = 0.072; // 8×6 इंच वाला अनुपात
+const BW = 0.64, BH = 0.13, BD = 0.48, SK = 0.072, BS = 1.35; // 8×6 इंच वाला अनुपात; BS = खेल में बड़ा (साफ़ दिखे)
 function makeBox() {
   const g = new THREE.Group(), t = 0.012, MR = flat(0x7a111a), CR = flat(0xfff1d6), GD = flat(0xe2b14a);
   const base = new THREE.Group(); g.add(base);
@@ -225,6 +225,7 @@ function makeBox() {
   const kn = new THREE.Mesh(G.sph(0.014, 8, 6), TM); kn.position.y = BH / 2 + 0.035; rib.add(kn);
   g.add(rib);
   g.userData = { base, balls, bm, lidP, rib };
+  g.scale.setScalar(BS);
   boxLook(g, 0, 4, 1);
   return g;
 }
@@ -248,6 +249,48 @@ function makeCounter() {
   // आगे लटका बैनर: MB Sweets लोगो + "माँ भगवती मिष्ठान भंडार" (दोनों ओर — जो सड़क की ओर हो वही दिखे)
   for (const s of [-1, 1]) { const bn = new THREE.Mesh(new THREE.PlaneGeometry(1.32, 0.22), new THREE.MeshStandardMaterial({ map: tex('dl_banner.webp'), roughness: 0.6 })); bn.position.set(0, 0.8, s * 0.432); bn.rotation.y = s > 0 ? 0 : PI; g.add(bn); }
   g.visible = false;
+  return g;
+}
+// 🔥 मिठाई बनाने की भट्ठी (19 नवंबर, मालिक: "मिठाई बनाने वाला सीन"): मिट्टी का चूल्हा + आग + लोहे की बड़ी कड़ाही —
+// ऑर्डर के हिसाब से अंदर चाशनी में रसगुल्ला/चमचम या घी में गुलाब जामुन/बालूशाही, बुलबुले-भाप; झरनी से निकालकर डिब्बे में
+const KAD_Y = 0.93, KAD_R = 0.57;
+const KAD = { rasgulla: [0xe8b04a, 0xfff8ea, 'ball'], chamcham: [0xe8b04a, 0xf6a8c0, 'oval'], gulabjamun: [0xf3d98a, 0x7a2a14, 'ball'], balushahi: [0xf3d98a, 0xe8a447, 'disc'] };
+function makeKitchen() {
+  const g = new THREE.Group(), mg = new Merge();
+  mg.add(G.cyl(0.62, 0.72, 0.64, 16), mat4(0, 0.32, 0), 0xb5653c); mg.add(G.cyl(0.66, 0.66, 0.06, 16), mat4(0, 0.66, 0), 0x8a4a2a); // मिट्टी का चूल्हा
+  mg.add(G.box(0.4, 0.3, 0.14), mat4(0, 0.2, 0.64), 0x1d1210); // आग का मुँह (सड़क की ओर)
+  for (let i = 0; i < 4; i++) mg.add(G.cyl(0.05, 0.05, 0.55, 6), mat4(-0.18 + i * 0.12, 0.12, 0.85, PI / 2 - 0.15, 0, 0), C.wood); // लकड़ी
+  mg.add(new THREE.SphereGeometry(0.62, 22, 10, 0, PI * 2, PI * 0.56, PI * 0.44), mat4(0, KAD_Y + 0.06, 0), 0x2a2622); // कड़ाही
+  mg.add(G.tor(0.6, 0.025, 6, 28), mat4(0, KAD_Y + 0.02, 0, PI / 2, 0, 0), 0x3a3632);
+  for (const s of [-1, 1]) mg.add(G.tor(0.09, 0.022, 6, 12), mat4(s * 0.66, KAD_Y + 0.01, 0, 0, PI / 2, 0), 0x3a3632); // कुंडे
+  const m = mg.mesh(0.02); m.castShadow = true; g.add(m);
+  const liq = new THREE.Mesh(new THREE.CircleGeometry(KAD_R, 28), new THREE.MeshStandardMaterial({ color: 0xe8b04a, roughness: 0.12, metalness: 0.1 })); liq.rotation.x = -PI / 2; liq.position.y = KAD_Y; g.add(liq);
+  const sm = new THREE.MeshStandardMaterial({ color: 0xfff8ea, roughness: 0.45 }), sweets = [];
+  for (let i = 0; i < 8; i++) { const sw = new THREE.Mesh(G.sph(0.075, 12, 9), sm); const a = i * 2.4, r = 0.12 + (i % 3) * 0.13; sw.userData = { x: Math.cos(a) * r, z: Math.sin(a) * r, ph: i * 1.3 }; sw.position.set(sw.userData.x, KAD_Y, sw.userData.z); g.add(sw); sweets.push(sw); }
+  const bub = []; const bm = new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.7, roughness: 0.1 });
+  for (let i = 0; i < 7; i++) { const b = new THREE.Mesh(G.sph(0.025, 8, 6), bm); b.userData = { x: (Math.random() - 0.5) * 0.8, z: (Math.random() - 0.5) * 0.8, t: Math.random() }; g.add(b); bub.push(b); }
+  const fl = []; const fm1 = new THREE.MeshBasicMaterial({ color: 0xff7a1a, toneMapped: false }), fm2 = new THREE.MeshBasicMaterial({ color: 0xffd24d, toneMapped: false });
+  for (let i = 0; i < 5; i++) { const f = new THREE.Mesh(G.cone(0.07 - (i % 2) * 0.02, 0.28, 6), i % 2 ? fm2 : fm1); f.position.set(-0.14 + i * 0.07, 0.3, 0.7); g.add(f); fl.push(f); }
+  g.userData = { liq, sm, sweets, bub, fl };
+  g.visible = false;
+  return g;
+}
+function kitchenFor(K, sw) { const [lq, col, shape] = KAD[sw] || KAD.rasgulla, u = K.userData; u.liq.material.color.set(lq); u.sm.color.set(col); for (const s of u.sweets) { s.visible = true; s.scale.set(shape === 'oval' ? 1.35 : 1, shape === 'disc' ? 0.5 : 1, shape === 'disc' ? 1.25 : 1); } }
+function kitchenAnim(K, t) {
+  const u = K.userData;
+  u.sweets.forEach((s) => { const d = s.userData; s.position.set(d.x + Math.sin(t * 0.7 + d.ph) * 0.04, KAD_Y + 0.02 + Math.sin(t * 3 + d.ph) * 0.015, d.z + Math.cos(t * 0.6 + d.ph) * 0.04); s.rotation.y = t * 0.4 + d.ph; });
+  u.bub.forEach((b) => { const d = b.userData; d.t += 0.035; if (d.t > 1) { d.t = 0; d.x = (Math.random() - 0.5) * 0.85; d.z = (Math.random() - 0.5) * 0.85; } b.position.set(d.x, KAD_Y + 0.01, d.z); b.scale.setScalar(0.4 + d.t * 1.2); b.material.opacity = 0.75 * (1 - d.t); });
+  u.fl.forEach((f, i) => { f.scale.set(1, 0.7 + 0.5 * Math.abs(Math.sin(t * 13 + i * 1.7)), 1); });
+}
+// 🥄 झरनी: छेद वाली गोल कलछी + लंबा डंडा (हलवाई के हाथ तक)
+function makeJharni() {
+  const g = new THREE.Group(), mg = new Merge();
+  mg.add(G.cyl(0.15, 0.13, 0.03, 18), mat4(0, 0, 0), 0x9aa0a8);
+  for (let i = 0; i < 9; i++) { const a = i * 0.7, r = (i % 3) * 0.05 + 0.02; mg.add(G.cyl(0.012, 0.012, 0.032, 5), mat4(Math.cos(a) * r, 0.002, Math.sin(a) * r), 0x3a3e44); }
+  const bowl = mg.mesh(0.01); g.add(bowl);
+  const h = new THREE.Mesh(G.cyl(0.018, 0.018, 1, 6), new THREE.MeshStandardMaterial({ color: 0x6b6f76, metalness: 0.5, roughness: 0.4 })); g.add(h);
+  const carry = []; for (let i = 0; i < 2; i++) { const c = new THREE.Mesh(G.sph(0.075, 12, 9)); c.position.set(-0.05 + i * 0.1, 0.07, 0); g.add(c); carry.push(c); }
+  g.userData = { h, carry }; g.visible = false;
   return g;
 }
 // हेलमेट (लाल, सफ़ेद धारी, काला शीशा) — r = नाप
@@ -322,6 +365,7 @@ function makeHome() {
 }
 
 const SEAT = 0.36; // स्कूटी पर गोलू कितना ऊपर
+const smooth = (k) => k * k * (3 - 2 * k), UP = new THREE.Vector3(0, 1, 0);
 const HR = 0.19; // सिर वाले हेलमेट का नाप (मॉडल की इकाई; खेल में ×2.25)
 // 🛵 डिलीवरी के हिस्से (18 नवंबर 2026, मालिक: "मिठाई लेता सीधे चला जाता है — एनिमेशन बढ़ाओ"):
 // 📞 फ़ोन (गोलू कान पर) → 🏪 दुकान के आगे ब्रेक → हलवाई काका डिब्बे में 4 मिठाई डालते, ढक्कन, फ़ीता बाँधते → डिब्बा गोलू को →
@@ -336,10 +380,19 @@ export class Delivery {
     this.halwai = makeCustomer('halwai'); this.halwai.visible = false; scene.add(this.halwai);
     { const hb = badge(0.2); hb.position.set(-0.11, 1.14, 0.335); this.halwai.userData.body.add(hb); } // बनियान पर MB Sweets बिल्ला
     this.counter = makeCounter(); scene.add(this.counter);
+    this.kitchen = makeKitchen(); scene.add(this.kitchen); // 🔥 चूल्हा + कड़ाही
+    this.jharni = makeJharni(); scene.add(this.jharni);
+    this.karigar = makeCustomer('halwai'); this.karigar.visible = false; scene.add(this.karigar); // 👐 कारीगर — छेना गूँधता, गोले बनाता
+    { const pm = new Merge(); for (const [x, z] of [[-0.45, -0.3], [0.45, -0.3], [-0.45, 0.3], [0.45, 0.3]]) pm.add(G.cyl(0.04, 0.04, 0.7, 6), mat4(x, 0.35, z), 0x6b4a2c); pm.add(G.box(1.05, 0.06, 0.72), mat4(0, 0.72, 0), 0x8a5a34);
+      pm.add(G.cyl(0.32, 0.26, 0.07, 20), mat4(-0.15, 0.79, 0), C.gold); pm.add(G.sph(0.17, 12, 8), mat4(-0.15, 0.86, 0, 0, 0, 0, 1.3, 0.55, 1), 0xfff6e2); // परात में छेना
+      for (let i = 0; i < 6; i++) pm.add(G.sph(0.045, 8, 6), mat4(0.25 + (i % 2) * 0.1, 0.8, -0.2 + Math.floor(i / 2) * 0.16), 0xfff8ea); // बने गोले
+      this.parat = pm.mesh(0.015); this.parat.visible = false; scene.add(this.parat); }
     this.home = makeHome(); scene.add(this.home);
     this.door = this.home.userData.gate; // पुराने कोड/कहानी के लिए
     this.box = makeBox(); this.box.visible = false; scene.add(this.box);
-    this.fly = new THREE.Mesh(G.sph(0.088, 14, 10), this.box.userData.bm); this.fly.visible = false; scene.add(this.fly); // हलवाई के हाथ से डिब्बे में गिरती मिठाई
+    this.fly = new THREE.Mesh(G.sph(0.088, 14, 10), this.box.userData.bm); this.fly.visible = false; scene.add(this.fly);
+    for (const c of this.jharni.userData.carry) c.material = this.box.userData.bm;
+    this.v3 = new THREE.Vector3(); this.v4 = new THREE.Vector3(); this.q0 = new THREE.Quaternion(); this.q1 = new THREE.Quaternion(); this.m4 = new THREE.Matrix4();
     this.scooty = makeScooty(); scene.add(this.scooty);
     this.helmS = makeHelmet(HR * 2.25); this.helmS.position.set(0, 0.92, 0.44); this.helmS.rotation.y = 0.4; this.scooty.userData.body.add(this.helmS); // सीट पर रखा हेलमेट
     this.coins = []; const cg = G.cyl(0.075, 0.075, 0.018, 14), cm = new THREE.MeshStandardMaterial({ color: 0xf2c230, metalness: 0.7, roughness: 0.3 });
@@ -356,6 +409,7 @@ export class Delivery {
   reset() {
     this.st = 'off'; this.toNext = rand(1050, 1200); this.streak = 0; this.lastC = null; this.cap = Infinity; this.boxT = -1; this.turnY = 0; this.turnTo = 0; this.callT = 0; this.fast = 1; // पहले पोखर (~600 मी.), फिर पहली डिलीवरी
     this.home.visible = false; this.box.visible = false; this.scooty.visible = false; this.mark.visible = false; this.halwai.visible = false; this.counter.visible = false; this.fly.visible = false;
+    this.kitchen.visible = false; this.jharni.visible = false; this.karigar.visible = false; this.parat.visible = false; this.hero = -1;
     for (const c of this.coins) { c.m.visible = false; c.t = -1; }
     if (this.shop) this.shop.visible = false; this.shop = null;
     for (const k in this.cust) this.cust[k].visible = false;
@@ -403,6 +457,10 @@ export class Delivery {
     this.shopZ = z;
     const H = this.halwai; H.visible = true; H.position.set(this.side * (ROAD_HALF + 0.65), 0, z + 1.4); H.rotation.y = -this.side * PI / 2; H.userData.arms.forEach((a) => a.rotation.set(0, 0, 0));
     const K = this.counter; K.visible = true; K.position.set(this.side * (ROAD_HALF - 0.12), 0, z + 1.4); K.rotation.y = PI / 2;
+    const KT = this.kitchen; KT.visible = true; KT.position.set(this.side * (ROAD_HALF + 0.2), 0, z + 1.4 + 1.5); KT.rotation.y = -this.side * PI / 2; kitchenFor(KT, this.sw); // काउंटर के पीछे वाली ओर चूल्हा-कड़ाही
+    const KG = this.karigar; KG.visible = true; KG.position.set(this.side * (ROAD_HALF + 1.45), 0, z + 1.4 + 3.3); KG.rotation.y = -this.side * PI / 2;
+    this.parat.visible = true; this.parat.position.set(this.side * (ROAD_HALF + 0.75), 0, z + 1.4 + 3.3); this.parat.rotation.y = -this.side * PI / 2;
+    this.hero = -1;
     const B = this.box; B.visible = true; boxLook(B, 1, 0, 0); B.rotation.set(0, 0, 0); this.boxOn = 'counter';
     const S = this.scooty; S.visible = true; S.position.set(this.side * (ROAD_HALF - 0.9), 0, z + 1.4 - 2.7); S.rotation.set(0, 0, 0); S.userData.body.rotation.set(0, 0, 0); this.helmS.visible = true; // काउंटर से आगे, किनारे खड़ी
     this.mark.visible = true; this.mark.position.set(LANES[this.pLane], 0, z + 3.5);
@@ -426,7 +484,8 @@ export class Delivery {
     this.paint();
   }
   steer(lane) { const p = this.g.p; if (p.lane !== lane) { p.prevLane = p.lane; p.lane = lane; p.tx = LANES[lane]; p.laneT = 0; } }
-  go(st) { this.st = st; this.t = 0; }
+  go(st) { this.st = st; this.t = 0; if (st === 'pack') this.hero = -1; }
+  packEnd() { return 2.18 + 1.1 + 0.42 + 0.12; } // पैकिंग + कैमरे के सामने डिब्बा + कंधे पर
   finish() {
     const g = this.g;
     this.streak++;
@@ -464,7 +523,8 @@ export class Delivery {
   // 🎬 रुके पलों का कैमरा: सामने से (सड़क के बीच से पीछे की ओर देखता) — गोलू का चेहरा, काउंटर/दरवाज़ा, हलवाई/ग्राहक सब एक साथ
   cam() {
     const st = this.st, s = this.side, s2 = this.side2;
-    if ((st === 'brake' && this.halwai.position.z > -12) || st === 'pack') return { pos: [s * 0.35, 2.35, -4.5], look: [s * 3.55, 1.3, -0.5] };
+    if (st === 'pack') return { pos: [s * 0.5, 3.0, -3.5], look: [s * 3.8, 0.95, 0.3] }; // थोड़ा ऊपर से — कड़ाही के अंदर की मिठाई दिखे
+    if (st === 'brake' && this.halwai.position.z > -12) return { pos: [s * 0.35, 2.35, -4.5], look: [s * 3.55, 1.3, -0.5] };
     if (['walk', 'mount', 'helmet', 'kick'].includes(st)) return { pos: [s * 0.9, 2.2, -4.3], look: [s * 3.5, 1.35, -0.2] }; // स्कूटी की ओर
     if (['off2', 'knock', 'open', 'hand'].includes(st) || (st === 'thank' && this.t < 1.35) || (st === 'arrive' && this.home.position.z > -8)) return { pos: [s2 * 2.3, 2.15, -4.9], look: [s2 * 4.7, 1.3, -0.5] };
     return null;
@@ -473,7 +533,7 @@ export class Delivery {
   turn() { return this.turnY; }
   // डिब्बा कंधे पर
   shoulder(out) { const p = this.g.p; return out.set(p.x + 0.42, p.y + 2.0, 0.05); }
-  carrier(out) { const S = this.scooty; return out.set(0, 0.96 + BH / 2, 0.84).applyEuler(S.rotation).add(S.position); }
+  carrier(out) { const S = this.scooty; return out.set(0, 1.0 + BH * BS / 2, 0.8).applyEuler(S.rotation).add(S.position); }
   update(dtReal, dz) {
     const g = this.g, p = g.p, B = this.box, S = this.scooty, H = this.halwai, U = B.userData;
     const dt = dtReal * (this.inScene() ? this.fast : 1); // रुके पलों में स्वाइप = जल्दी
@@ -483,7 +543,14 @@ export class Delivery {
     this.t = (this.t || 0) + dt;
     if (this.callT > 0) this.callT -= dtReal;
     // दुनिया के साथ चलती चीज़ें
-    if (H.visible) { H.position.z += dz; this.counter.position.z += dz; if (this.shop) this.shop.position.z += dz; this.mark.position.z += dz; if (H.position.z > 22) { H.visible = false; this.counter.visible = false; if (this.shop) this.shop.visible = false; } }
+    if (H.visible) {
+      for (const o of [H, this.counter, this.kitchen, this.karigar, this.parat, this.mark]) o.position.z += dz;
+      if (this.shop) this.shop.position.z += dz;
+      kitchenAnim(this.kitchen, performance.now() / 1000);
+      if (Math.random() < 0.18 && this.kitchen.position.z < 6) g.world.parts.burst(this.kitchen.position.x + rand(-0.3, 0.3), KAD_Y + 0.15, this.kitchen.position.z + rand(-0.3, 0.3), 0xf4f1ea, 1, 0.3, 1.2, 0.9, 0); // भाप
+      const ku = this.karigar.userData, kt = performance.now() / 1000; ku.arms[0].rotation.x = -0.9 + Math.sin(kt * 8) * 0.35; ku.arms[1].rotation.x = -0.9 + Math.sin(kt * 8 + 1.6) * 0.35; ku.body.position.y = Math.abs(Math.sin(kt * 8)) * 0.03; // गूँधना
+      if (H.position.z > 22) { for (const o of [H, this.counter, this.kitchen, this.karigar, this.parat]) o.visible = false; if (this.shop) this.shop.visible = false; }
+    }
     if (this.mark.visible) { const bm = this.mark.userData.beam; bm.visible = this.st === 'toShop'; bm.material.opacity = 0.35 + Math.sin(performance.now() / 160) * 0.12; }
     if (this.home.visible) { this.home.position.z += dz; if (this.cm) this.cm.position.z += dz; if (this.home.position.z > 24) { this.home.visible = false; if (this.cm) this.cm.visible = false; if (this.st === 'done') this.st = 'off'; } }
     if (S.visible && !p.scooty) { S.position.z += dz; if (S.position.z > 20 && this.st !== 'toShop') S.visible = false; }
@@ -505,26 +572,51 @@ export class Delivery {
       if (d < 0.08 || this.cap < 0.3) { this.cap = 0; this.go('pack'); this.boxT = -1; this.mark.visible = false; g.sound.order(); }
     }
     // ---- पैकिंग: 4 मिठाई डिब्बे में → ढक्कन → फ़ीता → डिब्बा गोलू को
-    if (this.boxOn === 'counter') { this.counter.updateMatrixWorld(); B.position.copy(this.v.set(0.15, 0.985 + BH / 2, -this.side * 0.2).applyMatrix4(this.counter.matrixWorld)); B.rotation.set(0, PI, 0); } // छपाई सामने वाले कैमरे की ओर
-    if (this.st === 'pack') {
+    if (this.boxOn === 'counter') { this.counter.updateMatrixWorld(); B.position.copy(this.v.set(0.12, 0.985 + BH * BS / 2, -this.side * 0.12).applyMatrix4(this.counter.matrixWorld)); B.rotation.set(0, PI, 0); } // छपाई सामने वाले कैमरे की ओर
+    if (this.st === 'pack') { // 🔥 झरनी से कड़ाही की गरम मिठाई डिब्बे में (2 बार × 2) → ढक्कन → सुतली → ✨ डिब्बा कैमरे के सामने → गोलू के कंधे पर
       this.cap = 0; this.turnTo = -this.side * 0.95;
-      const t = this.t, n = Math.min(4, Math.floor(Math.max(0, t - 0.15) / 0.26));
-      const k = Math.max(0, t - 0.15) / 0.26 - n; // गिरती मिठाई
-      if (n < 4 && t > 0.15) {
-        const F = this.fly; F.visible = true; const bp = U.balls[n].getWorldPosition(this.v2);
-        F.position.set(lerp(H.position.x - this.side * 0.35, bp.x, k), lerp(1.55, bp.y, k) + Math.sin(k * PI) * 0.35, lerp(H.position.z, bp.z, k));
-        if (k > 0.93 && !U.balls[n].visible) { U.balls[n].visible = true; g.sound.plop && g.sound.plop(); }
-      } else this.fly.visible = false;
-      const lid = clamp((t - 1.2) / 0.3, 0, 1), rib = clamp((t - 1.5) / 0.28, 0, 1);
-      boxLook(B, 1 - lid * lid, Math.min(4, n + (n < 4 && k > 0.93 ? 1 : 0)), rib < 1 ? rib * (1 + Math.sin(rib * PI) * 0.3) : 1);
+      const t = this.t, KT = this.kitchen, J = this.jharni, JU = J.userData, KS = KT.userData.sweets;
+      const R = this.v.set(KT.position.x - this.side * 0.1, KAD_Y + 0.5, KT.position.z - 0.25), SC = 0.12, SD = 0.66;
+      let jp = null, tilt = 0;
+      for (let j = 0; j < 2; j++) {
+        const a = (t - SC - j * SD) / SD; if (a < 0 || a >= 1) continue;
+        const sw = KS[j * 2], dp = this.v2.set(KT.position.x, KAD_Y + 0.02, KT.position.z); if (sw) { sw.getWorldPosition(this.v2); this.v2.y = KAD_Y + 0.01; }
+        const bx = this.v3.copy(B.position); bx.y += 0.42;
+        const e1 = smooth(clamp(a / 0.3, 0, 1)), e2 = smooth(clamp((a - 0.3) / 0.5, 0, 1)), e3 = clamp((a - 0.8) / 0.2, 0, 1);
+        jp = this.v4.copy(R).lerp(dp, e1); if (a > 0.3) { jp.copy(dp).lerp(bx, e2); jp.y += Math.sin(e2 * PI) * 0.35; }
+        const got = a > 0.27 && e3 < 0.5; JU.carry.forEach((c) => { c.visible = got; });
+        if (a > 0.27) { if (KS[j * 2]) KS[j * 2].visible = false; if (KS[j * 2 + 1]) KS[j * 2 + 1].visible = false; }
+        tilt = e3 * 1.1;
+        if (e3 >= 0.5 && !U.balls[j * 2].visible) { U.balls[j * 2].visible = U.balls[j * 2 + 1].visible = true; g.sound.plop && g.sound.plop(); g.world.parts.burst(B.position.x, B.position.y + 0.2, B.position.z, 0xffe9a8, 6, 1, 1.2, 0.4, 0); }
+      }
+      J.visible = !!jp;
+      if (jp) { // झरनी: कटोरा jp पर, डंडा हलवाई के हाथ तक
+        J.position.copy(jp); J.rotation.set(0, 0, 0); J.rotateZ(this.side * tilt);
+        const hand = this.v2.set(H.position.x - this.side * 0.3, 1.45, H.position.z - 0.1).sub(jp), L = hand.length();
+        JU.h.position.copy(hand).multiplyScalar(0.5); JU.h.scale.set(1, L, 1); JU.h.quaternion.setFromUnitVectors(UP, hand.normalize());
+      }
+      const lid = clamp((t - 1.5) / 0.3, 0, 1), rib = clamp((t - 1.82) / 0.28, 0, 1);
+      if (this.hero < 0) boxLook(B, 1 - lid * lid, U.balls.filter((b) => b.visible).length, rib < 1 ? rib * (1 + Math.sin(rib * PI) * 0.3) : 1);
       if (rib >= 1 && !this.tied) { this.tied = true; g.world.parts.burst(B.position.x, B.position.y + 0.3, B.position.z, 0xffd24d, 14, 2, 2.5, 0.6); g.sound.ring(); }
-      if (t > 1.85 && this.boxT < 0) { this.boxT = 0; this.boxOn = null; this.b0 = B.position.clone(); }
+      // ✨ डिब्बा कैमरे के ठीक सामने (ढक्कन — दुकान का नाम — पूरा दिखे), फिर गोलू के कंधे पर
+      if (t > 2.18 && this.hero < 0) { this.hero = 0; this.boxOn = null; this.b0 = B.position.clone(); this.q0.copy(B.quaternion); g.sound.power && g.sound.power(); }
+      if (this.hero >= 0 && this.boxT < 0) {
+        this.hero += dt; const h = this.hero, cam = g.cam;
+        const fw = cam.getWorldDirection(this.v2), up = this.v3.set(0, 1, 0).applyQuaternion(cam.quaternion);
+        const HP = this.v4.copy(cam.position).addScaledVector(fw, 2.15).addScaledVector(up, -0.12);
+        const yA = fw.clone().negate(), zA = up.clone().negate(), xA = new THREE.Vector3().crossVectors(yA, zA);
+        this.q1.setFromRotationMatrix(this.m4.makeBasis(xA, yA, zA));
+        if (h < 0.35) { const e = smooth(h / 0.35); B.position.copy(this.b0).lerp(HP, e); B.quaternion.copy(this.q0).slerp(this.q1, e); }
+        else if (h < 1.1) { B.position.copy(HP); B.position.y += Math.sin((h - 0.35) * 5) * 0.025; B.quaternion.copy(this.q1); B.rotateY(Math.sin((h - 0.35) * 3) * 0.06);
+          if (!this.heroSaid) { this.heroSaid = true; g.toast('✨ ' + T('boxReady'), 1300, 'gold'); vibrate(15); for (const c of [0xffd24d, 0xffffff]) g.world.parts.burst(HP.x, HP.y + 0.3, HP.z, c, 10, 1.6, 1.2, 0.6, 0); } }
+        else { this.boxT = 0; this.b0 = B.position.clone(); this.q0.copy(B.quaternion); this.heroSaid = false; }
+      }
       if (this.boxT >= 0 && this.boxT < 1) {
         this.boxT = Math.min(1, this.boxT + dt / 0.42); const e = this.boxT, to = this.shoulder(this.v);
-        B.position.set(lerp(this.b0.x, to.x, e), lerp(this.b0.y, to.y, e) + Math.sin(e * PI) * 0.8, lerp(this.b0.z, to.z, e)); B.rotation.set(0, PI + e * PI, 0);
+        B.position.set(lerp(this.b0.x, to.x, e), lerp(this.b0.y, to.y, e) + Math.sin(e * PI) * 0.5, lerp(this.b0.z, to.z, e)); B.quaternion.copy(this.q0).slerp(this.q1.identity(), smooth(e));
         if (e >= 1) { vibrate(20); if (g.emo) g.emo.play('cool', 0.8); this.turnTo = 0; }
       }
-      if (this.boxT >= 1) { B.position.copy(this.shoulder(this.v)); B.rotation.set(0, 0, 0); if (this.t > 2.45) { this.go('walk'); this.tied = false; } }
+      if (this.boxT >= 1) { B.position.copy(this.shoulder(this.v)); B.rotation.set(0, 0, 0); if (this.t > this.packEnd()) { this.go('walk'); this.tied = false; } }
     }
     // ---- स्कूटी तक चलना (धीरे)
     if (this.st === 'walk') {
@@ -537,8 +629,8 @@ export class Delivery {
       this.wob = Math.max(0, (this.wob || 0) - dt);
       const kick = this.st === 'kick' ? Math.sin(this.t * 40) * 0.025 * (this.t > 0.62 ? 1 : 0.4) : 0;
       S.rotation.set(!p.ground ? -0.22 : 0, 0, (p.tx - p.x) * -0.14 + Math.sin(this.wob * 30) * 0.12 * (this.wob > 0 ? 1 : 0) + kick);
-      if (this.st === 'mount') { const e = clamp(this.t / 0.32, 0, 1), to = this.carrier(this.v); B.position.set(lerp(this.b0.x, to.x, e), lerp(this.b0.y, to.y, e) + Math.sin(e * PI) * 0.3, lerp(this.b0.z, to.z, e)); B.rotation.copy(S.rotation); if (e >= 1 && p.ground) this.go('helmet'); }
-      else { B.position.copy(this.carrier(this.v)); B.rotation.copy(S.rotation); }
+      if (this.st === 'mount') { const e = clamp(this.t / 0.32, 0, 1), to = this.carrier(this.v); B.position.set(lerp(this.b0.x, to.x, e), lerp(this.b0.y, to.y, e) + Math.sin(e * PI) * 0.3, lerp(this.b0.z, to.z, e)); B.rotation.set(S.rotation.x + 0.34 * e, S.rotation.y, S.rotation.z); if (e >= 1 && p.ground) this.go('helmet'); }
+      else { B.position.copy(this.carrier(this.v)); B.rotation.set(S.rotation.x + 0.34, S.rotation.y, S.rotation.z); } // ढक्कन थोड़ा पीछे वाले कैमरे की ओर झुका — दुकान की छपाई दिखे
       B.visible = true;
       if (this.st === 'ride' || this.st === 'go') if (Math.random() < 0.35 && p.ground) g.world.parts.burst(p.x + rand(-0.15, 0.15), 0.25, 1.4, 0xd9cdb8, 1, 0.6, 0.8, 0.5, -3); // धुआँ/धूल
     }
@@ -602,13 +694,13 @@ export class Delivery {
       this.cap = 0; const cm = this.cm;
       if (this.boxT >= 0) {
         this.boxT = Math.min(1, this.boxT + dt / 0.5); const k = this.boxT;
-        const tx = cm.position.x - this.side2 * 0.3, tz = cm.position.z + 0.05, ty = 1.25 * (cm.userData.sc || 1);
+        const tx = cm.position.x - this.side2 * 0.3, tz = cm.position.z - 0.1, ty = 1.0 * (cm.userData.sc || 1); // बड़ा डिब्बा सीने के आगे — चेहरा न ढके
         B.position.set(lerp(this.box0.x, tx, k), lerp(this.box0.y, ty, k) + Math.sin(k * PI) * 0.4, lerp(this.box0.z, tz, k)); B.rotation.set(-0.95 * k, PI + this.side2 * 0.5 * k, 0); // ढक्कन (दुकान का नाम) सामने वाले कैमरे की ओर
         if (k >= 1) { this.boxT = -2; g.world.parts.burst(tx, ty + 0.3, tz, 0xffd24d, 22, 3, 3, 0.8); this.finish(); this.go('thank'); this.coinsGo(); }
       }
     }
     if (this.st === 'thank') { // ख़ुशी + टिप के सिक्के + 🙏 → फिर दौड़
-      const cm = this.cm; if (cm) { B.position.set(cm.position.x - this.side2 * 0.3, 1.35 * (cm.userData.sc || 1) + Math.abs(Math.sin(this.t * 9)) * 0.22, cm.position.z + 0.05); B.rotation.set(-0.95, PI + this.side2 * 0.5, 0); } // ख़ुशी से डिब्बा ऊपर — नाम दिखे
+      const cm = this.cm; if (cm) { B.position.set(cm.position.x - this.side2 * 0.3, 1.02 * (cm.userData.sc || 1) + Math.abs(Math.sin(this.t * 9)) * 0.16, cm.position.z - 0.1); B.rotation.set(-0.95, PI + this.side2 * 0.5, 0); } // ख़ुशी से डिब्बा ऊपर — नाम दिखे
       if (this.t > 1.35) { this.turnTo = 0; this.cap = (this.t - 1.35) * 28; p.tx = LANES[p.lane]; }
       else { this.cap = 0; p.tx = this.side2 * (ROAD_HALF + 0.15); }
       if (this.cap > 40) { this.cap = Infinity; this.st = 'done'; this.box.visible = false; }
@@ -621,10 +713,11 @@ export class Delivery {
     const t = performance.now() / 1000;
     if (H.visible) {
       const u = H.userData, [aL, aR] = u.arms;
-      const packing = this.st === 'pack' && this.t < 1.8, tossing = this.st === 'pack' && this.boxT >= 0 && this.boxT < 1;
+      const packing = this.st === 'pack' && this.t > 1.4 && this.t < 2.15, tossing = this.st === 'pack' && (this.hero >= 0 || (this.boxT >= 0 && this.boxT < 1)), scoop = this.st === 'pack' && this.t < 1.45; // झरनी चलाना / ढक्कन-सुतली / डिब्बा दिखाना
       aR.rotation.z = damp(aR.rotation.z, tossing ? 2.4 : packing ? 1.0 + Math.sin(this.t * 16) * 0.5 : this.st === 'toShop' || this.st === 'brake' ? 1.2 + Math.sin(t * 9) * 0.5 : 2.3 + Math.sin(t * 10) * 0.4, 10, dt); // बुलाना / पैक / उछालना / टाटा
       aL.rotation.z = damp(aL.rotation.z, packing ? -1.0 - Math.sin(this.t * 16 + 1.5) * 0.4 : -0.2, 8, dt);
-      aR.rotation.x = damp(aR.rotation.x, packing ? -0.7 : 0, 8, dt); aL.rotation.x = damp(aL.rotation.x, packing ? -0.7 : 0, 8, dt);
+      aR.rotation.x = damp(aR.rotation.x, scoop ? -1.25 + Math.sin(this.t * 9.5) * 0.25 : packing ? -0.7 : 0, 8, dt); aL.rotation.x = damp(aL.rotation.x, scoop ? -0.9 : packing ? -0.7 : 0, 8, dt);
+      if (scoop) { aR.rotation.z = damp(aR.rotation.z, 0.35, 10, dt); aL.rotation.z = damp(aL.rotation.z, -0.3, 10, dt); }
     }
     const cm = this.cm;
     if (cm && cm.visible) {
@@ -661,7 +754,7 @@ export class Delivery {
     if (this.st === 'off' || this.st === 'done' || this.st === 'thank') { this.hide(); return; }
     el.hidden = false; document.body.classList.add('hasOrder');
     const stars = `<span class="os">${'⭐'.repeat(this.stars)}</span>`;
-    const item = `<div class="oc"><span><i style="background:${SW_CSS[this.sw]}"></i>📦 ${swName(this.sw)}</span><span>${this.c.icon} ${cName(this.c)}</span></div>`;
+    const item = `<div class="oc"><img class="obox" src="img/box_top.webp" alt=""><span><i style="background:${SW_CSS[this.sw]}"></i>📦 ${swName(this.sw)}</span><span>${this.c.icon} ${cName(this.c)}</span></div>`; // असली डिब्बे की तस्वीर
     if (['toShop', 'brake', 'pack', 'walk'].includes(this.st)) el.innerHTML = `<div class="oh"><img class="ologo" src="img/logo.webp" alt=""><span class="on">${SHOP_NAME}</span>${stars}</div>${item}<div class="od"><b>🏪 ${T('ordToShop')}</b><em></em></div>`;
     else el.innerHTML = `<div class="oh"><span class="oa">🛵</span><span class="on">${T('ordRide', cName(this.c))}</span>${stars}</div>${item}<div class="od"><b>🏠</b><em></em></div>`;
     this.dEl = el.querySelector('.od em'); this.dK = null;
