@@ -252,6 +252,8 @@ class Game {
     this.mk = { st: 'off', t: 0, x: 0, y: 0, z: 4 };
     this.resize();
     window.addEventListener('resize', () => this.resize());
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => fitText($('#btnRg b'), 11)); // फ़ॉन्ट आने के बाद चौड़ाई बदलती है
+    { const bt = $('#btnRg'); let lw = -1; if (bt && window.ResizeObserver) new ResizeObserver((es) => { const w = Math.round(es[0].contentRect.width); if (w !== lw && w > 0) { lw = w; requestAnimationFrame(() => fitText(bt.querySelector('b'), 11)); } }).observe(bt); } // मेन्यू दिखते ही / चौड़ाई बदलते ही नाप
     this.bindInput();
     this.bindUI();
     this.wx = new Weather(sc, this.lb.url, !PORTAL && this.lb.on); // 🌧️ दरभंगा का असली मौसम

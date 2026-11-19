@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """रसगुल्ला रन — CrazyGames के लिए zip बनाना।
 
-    python3 _src/portal/build_crazygames.py <आउटपुट फ़ोल्डर>
+    python3 _src/portal/build_crazygames.py <आउटपुट फ़ोल्डर>          (Basic Launch: विज्ञापन बंद)
+    python3 _src/portal/build_crazygames.py <आउटपुट फ़ोल्डर> --ads    (Full Launch: rewarded/midgame चालू)
 
 क्या बदलता है (सिर्फ़ zip वाली कॉपी में, असली game/ फ़ोल्डर वैसा ही रहता है):
   * index.html में window.RR_PORTAL = 'crazygames' और CrazyGames SDK v3 स्क्रिप्ट
@@ -29,7 +30,8 @@ def sub1(pat, rep, s, flags=re.S):
 
 
 def main():
-    out_root = Path(sys.argv[1] if len(sys.argv) > 1 else 'dist').resolve()
+    args = [a for a in sys.argv[1:] if not a.startswith('--')]
+    out_root = Path(args[0] if args else 'dist').resolve()
     out = out_root / 'rasgulla-run-crazygames'
     if out.exists():
         shutil.rmtree(out)
@@ -47,7 +49,9 @@ def main():
     h = (out / 'index.html').read_text(encoding='utf-8')
     h = re.sub(r'\s*<meta property="og:[^>]*>', '', h)
     h = sub1(r'<title>.*?</title>', '<title>Rasgulla Run</title>', h)
-    head = '<meta charset="utf-8">\n<script>window.RR_PORTAL = \'crazygames\';</script>\n<script src="' + SDK + '"></script>'
+    # Basic Launch: CrazyGames विज्ञापन बंद रखता है — "विज्ञापन देखकर आगे खेलो" बटन बेकार दिखे तो QA रोकता है। Full Launch के समय `--ads` से build करो
+    no_ads = '' if '--ads' in sys.argv else ' window.RR_NO_ADS = true;'
+    head = '<meta charset="utf-8">\n<script>window.RR_PORTAL = \'crazygames\';' + no_ads + '</script>\n<script src="' + SDK + '"></script>'
     h = sub1(r'<meta charset="utf-8">', lambda m: head, h)
     h = sub1(r'<html lang="hi">', '<html lang="en">', h)
     h = sub1(r'\s*<a id="orderLink".*?</a>', '', h)
@@ -59,8 +63,17 @@ def main():
     g = (out / 'js/game.js').read_text(encoding='utf-8')
     g = sub1(r"const GAME_URL = '[^']*';", "const GAME_URL = '';", g)
     g = sub1(r"const ORDER_URL = '[^']*';", "const ORDER_URL = '';", g)
-    g = sub1(r"window\.open\('https://wa\.me/[^\n]*", '', g)
+    g, n = re.subn(r"window\.open\('https://wa\.me/[^\n]*", '', g)  # WhatsApp शेयर (दौड़ + चुनौती) — पोर्टल पर बंद
+    if n < 1:
+        raise SystemExit('wa.me वाली लाइन नहीं मिली')
     (out / 'js/game.js').write_text(g, encoding='utf-8')
+
+    # ---- i18n.js: फ़ोटो-कार्ड शेयर के टेक्स्ट से अपनी वेबसाइट का पता हटाओ (पोर्टल पर बाहरी प्रचार मना) ----
+    t = (out / 'js/i18n.js').read_text(encoding='utf-8')
+    t, n = re.subn(r"(cardShare: '[^']*?)\s*[^'!]*: https://mbsweets\.github\.io/game/'", r"\1'", t)
+    if n != 3:
+        raise SystemExit(f'cardShare 3 भाषाओं में नहीं मिला ({n})')
+    (out / 'js/i18n.js').write_text(t, encoding='utf-8')
 
     # ---- जाँच: कोई बाहरी पता बचा तो नहीं ----
     bad = []

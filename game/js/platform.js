@@ -15,7 +15,7 @@ export const P = {
     const S = sdk();
     try { await S.init(); } catch (e) { console.warn('CrazyGames SDK', e); return; }
     if (S.environment === 'disabled') return;
-    this.on = true; this.ads = true;
+    this.on = true; this.ads = !window.RR_NO_ADS; // Basic Launch में CrazyGames विज्ञापन बंद रखता है — तब "विज्ञापन देखो" वाला बटन बेकार न दिखे (नियम), इसलिए पोर्टल build में RR_NO_ADS
     try { this.info = S.user && S.user.systemInfo; } catch (e) { /* */ }
     // प्रोग्रेस सेव: CrazyGames का data module (लॉग-इन खिलाड़ी का हर डिवाइस पर)
     try {
