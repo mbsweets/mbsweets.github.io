@@ -91,7 +91,7 @@ export class MetaUI {
     const lang = [['en', 'English'], ['hi', 'हिंदी'], ['mai', 'मैथिली']].map(([l, n]) => `<button class="${LANG === l ? 'on' : ''}" data-lang="${l}">${n}</button>`).join('');
     return row('🔊 ' + T('sound'), tog('sound', !s.muted)) + row('🎵 ' + T('sMusic'), tog('music', SETTINGS.music))
       + row('🗣️ ' + T('sVoice'), tog('voice', SETTINGS.voice)) + row('📳 ' + T('sVib'), tog('vib', SETTINGS.vib))
-      + `<div class="st col"><span>🖼️ ${T('sGfx')}</span><div class="seg sm2">${gfx}</div></div>`
+      + `<div class="st col"><span>🖼️ ${T('sGfx')}</span><div class="seg sm2">${gfx}</div>${SETTINGS.gfx === 'auto' && this.g.tier != null ? `<small class="gnow">${T('gNow')}: ${T('gt' + this.g.tier)}</small>` : ''}</div>`
       + `<div class="st col"><span>🌐 ${T('sLang')}</span><div class="seg sm2">${lang}</div></div>`
       + (this.g.wx && this.g.wx.on ? row('🌧️ ' + T('sWx'), tog('wx', store('wxOff') !== '1')) + `<p class="lbnote">${T('wxCredit')}</p>` : '')
       + `<button class="sm howto" data-act="howto">${T('howTo')}</button>`

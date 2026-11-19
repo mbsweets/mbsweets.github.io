@@ -123,7 +123,8 @@ export class Golu {
     for (const mt of this.glowMats) mt.emissive.setRGB(0.5 * v, 0.26 * v, 0.02 * v);
   }
   eat() { this.eatT = 0.16; }
-  pose(mode, ph, sp) {
+  land(k) { this.landT = 0.2; this.landK = k; } // ज़मीन छूते ही हल्का दबना-उठना
+  pose(mode, ph, sp, o = {}) {
     const s = Math.sin(ph), c = Math.cos(ph);
     // P: कोण डिग्री में (आगे +), out = बाँह बाहर, el = कोहनी और मुड़े, tw = कमर घुमाव
     const P = { tR: 18, tL: 18, kR: 12, kL: 12, aR: -4, aL: -4, oR: 6, oL: 6, eR: 0, eL: 0, hipY: 0, spX: 6, spY: 0, hdX: 0, hdZ: 0, by: 0, bz: 0, bx: 0.1, sq: 1 };
@@ -134,8 +135,9 @@ export class Golu {
       P.hipY = 9 * s; P.spY = -13 * s; P.hdZ = 2.5 * s;
       P.by = Math.abs(c) * 0.08 - 0.03; P.bx = 0.12;
       if (mode === 'stumble') { P.oR = 55 + 30 * Math.sin(ph * 3); P.oL = 55 - 30 * Math.sin(ph * 3); P.aR = 30; P.aL = 30; P.bz = Math.sin(ph * 2.3) * 0.25; P.hdZ = Math.sin(ph * 3) * 14; }
-    } else if (mode === 'jump') {
-      P.tR = 62; P.tL = 30; P.kR = 85; P.kL = 95; P.aR = 75; P.aL = 70; P.oR = 28; P.oL = 28; P.eR = -10; P.eL = -10; P.spX = 2; P.bx = 0.05;
+    } else if (mode === 'jump') { // ऊपर जाते समय घुटने मुड़े, नीचे आते समय पैर सीधे (उतरने को तैयार), हाथ संतुलन में
+      const f = Math.min(1, Math.max(0, (3 - (o.vy == null ? 5 : o.vy)) / 12)), m = (a, b) => a + (b - a) * f;
+      P.tR = m(66, 30); P.tL = m(28, 12); P.kR = m(92, 34); P.kL = m(100, 26); P.aR = m(78, 108); P.aL = m(66, 96); P.oR = m(26, 44); P.oL = m(26, 44); P.eR = m(-10, 18); P.eL = m(-10, 18); P.spX = m(2, 8); P.bx = m(0.04, 0.1); P.hdX = m(-6, 4);
     } else if (mode === 'fly') { // समोसे पर बैठा — हाथ फैलाकर संतुलन, मज़े में
       P.tR = 80; P.tL = 80; P.kR = 100; P.kL = 100; P.aR = 20 + 18 * s; P.aL = 20 - 18 * s; P.oR = 70 + 12 * c; P.oL = 70 - 12 * c; P.eR = 20; P.eL = 20;
       P.spX = 4; P.hdZ = 5 * s; P.spY = 6 * s; P.by = -0.55; P.bx = 0.05; P.bz = 0.06 * s;
@@ -176,8 +178,8 @@ export class Golu {
       if (mode === 'hangUp') { P.tR = 98; P.tL = 98; P.kR = 115; P.kL = 115; P.spX = -6; }
     } else if (mode === 'lunge') { // बंदर पर झपट्टा — दोनों हाथ आगे, झुककर लपका
       P.tR = 55; P.tL = -10; P.kR = 40; P.kL = 20; P.aR = 100; P.aL = 95; P.oR = 18; P.oL = 18; P.eR = 5; P.eL = 5; P.spX = 28; P.hdX = -12; P.bx = 0.45; P.by = -0.05;
-    } else if (mode === 'roll') {
-      P.tR = 70; P.tL = 70; P.kR = 95; P.kL = 95; P.aR = 50; P.aL = 50; P.oR = 12; P.oL = 12; P.spX = 20; P.hdX = 15; P.by = -0.38; P.sq = 0.74;
+    } else if (mode === 'roll') { // 🛝 फिसलना: पीठ के बल सड़क पर सरकना — पैर आगे, एक हाथ पीछे ज़मीन पर, सिर उठा (पहले गेंद की तरह घूमता था)
+      P.tR = 52; P.tL = 40; P.kR = 10; P.kL = 34; P.aR = -38; P.aL = 34; P.oR = 30; P.oL = 40; P.eR = 8; P.eL = 30; P.spX = 0; P.hdX = 22; P.hdZ = 4; P.bx = -0.95; P.by = -0.5; P.sq = 0.92;
     } else if (mode === 'dead') {
       P.tR = 35; P.tL = -5; P.kR = 30; P.kL = 50; P.aR = 60; P.aL = 70; P.oR = 75; P.oL = 75; P.bx = -1.4; P.by = -0.52;
     } else if (mode === 'dance') {
@@ -194,9 +196,9 @@ export class Golu {
     const sp = o.speed || 14;
     const run = mode === 'run' || mode === 'stumble';
     this.phase += dt * (run || mode === 'carry' || mode === 'runPhone' ? (o.walk ? 6.5 : 8 + sp * 0.34) : mode === 'dance' ? 6.5 : mode === 'fly' ? 4 : mode === 'boat' ? 5 : 3);
-    const P = this.pose(mode, this.phase, sp);
+    const P = this.pose(mode, this.phase, sp, o);
     if (!this.cur) this.cur = { ...P };
-    const C = this.cur, spd = run ? 40 : 18;
+    const C = this.cur, spd = run ? (this.prevMode === 'roll' || this.prevMode === 'jump' ? 26 : 40) : mode === 'roll' ? 30 : mode === 'jump' ? 22 : 18; // फिसलने/कूदने से दौड़ में नरमी से
     for (const key in P) C[key] = k(C[key], P[key], key === 'by' || key === 'bx' || key === 'bz' ? 14 : spd);
     const B = this.B;
     B.thighR.rotation.x = -(C.tR - BIND.thighR) * D2R;
@@ -219,13 +221,13 @@ export class Golu {
     b.position.y = 0.5 * SCALE * 0.95 + C.by;
     // ध्यान: model 180° घूमा है, इसलिए आगे झुकना = body.rotation.x ऋणात्मक नहीं, धनात्मक कोण x पर (खेल की -z दिशा)
     // rx0/rz0 = अपना झुकाव; ऊपर से करतब (o.tx/o.tz) जोड़ते हैं — ताकि अगले फ़्रेम में झुकाव करतब से न बिगड़े
-    if (mode === 'roll') { this.spin -= dt * 15; this.rx0 = this.spin; }
-    else if (o.flip != null && !o.tx && !o.tz) { this.rx0 = -o.flip * PI * 2 - C.bx; this.spin = 0; }
-    else { this.spin = 0; const r = this.rx0 == null ? b.rotation.x : this.rx0; this.rx0 = k(((r % (PI * 2)) + PI * 3) % (PI * 2) - PI, -C.bx, 12); }
+    if (o.flip != null && !o.tx && !o.tz) { this.rx0 = -o.flip * PI * 2 - C.bx; this.spin = 0; }
+    else { this.spin = 0; const r = this.rx0 == null ? b.rotation.x : this.rx0; this.rx0 = k(((r % (PI * 2)) + PI * 3) % (PI * 2) - PI, -C.bx, mode === 'roll' ? 22 : this.prevMode === 'roll' ? 16 : 12); }
     this.rz0 = k(this.rz0 || 0, C.bz, 12);
     b.rotation.x = this.rx0 + (o.tx || 0);
     b.rotation.z = this.rz0 + (o.tz || 0);
-    b.scale.setScalar(C.sq);
+    this.landT = Math.max(0, (this.landT || 0) - dt); const lq = this.landT > 0 ? Math.sin((1 - this.landT / 0.2) * Math.PI) * (this.landK || 0) : 0; // उतरने की लचक
+    b.scale.set(C.sq * (1 + lq * 0.07), C.sq * (1 - lq * 0.13), C.sq * (1 + lq * 0.07)); this.prevMode = mode;
     this.scale = k(this.scale, o.big ? 1.45 : 1, 6);
     this.root.scale.setScalar(this.scale);
     const hy = (o.y || 0) - (o.gy || 0); // परछाईं ज़मीन/छत पर

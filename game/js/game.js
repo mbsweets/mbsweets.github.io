@@ -43,7 +43,18 @@ const $ = (s) => document.querySelector(s);
 // बटन का लिखा कटे नहीं: जगह से बड़ा हो तो अक्षर छोटे करो (न्यूनतम min px)
 function fitText(el, min = 11) { if (!el || !el.clientWidth) return; el.style.fontSize = ''; let f = parseFloat(getComputedStyle(el).fontSize); while (el.scrollWidth > el.clientWidth + 1 && f > min) { f -= 0.5; el.style.fontSize = f + 'px'; } }
 // ग्राफ़िक्स के दर्जे (0 = सबसे बढ़िया). ऑटो: पूरी दौड़ में हर 2 सेकंड रफ़्तार देखो, धीमा हो तो एक दर्जा नीचे; फ़ोन याद रखे
-const DPR = Math.min(window.devicePixelRatio || 1, 2);
+// 🖥️ फ़ोन का ग्राफ़िक्स चिप (19 नवंबर): बढ़िया चिप (iQOO 13 = Adreno 830, नए Mali/Immortalis, कंप्यूटर) → ज़्यादा साफ़ तस्वीर; पुराने चिप → हल्के दर्जे से शुरू
+export const GPU = (() => {
+  try {
+    const c = document.createElement('canvas'), gl = c.getContext('webgl2') || c.getContext('webgl'); if (!gl) return { name: '', cls: 'mid' };
+    const ext = gl.getExtension('WEBGL_debug_renderer_info'), name = String((ext && gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)) || gl.getParameter(gl.RENDERER) || '');
+    const lose = gl.getExtension('WEBGL_lose_context'); if (lose) lose.loseContext();
+    const top = /Adreno[^0-9]*(7[3-9]\d|8\d\d)|Mali-G(7[6-9]|7[1-9]\d|9\d\d)\b|Immortalis|Xclipse 9|NVIDIA|GeForce|Radeon RX|Apple M\d/i.test(name);
+    const low = /SwiftShader|llvmpipe|Adreno[^0-9]*([1-5]\d\d|60\d|61[0-2])\b|Mali-(4\d\d|T\d+|G[35]\d|G52|G57|G68)\b|PowerVR|SGX|Vivante/i.test(name);
+    return { name, cls: top ? 'top' : low ? 'low' : 'mid' };
+  } catch (e) { return { name: '', cls: 'mid' }; }
+})();
+const DPR = Math.min(window.devicePixelRatio || 1, GPU.cls === 'top' ? 2.5 : 2); // बढ़िया चिप पर 2.5 (2K स्क्रीन पर किनारे साफ़)
 const TIERS = [
   { pr: DPR, sh: true, fog: [70, 155], view: -175 },
   { pr: Math.min(DPR, 1.5), sh: true, fog: [70, 155], view: -175 },
@@ -51,14 +62,20 @@ const TIERS = [
   { pr: 1, sh: false, fog: [52, 128], view: -132 },
   { pr: Math.min(DPR, 1) * 0.8, sh: false, fog: [44, 112], view: -116 },
 ];
-// कम RAM वाले फ़ोन पहले से हल्के दर्जे से (navigator.deviceMemory: 0.5/1/2/4/8 GB)
-function startTier() {
-  const saved = parseInt(store('gfxTier'), 10);
-  if (saved >= 0 && saved < TIERS.length) return saved;
+// फ़ोन के हिसाब से शुरुआती दर्जा: चिप + RAM (navigator.deviceMemory: 0.5/1/2/4/8 GB) + CPU कोर
+function deviceTier() {
   const m = navigator.deviceMemory || 8, c = navigator.hardwareConcurrency || 8;
-  return m <= 2 ? 3 : m <= 3 ? 2 : (m <= 4 || c <= 4) ? 1 : 0;
+  if (GPU.cls === 'top' && m >= 4) return 0;
+  const t = m <= 2 ? 3 : m <= 3 ? 2 : (m <= 4 || c <= 4) ? 1 : 0;
+  return GPU.cls === 'low' ? Math.max(t, 3) : t;
 }
-const GRAV = -JUMP.g, JUMP_V = JUMP.v, SHOE_V = 16.2, ROLL_T = 0.62, H_STAND = 1.75, H_ROLL = 0.9, HALF_W = 0.38;
+const TIER_TOP = () => (GPU.cls === 'low' ? 2 : 0); // अपने-आप मोड इससे ऊपर नहीं चढ़ेगा
+// पिछली बार सीखा दर्जा (gfxTier2 — पुराना gfxTier छोड़ा: पहले एक भारी पल पर घटा दर्जा हमेशा के लिए अटक जाता था)
+function startTier() {
+  const saved = parseInt(store('gfxTier2'), 10);
+  return saved >= 0 && saved < TIERS.length ? saved : deviceTier();
+}
+const GRAV = -JUMP.g, JUMP_V = JUMP.v, SHOE_V = 17.1, ROLL_T = 0.62, H_STAND = 1.75, H_ROLL = 0.9, HALF_W = 0.38;
 const REVIVE_COST = 300; // मिठाइ दय आगू खेलू
 const LOCAL = !PORTAL && /mbsweets\.github\.io$|^127\.0\.0\.1$|^localhost$/.test(location.hostname) || /[?&]shop=1/.test(location.search);
 const GAME_URL = 'https://mbsweets.github.io/game/';
@@ -118,7 +135,8 @@ class Game {
     this.setTier(q === 'low' ? 3 : q === 'high' ? 0 : startTier());
     this.perf = { t: 0, n: 0, sum: 0, done: q !== 'auto', prev: 0, miss: 0 };
   }
-  setTier(n) {
+  // live = दौड़ के बीच: सिर्फ़ रेज़ोल्यूशन/दूरी बदलो — परछाईं चालू/बंद से हर shader दोबारा बनता है (बड़ा झटका), वो अगली दौड़ की शुरुआत में
+  setTier(n, live = false) {
     const T0 = TIERS[n], r = this.renderer;
     this.tier = n;
     this.pr = T0.pr;
@@ -127,7 +145,7 @@ class Game {
     this.scene.fog.near = T0.fog[0]; this.scene.fog.far = T0.fog[1];
     if (this.lamp) this.lamp.visible = n <= 2;
     this.world.viewZ = T0.view;
-    if (r.shadowMap.enabled !== T0.sh) {
+    if (!live && r.shadowMap.enabled !== T0.sh) {
       r.shadowMap.enabled = T0.sh; this.sun.castShadow = T0.sh;
       this.golu.shadow.material.opacity = T0.sh ? 0.16 : 0.28;
       this.scene.traverse((o) => { if (o.material) for (const m of [].concat(o.material)) m.needsUpdate = true; });
@@ -183,7 +201,7 @@ class Game {
     dl.target.position.set(0, 0, -15);
     dl.position.copy(SUN).multiplyScalar(45).add(dl.target.position);
     dl.castShadow = true;
-    const big = Math.min(window.innerWidth, window.innerHeight) > 700;
+    const big = Math.min(window.innerWidth, window.innerHeight) > 700 || GPU.cls === 'top'; // बढ़िया चिप: तीखी परछाईं
     dl.shadow.mapSize.set(big ? 2048 : 1024, big ? 2048 : 1024);
     const sc2 = dl.shadow.camera;
     sc2.left = -16; sc2.right = 16; sc2.top = 32; sc2.bottom = -32; sc2.near = 5; sc2.far = 110;
@@ -583,13 +601,14 @@ class Game {
     this.sound.init();
     if (!this.sound.playing) this.sound.startMusic();
     this.world.reset(!this.tutDone);
-    this.p = { lane: 1, prevLane: 1, x: 0, tx: 0, y: 0, vy: 0, ground: true, roll: 0, rollQ: false, laneT: 9, big: false, stumT: 0, beesT: 0, invT: 0, slowT: 0, air: 0, fly: 0, boat: false, jbuf: 0, coy: 0, scooty: false, zip: false, zipK: 0 };
+    this.p = { lane: 1, prevLane: 1, x: 0, tx: 0, vx: 0, y: 0, vy: 0, ground: true, roll: 0, rollQ: false, laneT: 9, big: false, stumT: 0, beesT: 0, invT: 0, slowT: 0, air: 0, fly: 0, boat: false, jbuf: 0, coy: 0, scooty: false, zip: false, zipK: 0 };
     this.pu = { magnet: 0, shoes: 0, shield: false, thali: 0, madhu: 0 };
     this.level = 0; this.samosa.visible = false; this.skyShow.reset();
     this.nightSaid = false; this.wild = 0; this.nfx.update(0, 0, 0, 0, this.world.chunks, this.cam.quaternion);
     this.rushT = 0; this.meter = 0;
     this.score = 0; this.got = 0; this.combo = 0; this.comboT = 0; this.timeScale = 1; this.slowmo = 0;
-    this.speed = 14; this.runT = 0; this.perf = { t: 0, n: 0, sum: 0, done: SETTINGS.gfx !== 'auto' || this.tier >= TIERS.length - 1, prev: 0, miss: 0 };
+    this.speed = 14; this.runT = 0; this.perf = { t: 0, n: 0, sum: 0, done: SETTINGS.gfx !== 'auto', prev: 0, miss: 0, good: 0, moved: false };
+    if (SETTINGS.gfx === 'auto' && this.renderer && this.renderer.shadowMap.enabled !== TIERS[this.tier].sh) this.setTier(this.tier); // पिछली दौड़ में बदला दर्जा — परछाईं अब (दौड़ शुरू होते ही)
     this.golu.root.rotation.y = 0;
     this.golu.setGlow(0);
     this.show(['#hud']);
@@ -1211,7 +1230,9 @@ class Game {
   // ------------------------------------------------ हर फ़्रेम
   frame() {
     requestAnimationFrame(() => this.frame());
-    const rdt = Math.min(this.clock.getDelta(), 1 / 20);
+    const d0 = this.clock.getDelta(); this.rawDt = d0; const raw = Math.min(d0, 1 / 20); // 🎞️ फ़्रेम का समय बराबर: 120/144Hz फ़ोन पर 7–8 ms का उछलता अंतर चाल में झटका न दे; असली रुकावट (बड़ा अंतर) तुरंत माने
+    this.sdt = this.sdt && Math.abs(raw - this.sdt) < this.sdt * 0.5 ? this.sdt + (raw - this.sdt) * 0.2 : raw;
+    const rdt = this.sdt;
     if (this.rg && this.rg.on && this.state === 'menu') return; // 🍮 रसगुल्ला वाला खेल खुला — पीछे 3D नहीं बनाना (फ़ोन हल्का)
     try { this.update(rdt); } catch (e) { logErr(e, 'update ' + this.state + (this.dl ? ' dl=' + this.dl.st : '') + (this.mk ? ' mk=' + this.mk.st : '')); } // 🐞 गलती डायरी में, फ़्रेम फिर भी बने
     this.sky.position.copy(this.cam.position);
@@ -1328,7 +1349,7 @@ class Game {
     this.lastDz = dz;
     // खिलाड़ी
     p.laneT += dt;
-    p.x = damp(p.x, p.tx, 16, dt);
+    { const W = 26, e = Math.exp(-W * dt), d = p.x - p.tx, v0 = p.vx || 0, c = v0 + W * d; p.x = p.tx + (d + c * dt) * e; p.vx = (v0 - W * c * dt) * e; } // 🏃 लेन बदलना: स्प्रिंग जैसी नरम चाल — शुरू और रुकना दोनों नरम, फिर भी ~0.18 सेकंड में
     const gy = this.world.groundAt(p.x, 0); // डिब्बे की छत / ढलान
     p.gy = gy;
     if (p.fly > 0) {
@@ -1349,7 +1370,9 @@ class Game {
       p.air += dt;
       const floor = prevY >= gy - 0.3 ? gy : 0; // ऊपर से आए तो छत, बगल से तो ज़मीन
       if (p.y <= floor && p.vy <= 0) {
+        const imp = -p.vy; // ज़मीन पर कितनी ज़ोर से
         p.y = floor; p.vy = 0; p.ground = true; p.air = 0;
+        if (imp > 5 && !p.boat) { if (this.golu.land) this.golu.land(Math.min(1, imp / 16)); if (!p.rollQ) this.world.parts.burst(p.x, p.y + 0.08, 0.15, 0xd9c7a8, imp > 11 ? 7 : 4, 1.8, 0.7, 0.4, 0); } // उतरते ही हल्की लचक + धूल
         if (p.rollQ) { p.roll = ROLL_T; p.rollQ = false; this.sound.roll(); }
         this.tricks.land();
         if (p.jbuf > 0 && !p.roll && p.fly <= 0) this.doJump();
@@ -1385,7 +1408,7 @@ class Game {
     }
     const zw = this.world.zip, zSag = zw ? zipSag(-zw.a) : 0; // 🚡 रस्सी का झोल: खंभों के बीच गोलू थोड़ा नीचे, खंभे पर फिर ऊपर
     this.zipOff = p.zip ? ZIP_H * (1 - Math.pow(1 - p.zipK, 3)) + zSag * p.zipK : 0;
-    if (p.roll > 0) p.roll -= dt;
+    if (p.roll > 0) { p.roll -= dt; if (p.ground && !p.boat && p.fly <= 0 && Math.random() < dt * 40) this.world.parts.burst(p.x + rand(-0.25, 0.25), p.y + 0.06, -0.35, 0xd9c7a8, 1, 1.4, 0.7, 0.4, 0); } // फिसलते समय पीछे उड़ती धूल
     p.stumT = Math.max(0, p.stumT - dt);
     p.invT = Math.max(0, p.invT - dt);
     if (p.beesT > 0) { p.beesT -= dt; if (p.beesT <= 0) this.sound.bees(false); }
@@ -1443,9 +1466,9 @@ class Game {
     const look = chased && p.ground && p.roll <= 0 && p.fly <= 0 && this.lookC % 1.7 > 1.12 ? 1 : 0;
     this.emo.set('sweat', chased && p.fly <= 0);
     const tr = this.tricks;
-    g.update(dt, mode, { speed: this.speed, y: p.y, gy, big: this.rushT > 0, shield: this.pu.shield, flip, tx: tr.rx, tz: tr.rz, look, walk: this.dl.st === 'walk' });
+    g.update(dt, mode, { speed: this.speed, vy: p.vy, y: p.y, gy, big: this.rushT > 0, shield: this.pu.shield, flip, tx: tr.rx, tz: tr.rz, look, walk: this.dl.st === 'walk' });
     g.root.position.set(p.x, p.y + (inBoat ? WATER_Y + 0.12 : p.scooty ? 0.36 : 0), inBoat ? 0.12 : p.scooty ? 0.18 : 0);
-    g.root.rotation.z = (p.tx - p.x) * -0.06;
+    g.root.rotation.z = clamp(-(p.vx || 0) * 0.009, -0.24, 0.24); // मोड़ की ओर हल्का झुकाव (रफ़्तार के हिसाब से)
     const tro = this.trolley; tro.visible = !!p.zip;
     if (p.zip) { // रस्सी से लटका: पैर उठाने पर थोड़ा ऊपर, रस्सी बदलते समय झूला
       g.root.position.y = this.zipOff + p.y * 0.3 - (1 - p.zipK) * 0.0; g.root.rotation.z = (p.tx - p.x) * -0.22 + Math.sin(this.runT * 2.2) * 0.04;
@@ -1471,7 +1494,7 @@ class Game {
       roll = ft < 1.1 ? e(ft / 1.1) * Math.PI * 2 : 0;
       for (const t0 of [3.3, 6.2]) if (ft > t0 && ft < t0 + 0.8) twirl = e((ft - t0) / 0.8) * Math.PI * 2;
     }
-    g.root.rotation.z += roll; g.root.rotation.y = twirl + tr.ry + this.dl.turn(); // रुककर दुकान/दरवाज़े की ओर मुँह
+    g.root.rotation.z += roll; g.root.rotation.y = twirl + tr.ry + this.dl.turn() + (p.fly > 0 || p.zip ? 0 : clamp(-(p.vx || 0) * 0.01, -0.26, 0.26)); // रुककर दुकान/दरवाज़े की ओर मुँह; लेन बदलते समय उधर मुड़कर
     const hits = this.skyShow.update(dt, dz, p.x, p.y, this.cam.position);
     if (hits) {
       this.score += 100 * hits * this.mult; this.got += 3 * hits;
@@ -1507,7 +1530,7 @@ class Game {
     this.rec.push(this.runT, this.world.dist, p.x, p.y, flagsOf(p));
     this.ghostGap = this.ghost.update(dt, this.runT, this.world.dist, WATER_Y);
     this.updateHud();
-    this.autoQuality(rdt);
+    this.autoQuality(this.rawDt || rdt);
   }
 
   ctx() {
@@ -1731,17 +1754,24 @@ class Game {
   autoQuality(dt) {
     const q = this.perf;
     if (q.done) return;
+    if (this.runT < 3 || this.cine > 0 || (this.dl.inScene && this.dl.inScene()) || dt > 0.25) { q.t = 0; q.n = 0; q.sum = 0; return; } // शुरू के 3 सेकंड (लोड), रुके सीन, ऐप से लौटना — गिनती में नहीं
     q.t += dt; q.n++; q.sum += dt;
     if (q.t < 2) return;
     const avg = q.sum / q.n;
     q.t = 0; q.n = 0; q.sum = 0;
+    if (avg <= 1 / 54) { // आराम से चल रहा: 6 सेकंड लगातार ऐसा हो तो एक दर्जा ऊपर (दौड़ में एक ही बार, फ़ोन की हद तक)
+      q.prev = 0; q.good++;
+      if (q.good >= 3 && !q.moved && this.tier > TIER_TOP()) { q.moved = true; q.good = 0; this.setTier(this.tier - 1, true); store('gfxTier2', this.tier); }
+      return;
+    }
+    q.good = 0;
     if (avg <= 1 / 45) { q.prev = 0; return; } // ठीक चल रहा — देखते रहो (आगे भारी जगह आ सकती है)
     // पिछली बार घटाने से फ़ायदा नहीं हुआ (जैसे फ़ोन ख़ुद 30fps पर बँधा हो) — दो बार ऐसा हो तो रुक जाओ
     if (q.prev && avg > q.prev * 0.93) { if (++q.miss >= 2) { q.done = true; return; } } else q.miss = 0;
     q.prev = avg;
-    if (this.tier >= TIERS.length - 1) { q.done = true; return; }
-    this.setTier(this.tier + 1);
-    store('gfxTier', this.tier);
+    if (this.tier >= TIERS.length - 1) return;
+    q.moved = true; this.setTier(this.tier + 1, true);
+    store('gfxTier2', this.tier);
   }
 
 }

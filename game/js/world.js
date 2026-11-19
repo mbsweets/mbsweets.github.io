@@ -35,7 +35,7 @@ export const LANE_W = 2.5;
 export const LANES = [-LANE_W, 0, LANE_W];
 export const SPAWN_Z = -150;
 // कूद (game.js भी यही इस्तेमाल करता है): v = ऊपर की रफ़्तार, g = गुरुत्व. ऊँचाई ≈ v²/2g = 1.65 मी., हवा में ≈ 0.6 से.
-export const JUMP = { v: 10.9, g: 36 };
+export const JUMP = { v: 12.8, g: 40 }; // 19 नवंबर (मालिक: "jump बहुत कम है"): ऊँचाई 1.65 → 2.05 मी., हवा में 0.64 सेकंड (थोड़ा तेज़ गिरना — भारीपन, तैरना नहीं)
 const DESPAWN_Z = 14;
 const SHOP_EVERY = 430; // इतनी दूरी पर फिर दुकान (≈ 20–28 सेकंड)
 

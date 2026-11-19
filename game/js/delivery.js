@@ -276,10 +276,10 @@ function makeKitchen() {
   return g;
 }
 function kitchenFor(K, sw) { const [lq, col, shape] = KAD[sw] || KAD.rasgulla, u = K.userData; u.liq.material.color.set(lq); u.sm.color.set(col); for (const s of u.sweets) { s.visible = true; s.scale.set(shape === 'oval' ? 1.35 : 1, shape === 'disc' ? 0.5 : 1, shape === 'disc' ? 1.25 : 1); } }
-function kitchenAnim(K, t) {
+function kitchenAnim(K, t, dt = 1 / 60) {
   const u = K.userData;
   u.sweets.forEach((s) => { const d = s.userData; s.position.set(d.x + Math.sin(t * 0.7 + d.ph) * 0.04, KAD_Y + 0.02 + Math.sin(t * 3 + d.ph) * 0.015, d.z + Math.cos(t * 0.6 + d.ph) * 0.04); s.rotation.y = t * 0.4 + d.ph; });
-  u.bub.forEach((b) => { const d = b.userData; d.t += 0.035; if (d.t > 1) { d.t = 0; d.x = (Math.random() - 0.5) * 0.85; d.z = (Math.random() - 0.5) * 0.85; } b.position.set(d.x, KAD_Y + 0.01, d.z); b.scale.setScalar(0.4 + d.t * 1.2); b.material.opacity = 0.75 * (1 - d.t); });
+  u.bub.forEach((b) => { const d = b.userData; d.t += dt * 2.1; if (d.t > 1) { d.t = 0; d.x = (Math.random() - 0.5) * 0.85; d.z = (Math.random() - 0.5) * 0.85; } b.position.set(d.x, KAD_Y + 0.01, d.z); b.scale.setScalar(0.4 + d.t * 1.2); b.material.opacity = 0.75 * (1 - d.t); });
   u.fl.forEach((f, i) => { f.scale.set(1, 0.7 + 0.5 * Math.abs(Math.sin(t * 13 + i * 1.7)), 1); });
 }
 // 🥄 झरनी: छेद वाली गोल कलछी + लंबा डंडा (हलवाई के हाथ तक)
@@ -546,8 +546,8 @@ export class Delivery {
     if (H.visible) {
       for (const o of [H, this.counter, this.kitchen, this.karigar, this.parat, this.mark]) o.position.z += dz;
       if (this.shop) this.shop.position.z += dz;
-      kitchenAnim(this.kitchen, performance.now() / 1000);
-      if (Math.random() < 0.18 && this.kitchen.position.z < 6) g.world.parts.burst(this.kitchen.position.x + rand(-0.3, 0.3), KAD_Y + 0.15, this.kitchen.position.z + rand(-0.3, 0.3), 0xf4f1ea, 1, 0.3, 1.2, 0.9, 0); // भाप
+      kitchenAnim(this.kitchen, performance.now() / 1000, dtReal);
+      if (Math.random() < dtReal * 11 && this.kitchen.position.z < 6) g.world.parts.burst(this.kitchen.position.x + rand(-0.3, 0.3), KAD_Y + 0.15, this.kitchen.position.z + rand(-0.3, 0.3), 0xf4f1ea, 1, 0.3, 1.2, 0.9, 0); // भाप
       const ku = this.karigar.userData, kt = performance.now() / 1000; ku.arms[0].rotation.x = -0.9 + Math.sin(kt * 8) * 0.35; ku.arms[1].rotation.x = -0.9 + Math.sin(kt * 8 + 1.6) * 0.35; ku.body.position.y = Math.abs(Math.sin(kt * 8)) * 0.03; // गूँधना
       if (H.position.z > 22) { for (const o of [H, this.counter, this.kitchen, this.karigar, this.parat]) o.visible = false; if (this.shop) this.shop.visible = false; }
     }
