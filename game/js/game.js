@@ -180,7 +180,7 @@ class Game {
     const bar = $('#loadbar i');
     try {
       await Promise.all([loadTextures((p) => { bar.style.width = (p * 80) + '%'; }), document.fonts ? document.fonts.ready : null,
-        loadGolu().then(async (d) => { this.has3d = true; try { await loadWardrobe(d.tex); } catch (e) { console.warn('wardrobe', e); } }, (e) => { console.warn('golu3d', e); })]);
+        loadGolu().then(async (d) => { this.has3d = true; try { await loadWardrobe(d.tex); } catch (e) { console.warn('wardrobe', e); } }, (e) => { console.warn('golu3d', e); logErr(e, 'golu3d'); })]);
       buildRealTextures();
     } catch (e) {
       $('#loadmsg').textContent = 'Error: ' + e;
@@ -195,6 +195,27 @@ class Game {
     this.checkChallenge();
     this.clock = new THREE.Clock();
     this.frame();
+    if (!this.has3d) this.retryGolu();
+  }
+  // 🧒 असली 3D गोलू नहीं आया (नेट अटका) — पुराना कोड वाला गोलू टिकने नहीं देना: पीछे से दोबारा लाओ, आते ही बदल दो
+  retryGolu(n = 0) {
+    if (this.has3d || n > 30) return;
+    setTimeout(() => loadGolu('', 1).then(async (d) => {
+      try { await loadWardrobe(d.tex); } catch (e) { console.warn('wardrobe', e); }
+      this.swapGolu3D();
+    }, () => this.retryGolu(n + 1)), n < 4 ? 2500 : 8000);
+  }
+  swapGolu3D() {
+    if (this.has3d || !this.chars) return;
+    const old = this.chars.c_golu, ng = new Golu3D();
+    shadows(ng.root, true, false);
+    ng.shadow.material = ng.shadow.material.clone(); ng.shadow.material.opacity = 0.16;
+    ng.root.visible = false; this.scene.add(ng.root);
+    this.has3d = true; this.chars.c_golu = ng;
+    if (this.golu === old) this.setChar('c_golu');
+    old.root.visible = false; this.scene.remove(old.root);
+    { const vc = this.trialChar || (this.state === 'menu' && this.viewChar); this.wearNow(vc ? { ...wardrobe.outfit, char: vc } : undefined); }
+    this.needWarm = true; if (this.state !== 'play') this.warmUp();
   }
 
   setup() {

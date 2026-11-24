@@ -7,16 +7,25 @@ import { LOOKS, makeTexture, makeAttachment, makeBackItem, animWear } from './wa
 const PI = Math.PI, D2R = PI / 180;
 let DATA = null;
 
-export async function loadGolu(base = '') {
+// 24 नवंबर (मालिक का फ़ोटो: पुराना कोड वाला गोलू दिखा) — नेट अटके तो एक बार में हार नहीं: 3 बार कोशिश, दूसरी बार से cache छोड़कर
+export async function loadGolu(base = '', tries = 3) {
   if (DATA) return DATA;
-  const [meta, bin, tex] = await Promise.all([
-    fetch(base + 'models/golu.json').then((r) => r.json()),
-    fetch(base + 'models/golu.bin').then((r) => r.arrayBuffer()),
-    new Promise((res, rej) => new THREE.TextureLoader().load(base + 'img/golu.webp', res, undefined, rej)),
-  ]);
-  tex.flipY = false; tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
-  DATA = { meta, bin, tex };
-  return DATA;
+  let last = null;
+  for (let i = 0; i < tries; i++) {
+    try {
+      const o = i ? { cache: 'reload' } : undefined;
+      const [meta, bin, tex] = await Promise.all([
+        fetch(base + 'models/golu.json', o).then((r) => { if (!r.ok) throw new Error('golu.json ' + r.status); return r.json(); }),
+        fetch(base + 'models/golu.bin', o).then((r) => { if (!r.ok) throw new Error('golu.bin ' + r.status); return r.arrayBuffer(); }),
+        new Promise((res, rej) => new THREE.TextureLoader().load(base + 'img/golu.webp', res, undefined, () => rej(new Error('golu.webp')))),
+      ]);
+      if (!bin || bin.byteLength < 1000) throw new Error('golu.bin छोटा');
+      tex.flipY = false; tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+      DATA = { meta, bin, tex };
+      return DATA;
+    } catch (e) { last = e; if (i < tries - 1) await new Promise((r) => setTimeout(r, 1200 * (i + 1))); }
+  }
+  throw last;
 }
 
 function buildGeometry({ meta, bin }) {
