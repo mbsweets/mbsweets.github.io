@@ -418,7 +418,14 @@ export class Delivery {
     this.helmet(false);
     this.hide();
   }
-  hide() { if (this.el) this.el.hidden = true; document.body.classList.remove('hasOrder'); }
+  hide() { if (this.el) { this.el.hidden = true; this.el.classList.remove('mini'); } this.bigT = 0; document.body.classList.remove('hasOrder', 'ordBig', 'ordMini'); }
+  /* 📌 ऑर्डर कार्ड: नया ऑर्डर/नया पड़ाव आते ही 2.6 सेकंड बड़ा, फिर स्कोर के नीचे एक पतली पट्टी — बीच की स्क्रीन (सड़क) खाली
+     (24 नवंबर 2026, मालिक: "पॉपअप जो आता है… मेन स्क्रीन पर गेम प्ले बिगड़ जाता है") */
+  mini(on) {
+    const el = this.el; if (!el) return; const b = document.body.classList;
+    el.classList.toggle('mini', on); b.toggle('ordMini', on); b.toggle('ordBig', !on);
+    if (!on) this.bigT = 2.6;
+  }
   active() { return this.st !== 'off' && this.st !== 'done'; }
   inScene() { return SCENE.includes(this.st); } // रुका हुआ पल (स्वाइप = जल्दी)
   hurry() { this.fast = 2.4; }
@@ -467,7 +474,7 @@ export class Delivery {
     this.boxT = -1; this.clearZone(z - 28, z + 34); this.quiet(1000);
     this.st = 'toShop'; this.callT = 1.7; this.fast = 1;
     const sw = swName(this.sw);
-    g.cheer('order', 2200, -1, true, 'gold', T('ordCallShop', cName(c), sw));
+    g.cheer('order', 2200, -1, true, 'gold', ''); // लंबी नीचे वाली लाइन नहीं — वही बात बड़े ऑर्डर कार्ड में है (सड़क पर दो लाइन का संदेश न आए)
     g.say(T('ordCall', cName(c), sw), false);
     g.sound.order(); if (g.sound.phone) g.sound.phone(); vibrate([25, 40, 25, 40, 25]);
     if (g.emo) g.emo.play('phone', 1.7);
@@ -540,6 +547,7 @@ export class Delivery {
     if (this.st === 'off' || this.st === 'done') {
       if (this.st === 'off') { if (this.toNext > 0) this.toNext -= dz; else if (this.canStart()) this.start(); }
     }
+    if (this.bigT > 0) { this.bigT -= dtReal; if (this.bigT <= 0) this.mini(true); } // 📌 बड़ा कार्ड 2.6 सेकंड, फिर ऊपर पतली पट्टी
     this.t = (this.t || 0) + dt;
     if (this.callT > 0) this.callT -= dtReal;
     // दुनिया के साथ चलती चीज़ें
@@ -755,10 +763,11 @@ export class Delivery {
     el.hidden = false; document.body.classList.add('hasOrder');
     const stars = `<span class="os">${'⭐'.repeat(this.stars)}</span>`;
     const item = `<div class="oc"><img class="obox" src="img/box_top.webp" alt=""><span><i style="background:${SW_CSS[this.sw]}"></i>📦 ${swName(this.sw)}</span><span>${this.c.icon} ${cName(this.c)}</span></div>`; // असली डिब्बे की तस्वीर
-    if (['toShop', 'brake', 'pack', 'walk'].includes(this.st)) el.innerHTML = `<div class="oh"><img class="ologo" src="img/logo.webp" alt=""><span class="on">${SHOP_NAME}</span>${stars}</div>${item}<div class="od"><b>🏪 ${T('ordToShop')}</b><em></em></div>`;
+    if (['toShop', 'brake', 'pack', 'walk'].includes(this.st)) el.innerHTML = `<div class="oh"><img class="ologo" src="img/logo.webp" alt=""><span class="on">${SHOP_NAME}</span>${stars}</div>${item}<div class="od"><b>🏪 <span class="odt">${T('ordToShop')}</span></b><em></em></div>`;
     else el.innerHTML = `<div class="oh"><span class="oa">🛵</span><span class="on">${T('ordRide', cName(this.c))}</span>${stars}</div>${item}<div class="od"><b>🏠</b><em></em></div>`;
     this.dEl = el.querySelector('.od em'); this.dK = null;
-    if (full) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+    if (full) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); this.mini(false); }
+    else if (!el.classList.contains('mini') && !(this.bigT > 0)) this.mini(true);
   }
   paintDist(m) { const v = Math.round(m / 5) * 5; if (!this.dEl || v === this.dK) return; this.dK = v; this.dEl.textContent = T('ordM', v); }
   // पुराना (मिठाई जमा करने वाला) तरीका अब नहीं — game.collect अब भी बुलाता है

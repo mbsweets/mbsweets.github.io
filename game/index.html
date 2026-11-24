@@ -132,12 +132,25 @@
 #order .ol span.t{background:var(--haldi);animation:pulse .45s ease-in-out infinite alternate}
 #order .ol span.me:not(.t){background:#f3e6c8}
 #order.pop{animation:opop .4s}
+/* 📌 पतली पट्टी (बड़ा कार्ड 2.6 सेकंड बाद) — स्कोर के नीचे एक लाइन; सड़क खाली (24 नवंबर 2026) */
+#order.mini{flex-direction:row;align-items:center;gap:5px;width:max-content;max-width:calc(100vw - 20px);padding:3px 6px 3px 4px;border-radius:99px;border-width:2.5px;box-shadow:0 3px 0 var(--ink);transition:none}
+#order.mini .oh{flex:none;gap:2px}#order.mini .on{display:none}#order.mini .ologo{width:22px}#order.mini .oa{font-size:18px}
+#order.mini .os{font-size:9px;order:9}
+#order.mini .oc{flex-wrap:nowrap;gap:4px;min-width:0}
+#order.mini .oc .obox{width:30px;border-width:1.5px;border-radius:4px;box-shadow:none}
+#order.mini .oc span{font-size:12px;padding:0 6px 0 2px;border-width:1.5px;min-width:0;overflow:hidden;text-overflow:ellipsis}
+#order.mini .oc i{width:11px;height:11px;border-width:1.5px}#order.mini .oc span:first-of-type{flex-shrink:0}#order.mini .oc span+span{flex-shrink:1}
+#order.mini .od{flex:none;font-size:12px;gap:3px}#order.mini .odt{display:none}
+#order.mini .od em{padding:0 7px;border-width:1.5px;font-size:12px}
 @keyframes opop{0%{transform:translateX(-50%) scale(.5)}70%{transform:translateX(-50%) scale(1.08)}100%{transform:translateX(-50%) scale(1)}}
 #order.shake{animation:oshake .4s}
 @keyframes oshake{0%,100%{transform:translateX(-50%)}25%{transform:translateX(calc(-50% - 8px))}75%{transform:translateX(calc(-50% + 8px))}}
 body.hasOrder #combo{top:calc(max(10px,env(safe-area-inset-top)) + 178px)}
 body.hasOrder #toast{top:40%} /* ऑर्डर कार्ड के नीचे (360px फ़ोन पर कार्ड 36% तक जाता है) */
 #toast.low{top:38%}body.hasOrder #toast.low{top:40%}
+body.ordMini #combo{top:calc(max(10px,env(safe-area-inset-top)) + 140px)}
+body.ordBig #combo{opacity:0}
+body.ordMini #toast,body.ordMini #toast.low{top:calc(max(10px,env(safe-area-inset-top)) + 185px)}
 #lvl{z-index:8} /* लेवल की पट्टी 2 सेकंड ऑर्डर कार्ड के ऊपर — शाबाशी से न टकराए */
 /* उड़ते अंक (करतब) */
 .ftxt{position:absolute;left:50%;top:52%;transform:translate(-50%,0);font:800 clamp(22px,6vw,30px) var(--disp);color:#FFE45C;-webkit-text-stroke:5px var(--ink);paint-order:stroke fill;pointer-events:none;z-index:4;animation:ftxt .9s ease-out forwards}
