@@ -253,6 +253,7 @@ export class Darshan {
   }
   get data() { try { return JSON.parse(store('darshan') || 'null') || { got: [], img: {} }; } catch (e) { return { got: [], img: {} }; } }
   save(d) { try { store('darshan', JSON.stringify(d)); } catch (e) { /* जगह कम: तस्वीर के बिना */ d.img = {}; store('darshan', JSON.stringify(d)); } }
+  prebuild() { for (const id of Object.keys(MAKERS)) this.model(id); } // खेल खुलते समय सब जगहें तैयार (दौड़ में बनना = झटका)
   model(id) { if (!this.models[id]) { const m = MAKERS[id](); m.visible = false; this.g.scene.add(m); this.models[id] = m; } return this.models[id]; }
   reset() {
     if (this.act) this.act.m.visible = false;

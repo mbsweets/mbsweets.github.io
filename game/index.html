@@ -50,9 +50,9 @@
 #mbFrame{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .45s;
   background:radial-gradient(circle at 0 0,#f2a91b 0 26px,#c4161c 26px 31px,#2a1511 31px 34px,transparent 35px),radial-gradient(circle at 100% 0,#f2a91b 0 26px,#c4161c 26px 31px,#2a1511 31px 34px,transparent 35px),
     radial-gradient(circle at 0 100%,#f2a91b 0 26px,#c4161c 26px 31px,#2a1511 31px 34px,transparent 35px),radial-gradient(circle at 100% 100%,#f2a91b 0 26px,#c4161c 26px 31px,#2a1511 31px 34px,transparent 35px),
-    repeating-linear-gradient(90deg,#c4161c 0 12px,#f2a91b 12px 24px,#2e7b47 24px 36px) top/100% 9px no-repeat,repeating-linear-gradient(90deg,#c4161c 0 12px,#f2a91b 12px 24px,#2e7b47 24px 36px) bottom/100% 9px no-repeat,
-    repeating-linear-gradient(0deg,#c4161c 0 12px,#f2a91b 12px 24px,#2e7b47 24px 36px) left/9px 100% no-repeat,repeating-linear-gradient(0deg,#c4161c 0 12px,#f2a91b 12px 24px,#2e7b47 24px 36px) right/9px 100% no-repeat;
-  box-shadow:inset 0 0 0 9px transparent,inset 0 0 0 12px #2a1511,inset 0 0 0 17px #fbf0d6,inset 0 0 0 19px #2a1511}
+    repeating-linear-gradient(90deg,#c4161c 0 12px,#f2a91b 12px 24px,#2e7b47 24px 36px) top/100% 13px no-repeat,repeating-linear-gradient(90deg,#c4161c 0 12px,#f2a91b 12px 24px,#2e7b47 24px 36px) bottom/100% 13px no-repeat,
+    repeating-linear-gradient(0deg,#c4161c 0 12px,#f2a91b 12px 24px,#2e7b47 24px 36px) left/13px 100% no-repeat,repeating-linear-gradient(0deg,#c4161c 0 12px,#f2a91b 12px 24px,#2e7b47 24px 36px) right/13px 100% no-repeat;
+  box-shadow:inset 0 0 0 13px transparent,inset 0 0 0 16px #2a1511,inset 0 0 0 21px #fbf0d6,inset 0 0 0 23px #2a1511}
 #mbFrame.on{opacity:1}
 #beat{position:absolute;left:50%;bottom:calc(max(18px,env(safe-area-inset-bottom)) + 86px);transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none;--k:0}
 #beat b{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;font:800 24px var(--disp);color:#fff;background:radial-gradient(circle,#ff8a1c,#c4161c);border:4px solid var(--ink);
@@ -136,7 +136,9 @@
 #order.shake{animation:oshake .4s}
 @keyframes oshake{0%,100%{transform:translateX(-50%)}25%{transform:translateX(calc(-50% - 8px))}75%{transform:translateX(calc(-50% + 8px))}}
 body.hasOrder #combo{top:calc(max(10px,env(safe-area-inset-top)) + 178px)}
-body.hasOrder #toast{top:33%}
+body.hasOrder #toast{top:40%} /* ऑर्डर कार्ड के नीचे (360px फ़ोन पर कार्ड 36% तक जाता है) */
+#toast.low{top:38%}body.hasOrder #toast.low{top:40%}
+#lvl{z-index:8} /* लेवल की पट्टी 2 सेकंड ऑर्डर कार्ड के ऊपर — शाबाशी से न टकराए */
 /* उड़ते अंक (करतब) */
 .ftxt{position:absolute;left:50%;top:52%;transform:translate(-50%,0);font:800 clamp(22px,6vw,30px) var(--disp);color:#FFE45C;-webkit-text-stroke:5px var(--ink);paint-order:stroke fill;pointer-events:none;z-index:4;animation:ftxt .9s ease-out forwards}
 @keyframes ftxt{0%{opacity:0;transform:translate(-50%,10px) scale(.6)}20%{opacity:1;transform:translate(-50%,0) scale(1.1)}100%{opacity:0;transform:translate(-50%,-60px) scale(1)}}
@@ -335,6 +337,12 @@ button:focus-visible,a:focus-visible{outline:3px solid #fff;outline-offset:3px}
 #lvl small{display:block;font:800 clamp(14px,4vw,18px)/1.1 var(--disp);color:#7A0010;letter-spacing:1px;text-transform:uppercase}
 #lvl b{display:block;font:800 clamp(24px,7vw,36px)/1.1 var(--disp);color:#9A0C16}
 #lvl.show{animation:lvl 2.4s ease-out forwards}
+/* 🚆 सामने से आती रेलगाड़ी — उस लेन के ऊपर चेतावनी (24 नवंबर) */
+#trWarn{position:absolute;left:0;right:0;top:30%;height:0;pointer-events:none;z-index:6}
+#trWarn i{position:absolute;top:0;transform:translateX(-50%);font:800 18px/1 var(--disp);font-style:normal;color:#fff;background:#c4161c;border:3px solid var(--ink);border-radius:999px;padding:6px 12px 4px;box-shadow:0 3px 0 rgba(0,0,0,.3);opacity:0;white-space:nowrap}
+#trWarn i:nth-child(1){left:24%}#trWarn i:nth-child(2){left:50%}#trWarn i:nth-child(3){left:76%}
+#trWarn i.on{animation:trw 1.8s ease-out forwards}
+@keyframes trw{0%{opacity:0;transform:translateX(-50%) scale(.6)}12%{opacity:1;transform:translateX(-50%) scale(1.08)}25%,45%,65%{opacity:1;transform:translateX(-50%) scale(1)}35%,55%{opacity:.55}100%{opacity:0;transform:translateX(-50%) scale(1)}}
 @keyframes lvl{0%{opacity:0;transform:translate(-50%,-50%) scale(.5)}12%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}20%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-80%) scale(1)}}
 #toast.rush{color:#FFD24D;font-size:clamp(34px,10vw,58px)}
 body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 75% 70% at 50% 50%,rgba(255,138,28,0) 55%,rgba(255,138,28,.45) 100%)}
@@ -439,6 +447,36 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
   #menu .titlewrap{text-align:left;max-width:calc(100vw - min(360px,40vw) - 6vw)}
   #menu .sub.fest,#menu .sub.wx{max-width:100%}
   #menu .panel{position:absolute;right:max(28px,env(safe-area-inset-right));bottom:max(24px,env(safe-area-inset-bottom));width:min(360px,40vw)}}
+
+/* 🏁 गेम-ओवर — एक ही स्क्रीन में (24 नवंबर, मालिक: "बहुत लंबा पेज… पूरा मोबाइल में दिखता भी नहीं") */
+#over{overflow-y:auto;justify-content:safe center}
+#over .card{gap:7px;padding:12px 14px 12px}
+#over .card h2{font-size:clamp(20px,5.6vw,25px)}
+#over .badge{font-size:14px;padding:1px 10px 0;margin:-3px 0 -2px}
+#over .big-score{font-size:clamp(40px,12vw,50px)}
+#over .stats{gap:8px}#over .stats>div{padding:2px 6px 1px;border-width:2.5px;border-radius:12px}#over .stats small{font-size:11.5px}#over .stats b{font-size:19px}
+#over .orate{padding:4px 8px 4px 10px;border-width:2.5px;border-radius:13px;font-size:14px;flex-wrap:nowrap}
+#over .orate span{white-space:normal;line-height:1.1;font-size:13.5px}
+#over .orate .ostars{flex:none;flex-basis:auto;order:0}
+#over .orate .ost{font-size:clamp(22px,6.6vw,28px)}
+#over .big{font-size:clamp(24px,6.6vw,30px);padding:9px 14px 6px}
+#over .row .sm{font-size:14.5px;padding:6px 8px 3px}
+.oxtra{width:100%;display:flex;flex-direction:column;gap:6px}
+.oxtra:empty{display:none}
+#over .msgain{font-size:13.5px;line-height:1.3;padding:3px 10px 2px;border-radius:10px}
+#over #overLb,#over #overRw{margin:0;font-size:13.5px;line-height:1.25}
+#over #overRw b{font-size:15px}
+#over .opc-box{padding:5px 8px;border-width:2.5px;cursor:pointer}
+#over .opc-box>b{font-size:13.5px;display:flex;justify-content:space-between;gap:6px}
+#over .opc-box>b::after{content:'›';font-size:18px;line-height:.8}
+#over .opc-box .opcs{display:none}#over .opc-box.open .opcs{display:flex}#over .opc-box.open>b::after{content:'⌄'}
+#over .rgbtn.wide2{padding:4px 8px 3px;border-width:2.5px;margin:0}#over .rgbtn.wide2 b{font-size:15px}#over .rgbtn.wide2 small{font-size:11px}
+#over .oshot{padding:4px 6px;border-width:2.5px}#over .oshot img{width:40px;height:50px}#over .oshot span{font-size:13px}#over .oshot .sm{font-size:12.5px;padding:4px 6px 2px}
+#over .shopcard{margin-top:8px;padding:6px 10px;gap:9px;border-radius:14px;border-width:3px}
+#over .shopcard img{width:38px}#over .shopcard b{font-size:15px}#over .shopcard small{display:none}#over .shopcard em{margin-top:2px;font-size:13px;padding:1px 10px 0}
+@media (min-aspect-ratio:4/3) and (min-width:640px){#over .card{width:min(94vw,760px);display:grid;grid-template-columns:1fr 1fr;column-gap:14px;align-items:start;justify-items:center}
+  #over .card>*:not(.oxtra){grid-column:1}#over .oxtra{grid-column:2;grid-row:1/span 9;align-self:center}#over .shopcard{width:min(94vw,760px)}}
+@media (max-height:640px){#over .card{gap:5px;padding:10px 12px}#over .big-score{font-size:38px}#over .card h2{font-size:19px}#over .shopcard{display:none}}
 </style>
 </head>
 <body>
@@ -470,6 +508,7 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
   <div id="vig"></div>
   <div id="toast"></div>
   <div id="lvl"></div>
+  <div id="trWarn"><i></i><i></i><i></i></div>
 
   <section id="menu" class="screen" hidden>
     <div class="brand"><img src="img/logo.webp" alt="" width="38" height="35"><span data-t="brandTag">MB Sweets · दरभंगा</span></div>
@@ -525,14 +564,16 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
         <div><small data-t="best"></small><b id="overBest">0</b></div>
       </div>
       <div id="overRate" class="orate" hidden><span data-t="rateAskBig"></span><div id="overStars" class="ostars"></div><button id="overRateX" class="ox" aria-label="close">✕</button></div>
-      <div id="overMs" class="msgain" hidden></div>
-      <div id="overLb" hidden></div>
-      <div id="overRw" class="rwon" hidden></div>
-      <div id="overPc" class="opc-box" hidden></div>
-      <button id="overRg" class="rgbtn wide2" hidden><b>🍮 <span data-t="rgInvite"></span></b><small id="overRgSub"></small></button>
-      <div id="overShot" class="oshot" hidden><img alt=""><div><span></span><button id="btnShot" class="sm" data-t="shotBtn"></button></div></div>
       <button id="btnAgain" class="big" data-t="again"></button>
       <div class="row"><button id="btnHome" class="sm" data-t="home"></button><button id="btnShare" class="sm local" data-t="share"></button><button id="btnLb2" class="sm lbbtn" data-t="lbShort" hidden></button></div>
+      <div class="oxtra">
+        <div id="overMs" class="msgain" hidden></div>
+        <div id="overLb" hidden></div>
+        <div id="overRw" class="rwon" hidden></div>
+        <div id="overPc" class="opc-box" hidden></div>
+        <button id="overRg" class="rgbtn wide2" hidden><b>🍮 <span data-t="rgInvite"></span></b><small id="overRgSub"></small></button>
+        <div id="overShot" class="oshot" hidden><img alt=""><div><span></span><button id="btnShot" class="sm" data-t="shotBtn"></button></div></div>
+      </div>
     </div>
     <a id="orderLink" class="shopcard local" target="_blank" rel="noopener">
       <img src="img/logo.webp" alt="MB Sweets" width="62" height="57">
@@ -699,7 +740,7 @@ body.rushing #app::after{content:"";position:absolute;inset:0;pointer-events:non
     <p id="loadmsg" data-t="loading">Loading…</p>
   </div>
 </div>
-<!--vmap--><meta name="rr-ver" content="83a21f5"><script type="importmap">{"imports":{"./js/art.js":"./js/art.js?v=e62c963a","./js/audio.js":"./js/audio.js?v=5af3e31b","./js/cheers.js":"./js/cheers.js?v=2d83f435","./js/count.js":"./js/count.js?v=c8c09484","./js/darshan.js":"./js/darshan.js?v=f62c456b","./js/delivery.js":"./js/delivery.js?v=70610fd5","./js/emote.js":"./js/emote.js?v=a3f7825d","./js/errlog.js":"./js/errlog.js?v=2fd6a0af","./js/events.js":"./js/events.js?v=9b13f3fc","./js/extra.js":"./js/extra.js?v=dd7e9e74","./js/festivals.js":"./js/festivals.js?v=82db78bb","./js/game.js":"./js/game.js?v=6be75b0c","./js/ghost.js":"./js/ghost.js?v=01eb93af","./js/golu.js":"./js/golu.js?v=65aefb7e","./js/golu3d.js":"./js/golu3d.js?v=7d746ff5","./js/goshop.js":"./js/goshop.js?v=89c9e3c3","./js/haat.js":"./js/haat.js?v=e3296a6b","./js/hero.js":"./js/hero.js?v=ce1d83d6","./js/i18n.js":"./js/i18n.js?v=5198084e","./js/jungle.js":"./js/jungle.js?v=aa543d30","./js/lb.js":"./js/lb.js?v=1c8987e7","./js/madhubani.js":"./js/madhubani.js?v=3242781f","./js/main.js":"./js/main.js?v=019fbe5d","./js/meta.js":"./js/meta.js?v=378a6036","./js/metaui.js":"./js/metaui.js?v=99c14984","./js/models.js":"./js/models.js?v=d74af419","./js/moment.js":"./js/moment.js?v=3281490e","./js/monkeyscene.js":"./js/monkeyscene.js?v=fa2a7d45","./js/platform.js":"./js/platform.js?v=79dfaabf","./js/pond.js":"./js/pond.js?v=895b7a51","./js/rail.js":"./js/rail.js?v=55fe5aa7","./js/rasgulla.js":"./js/rasgulla.js?v=f3ecec61","./js/rate.js":"./js/rate.js?v=f5b90e18","./js/real.js":"./js/real.js?v=e9e362c7","./js/rewards.js":"./js/rewards.js?v=d1ff3664","./js/skyshow.js":"./js/skyshow.js?v=1a385d81","./js/story.js":"./js/story.js?v=aa0c2b52","./js/three.module.min.js":"./js/three.module.min.js?v=2992ecd7","./js/tricks.js":"./js/tricks.js?v=144c7884","./js/util.js":"./js/util.js?v=e9049a32","./js/voice.js":"./js/voice.js?v=bd992b7c","./js/wardrobe.js":"./js/wardrobe.js?v=714d1b85","./js/weather.js":"./js/weather.js?v=78c12603","./js/world.js":"./js/world.js?v=a41fae18","./js/zipline.js":"./js/zipline.js?v=627f073b"}}</script><!--/vmap-->
+<!--vmap--><meta name="rr-ver" content="763ed9a"><script type="importmap">{"imports":{"./js/art.js":"./js/art.js?v=e62c963a","./js/audio.js":"./js/audio.js?v=1727b231","./js/cheers.js":"./js/cheers.js?v=2d83f435","./js/count.js":"./js/count.js?v=c8c09484","./js/darshan.js":"./js/darshan.js?v=0b31552c","./js/delivery.js":"./js/delivery.js?v=70610fd5","./js/emote.js":"./js/emote.js?v=a3f7825d","./js/errlog.js":"./js/errlog.js?v=2fd6a0af","./js/events.js":"./js/events.js?v=9b13f3fc","./js/extra.js":"./js/extra.js?v=dd7e9e74","./js/festivals.js":"./js/festivals.js?v=82db78bb","./js/game.js":"./js/game.js?v=09049032","./js/ghost.js":"./js/ghost.js?v=01eb93af","./js/golu.js":"./js/golu.js?v=65aefb7e","./js/golu3d.js":"./js/golu3d.js?v=7d746ff5","./js/goshop.js":"./js/goshop.js?v=89c9e3c3","./js/haat.js":"./js/haat.js?v=e3296a6b","./js/hero.js":"./js/hero.js?v=ce1d83d6","./js/i18n.js":"./js/i18n.js?v=7042e361","./js/jungle.js":"./js/jungle.js?v=aa543d30","./js/lb.js":"./js/lb.js?v=1c8987e7","./js/lite.js":"./js/lite.js?v=dfc215f1","./js/madhubani.js":"./js/madhubani.js?v=3242781f","./js/main.js":"./js/main.js?v=019fbe5d","./js/meta.js":"./js/meta.js?v=378a6036","./js/metaui.js":"./js/metaui.js?v=99c14984","./js/models.js":"./js/models.js?v=d74af419","./js/moment.js":"./js/moment.js?v=3281490e","./js/monkeyscene.js":"./js/monkeyscene.js?v=fa2a7d45","./js/platform.js":"./js/platform.js?v=79dfaabf","./js/pond.js":"./js/pond.js?v=895b7a51","./js/rail.js":"./js/rail.js?v=5d62e5a9","./js/rasgulla.js":"./js/rasgulla.js?v=f3ecec61","./js/rate.js":"./js/rate.js?v=f5b90e18","./js/real.js":"./js/real.js?v=e9e362c7","./js/rewards.js":"./js/rewards.js?v=d1ff3664","./js/skyshow.js":"./js/skyshow.js?v=1a385d81","./js/story.js":"./js/story.js?v=aa0c2b52","./js/three.module.min.js":"./js/three.module.min.js?v=2992ecd7","./js/tricks.js":"./js/tricks.js?v=144c7884","./js/util.js":"./js/util.js?v=e9049a32","./js/voice.js":"./js/voice.js?v=bd992b7c","./js/wardrobe.js":"./js/wardrobe.js?v=714d1b85","./js/weather.js":"./js/weather.js?v=78c12603","./js/world.js":"./js/world.js?v=1569e659","./js/zipline.js":"./js/zipline.js?v=627f073b"}}</script><!--/vmap-->
 <script type="module" src="js/main.js"></script>
 </body>
 </html>

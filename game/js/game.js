@@ -18,6 +18,8 @@ import { Voice } from './voice.js';
 import { Sound } from './audio.js';
 import { T, LANG, setLang, applyLang, L } from './i18n.js';
 import { logErr } from './errlog.js';
+import { setLite } from './lite.js';
+import { ROOF } from './rail.js';
 import { clamp, lerp, damp, rand, randi, pick, store, storeNum, vibrate, VIB } from './util.js';
 import { SETTINGS, loadSettings, Missions, wallet, upTime, wardrobe, stats, checkBadges, buyHeadstart, HEADSTART_COST } from './meta.js';
 import { P, PORTAL } from './platform.js';
@@ -55,12 +57,15 @@ export const GPU = (() => {
   } catch (e) { return { name: '', cls: 'mid' }; }
 })();
 const DPR = Math.min(window.devicePixelRatio || 1, GPU.cls === 'top' ? 2.5 : 2); // बढ़िया चिप पर 2.5 (2K स्क्रीन पर किनारे साफ़)
+// lite = हल्की रोशनी (आसमान की परावर्तन-रोशनी/env और रात का लैम्प बंद, आसमानी रोशनी तेज़) · cap = फ़्रेम की ऊपरी सीमा (0 = फ़ोन जितना दे)
+// 20 नवंबर: कमज़ोर फ़ोन — परछाईं/लैम्प/env बदलने से हर shader दोबारा बनता है (कई सेकंड अटकना), इसलिए ये सिर्फ़ दौड़ की शुरुआत में बदलते हैं;
+// दौड़ के बीच सिर्फ़ रेज़ोल्यूशन (dyn) थोड़ा घटता-बढ़ता है
 const TIERS = [
-  { pr: DPR, sh: true, fog: [70, 155], view: -175 },
-  { pr: Math.min(DPR, 1.5), sh: true, fog: [70, 155], view: -175 },
-  { pr: Math.min(DPR, 1.25), sh: false, fog: [66, 150], view: -165 },
-  { pr: 1, sh: false, fog: [52, 128], view: -132 },
-  { pr: Math.min(DPR, 1) * 0.8, sh: false, fog: [44, 112], view: -116 },
+  { pr: DPR, sh: true, fog: [70, 155], view: -175, lamp: true, lite: false, cap: 0, fx: 1 }, //   0 बढ़िया (iQOO 13 जैसे)
+  { pr: Math.min(DPR, 1.5), sh: true, fog: [70, 155], view: -175, lamp: true, lite: false, cap: 0, fx: 1 }, // 1
+  { pr: Math.min(DPR, 1.35), sh: false, fog: [66, 150], view: -165, lamp: true, lite: false, cap: 60, fx: 0.85 }, // 2 बीच वाला
+  { pr: Math.min(DPR, 1.25), sh: false, fog: [56, 135], view: -140, lamp: false, lite: true, cap: 60, fx: 0.65 }, // 3 हल्का (सादी रंगाई — lite.js)
+  { pr: Math.min(DPR, 1.1), sh: false, fog: [48, 120], view: -124, lamp: false, lite: true, cap: 30, fx: 0.5 }, //   4 सबसे हल्का (स्थिर 30)
 ];
 // फ़ोन के हिसाब से शुरुआती दर्जा: चिप + RAM (navigator.deviceMemory: 0.5/1/2/4/8 GB) + CPU कोर
 function deviceTier() {
@@ -138,18 +143,33 @@ class Game {
   // live = दौड़ के बीच: सिर्फ़ रेज़ोल्यूशन/दूरी बदलो — परछाईं चालू/बंद से हर shader दोबारा बनता है (बड़ा झटका), वो अगली दौड़ की शुरुआत में
   setTier(n, live = false) {
     const T0 = TIERS[n], r = this.renderer;
-    this.tier = n;
+    this.tier = n; this.dyn = 1;
     this.pr = T0.pr;
     r.setPixelRatio(this.pr); this.resize();
     this.fogBase = T0.fog; this.tod = null; // कोहरा applyTod में (रात में थोड़ा पास)
     this.scene.fog.near = T0.fog[0]; this.scene.fog.far = T0.fog[1];
-    if (this.lamp) this.lamp.visible = n <= 2;
     this.world.viewZ = T0.view;
-    if (!live && r.shadowMap.enabled !== T0.sh) {
+    this.fpsCap = T0.cap; this.world.parts.density = T0.fx;
+    if (live) return; // shader बदलने वाली चीज़ें (परछाईं, लैम्प, env) — सिर्फ़ दौड़ शुरू होते समय / मेन्यू में
+    let rebuild = false;
+    if (r.shadowMap.enabled !== T0.sh) {
       r.shadowMap.enabled = T0.sh; this.sun.castShadow = T0.sh;
       this.golu.shadow.material.opacity = T0.sh ? 0.16 : 0.28;
-      this.scene.traverse((o) => { if (o.material) for (const m of [].concat(o.material)) m.needsUpdate = true; });
+      rebuild = true;
     }
+    if (this.lamp && this.lamp.visible !== T0.lamp) { this.lamp.visible = T0.lamp; rebuild = true; }
+    if (!!this.lite !== T0.lite) { this.lite = T0.lite; setLite(this.scene, this.lite); rebuild = true; }
+    this.scene.environment = this.lite ? null : this.envs[0]; // applyTod हर बार सही वाला लगाता है; warmUp उसी हालत में हो
+    if (rebuild && this.warmed) {
+      this.scene.traverse((o) => { if (o.material) for (const m of [].concat(o.material)) m.needsUpdate = true; });
+      this.warmUp(); // मेन्यू / दौड़ की शुरुआत में ही सब shader + सामान फ़ोन की मेमोरी में — दौड़ के बीच झटका नहीं
+    }
+  }
+  // 🎞️ दौड़ के बीच रेज़ोल्यूशन: धीमा तो 10% कम, लगातार आराम से तो 5% ज़्यादा (दर्जे की हद तक) — shader नहीं बदलता
+  setDyn(k) {
+    k = clamp(Math.round(k * 100) / 100, 0.7, 1);
+    if (k === this.dyn) return;
+    this.dyn = k; this.renderer.setPixelRatio(this.pr * k); this.resize();
   }
 
   async boot() {
@@ -261,20 +281,41 @@ class Game {
     this.wx.load();
     this.camX = 0; this.shake = 0;
     this.world.reset(false);
+    // बीच दौड़ में पहली बार बनने वाली चीज़ें पहले ही बना लो (20 नवंबर: डिलीवरी पर दुकान का मॉडल बनते ही ~90 टुकड़े एक साथ = झटका)
+    try { this.gshop.model(this.gshop.lv); } catch (e) { /* */ }
+    try { this.darshan.prebuild(); } catch (e) { console.warn('darshan prebuild', e); }
+    try { this.dl.helmet(true); this.dl.helmet(false); } catch (e) { /* */ } // ⛑️ हेलमेट भी पहले से (पहली डिलीवरी पर बनता था)
+    this.world.onNew = (o) => { if (this.lite) setLite(o, true); }; // दौड़ में कभी नई रुकावट बने तो भी हल्के रूप में
+    if (!this.goldMesh) this.goldMesh = this.makeGold();
+    r.debug.checkShaderErrors = false; // हर नए shader पर रुककर जाँच नहीं (जाँचे हुए हैं) — फ़ोन पर झटका कम
     this.applyGfx();
     this.warmUp();
+    this.warmed = true;
+    THREE.DefaultLoadingManager.onLoad = () => { this.needWarm = true; if (this.state !== 'play') this.warmUp(); }; // बाद में आई तस्वीरें (डिब्बा, स्कूटी…) भी पहले से GPU में
   }
 
   // छिपी चीज़ें (हाट, मेला, ट्रेन, रुकावटें…) के shader और तस्वीरें लोडिंग में ही GPU पर — पहली बार दिखने पर झटका नहीं
   warmUp() {
-    const r = this.renderer, hid = [], texs = new Set();
+    // 24 नवंबर: सिर्फ़ compile नहीं — एक बार छोटे पर्दे पर सब कुछ (छिपा हुआ भी, कैमरे के बाहर भी) बनाकर देखो,
+    // ताकि shader, तस्वीरें और हर टुकड़े का आकार (geometry) पहले ही फ़ोन के GPU में चला जाए। पहले बंदर/डिलीवरी आते ही ~60 टुकड़े + 4 shader एक साथ बनते थे = झटका
+    const r = this.renderer, hid = [], unc = [], texs = new Set();
+    if (this.lite) setLite(this.scene, true); // बाद में जुड़ी चीज़ें भी हल्के रूप में
     this.scene.traverse((o) => {
-      if (!o.visible) { hid.push(o); o.visible = true; }
+      if (!o.visible && !o.isLight) { hid.push(o); o.visible = true; } // रोशनी नहीं — बंद लैम्प चालू करके बने shader में "1 लैम्प" होता, दौड़ में फिर बनता
+      if (o.frustumCulled) { unc.push(o); o.frustumCulled = false; }
       if (o.material) for (const m of [].concat(o.material)) for (const k of ['map', 'normalMap', 'roughnessMap', 'emissiveMap', 'alphaMap', 'bumpMap']) if (m[k] && m[k].isTexture) texs.add(m[k]);
     });
-    try { r.compile(this.scene, this.cam); for (const t of texs) r.initTexture(t); } catch (e) { console.warn('warmUp', e); }
+    try {
+      for (const t of texs) r.initTexture(t);
+      // असली पर्दे पर ही (अलग render target पर बने shader अलग होते हैं — रंग/टोन का फ़र्क़ — फिर दौड़ में दोबारा बनते), पर सिर्फ़ 1 पिक्सेल में
+      r.setRenderTarget(null); r.setScissorTest(true); r.setScissor(0, 0, 1, 1);
+      r.render(this.scene, this.cam);
+    } catch (e) { console.warn('warmUp', e); } finally { r.setScissorTest(false); }
     for (const o of hid) o.visible = false;
+    for (const o of unc) o.frustumCulled = true;
+    this.needWarm = false;
   }
+
 
   resize() {
     const w = window.innerWidth, h = window.innerHeight;
@@ -397,7 +438,7 @@ class Game {
     click('#btnSet2', () => this.meta.open('set'));
     click('#btnShare', () => this.share());
     click('#btnShot', () => this.shareShot());
-    $('#overPc').addEventListener('click', (e) => { const b = e.target.closest('[data-pc]'); if (!b) return; this.sound.init(); this.sound.click(); this.darshan.open(b.dataset.pc); }); // 📮 पूरा पोस्टकार्ड
+    $('#overPc').addEventListener('click', (e) => { const b = e.target.closest('[data-pc]'); this.sound.init(); this.sound.click(); if (!b) { $('#overPc').classList.toggle('open'); return; } this.darshan.open(b.dataset.pc); }); // पहले एक पतली पट्टी "📮 N नए पोस्टकार्ड ›" — दबाओ तो खुलें // 📮 पूरा पोस्टकार्ड
     this.lb = new Leaderboard();
     if (PORTAL) this.lb.on = false; // पोर्टल पर अपना लीडरबोर्ड नहीं (उनके नियम)
     this.lb.bind(() => {});
@@ -610,7 +651,8 @@ class Game {
     this.rushT = 0; this.meter = 0;
     this.score = 0; this.got = 0; this.combo = 0; this.comboT = 0; this.timeScale = 1; this.slowmo = 0;
     this.speed = 14; this.runT = 0; this.perf = { t: 0, n: 0, sum: 0, done: SETTINGS.gfx !== 'auto', prev: 0, miss: 0, good: 0, moved: false };
-    if (SETTINGS.gfx === 'auto' && this.renderer && this.renderer.shadowMap.enabled !== TIERS[this.tier].sh) this.setTier(this.tier); // पिछली दौड़ में बदला दर्जा — परछाईं अब (दौड़ शुरू होते ही)
+    if (SETTINGS.gfx === 'auto' && this.renderer) { const want = startTier(); if (want !== this.tier || this.dyn !== 1) this.setTier(want); } // पिछली दौड़ में सीखा दर्जा — अब, दौड़ शुरू होते ही (बीच में नहीं)
+    if (this.needWarm) this.warmUp();
     this.golu.root.rotation.y = 0;
     this.golu.setGlow(0);
     this.show(['#hud']);
@@ -724,7 +766,7 @@ class Game {
   toast(txt, ms = 900, cls = '') {
     const t = $('#toast');
     t.textContent = txt;
-    t.className = 'show ' + cls;
+    t.className = 'show ' + cls + this.toastLow();
     clearTimeout(this.toastT);
     this.toastT = setTimeout(() => { t.className = ''; }, ms);
   }
@@ -824,12 +866,13 @@ class Game {
 
   // शाबाशी: चुनी भाषा बड़ी + बोली; नीचे छोटी — हिंदी/मैथिली में English, English में मैथिली (मिथिला का स्वाद)
   cheer(kind = 'near', ms = 900, tier = -1, prio = false, cls = 'cheer', small = null) {
+    if (!prio && kind !== 'level' && this.toastLow()) return; // लेवल की पट्टी के समय छोटी शाबाशी छोड़ो — स्क्रीन पर एक बार में एक ही बड़ी बात
     const ln = pickCheer(kind, tier), [en, mai, hi] = ln;
     const big = LANG === 'en' ? en : LANG === 'hi' ? hi : mai;
     const t = $('#toast');
     const sm = small != null ? small : (LANG === 'en' ? mai : en);
     t.innerHTML = `${big}${sm ? `<small>${sm}</small>` : ''}`;
-    t.className = 'show ' + cls;
+    t.className = 'show ' + cls + this.toastLow();
     clearTimeout(this.toastT);
     this.toastT = setTimeout(() => { t.className = ''; }, ms);
     this.sayPair(ln, prio || kind === 'level');
@@ -859,7 +902,10 @@ class Game {
   }
 
   // इलाक़ा / रात-भोर का बड़ा बैनर (लेवल वाले की जगह पर)
+  // लेवल/इलाक़े की पट्टी दिख रही हो तो शाबाशी उसके ऊपर न चढ़े — थोड़ा नीचे दिखे (24 नवंबर)
+  toastLow() { return performance.now() < (this.lvlUntil || 0) ? ' low' : ''; }
   zoneBanner(icon, text) {
+    this.lvlUntil = performance.now() + 2300;
     const el = $('#lvl');
     el.innerHTML = `<small>${icon}</small><b>${text}</b>`;
     el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
@@ -869,12 +915,13 @@ class Game {
     this.level = n;
     this.msBump('level', n + 1, true);
     this.say(`${T('level')} ${n + 1}, ${T('lv' + (n + 1))}`, true);
+    this.lvlUntil = performance.now() + 2300;
     const el = $('#lvl');
     el.innerHTML = `<small>${T('level')} ${n + 1}</small><b>${T('lv' + (n + 1))}</b>`;
     el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
     this.sound.levelUp();
     vibrate(40);
-    setTimeout(() => { if (this.state === 'play') this.cheer('level', 1000); }, 1300);
+    setTimeout(() => { if (this.state === 'play') this.cheer('level', 1000); }, 2350); // पट्टी जाने के बाद
   }
 
   startRush() {
@@ -1144,6 +1191,7 @@ class Game {
   gameOver() {
     this.state = 'over';
     clearInterval(this.revTimer);
+    { const lv = $('#lvl'); if (lv) lv.classList.remove('show'); } // लेवल/इलाक़े की पट्टी गेम-ओवर कार्ड के पीछे न झाँके
     P.gameplayStop();
     this.sound.bees(false);
     const sc = Math.floor(this.score);
@@ -1177,7 +1225,7 @@ class Game {
     const ln = pickCheer(nb ? 'newBest' : 'over');
     setTimeout(() => { if (this.state === 'over') this.sayPair(ln, true); }, 500);
     $('#overLb').hidden = true; $('#overRw').hidden = true; this.dl.hide();
-    { const op = $('#overPc'), hs = this.darshan.overHtml(); op.hidden = !hs; op.innerHTML = hs; } // 📮 इस दौड़ के नए पोस्टकार्ड — पूरा कार्ड यहीं
+    { const op = $('#overPc'), hs = this.darshan.overHtml(); op.hidden = !hs; op.innerHTML = hs; op.classList.remove('open'); } // 📮 इस दौड़ के नए पोस्टकार्ड — पूरा कार्ड यहीं
     { const ob = $('#overRg'), lf = this.rg ? this.rg.left() : 0; ob.hidden = !(this.runDeliv > 0 && lf > 0 && store('freshStock') !== '1'); if (!ob.hidden) $('#overRgSub').textContent = T('rgInviteSub', lf); } // डिलीवरी के बाद: ताज़ा रसगुल्ले बनाओ → अगली डिलीवरी डबल
     { const sh = $('#overShot'), th = LOCAL && this.mom.best ? this.mom.thumb() : null; sh.hidden = !th; if (th) { sh.querySelector('img').src = th; sh.querySelector('span').textContent = this.mom.best.label; } }
     this.rate.maybeAsk();
@@ -1229,24 +1277,48 @@ class Game {
     }
   }
 
+  // 🚆 चलती रेलगाड़ी (24 नवंबर): सामने से आती — सीटी + उस लेन पर ⚠️ + इंजन से धुआँ; चलती छत पर पहली बार = "सवारी" इनाम
+  trainFx(dt) {
+    const w = this.world, p = this.p;
+    for (const e of w.obs) {
+      if (e.dead || e.kind !== 'train' || !e.vz) continue;
+      if (e.vz > 0) {
+        if (!e.warned && e.z > -85) {
+          e.warned = true; if (this.sound.horn) this.sound.horn();
+          const el = document.querySelectorAll('#trWarn i')[e.lane]; if (el) { el.textContent = '⚠️ 🚆'; el.classList.remove('on'); void el.offsetWidth; el.classList.add('on'); }
+        }
+        if (e.z > -95 && e.z < 8) w.parts.burst(e.x + rand(-0.15, 0.15), ROOF + 0.5, e.z + e.halfL - 1.4, Math.random() < 0.5 ? 0xd8d4cc : 0xb9b4ab, 1, 0.5, 1.6, 1.1, 1.5); // चिमनी का धुआँ
+      }
+      if (!e.rode && p.ground && p.y > ROOF - 0.2 && Math.abs(e.x - p.x) < e.halfW && Math.abs(e.z) < e.halfL) { // चलती छत पर सवार
+        e.rode = true; this.score += 150 * this.mult; this.toast('🚃 ' + T('trainRide') + ' +' + (150 * this.mult), 1200, 'gold'); this.sound.ring(); vibrate(20);
+      }
+    }
+  }
   // ------------------------------------------------ हर फ़्रेम
   frame() {
     requestAnimationFrame(() => this.frame());
+    const nowF = performance.now();
+    if (this.rafT) { const iv = nowF - this.rafT; if (iv > 2 && iv < 60) this.rafIv = this.rafIv ? this.rafIv + (iv - this.rafIv) * 0.05 : iv; } // स्क्रीन कितनी तेज़ (60/90/120/144Hz)
+    this.rafT = nowF;
+    const capMs = this.fpsCap ? 1000 / this.fpsCap : 0;
+    if (capMs && this.rafIv && this.rafIv * 1.9 <= capMs && this.lastF && nowF - this.lastF < capMs - this.rafIv * 0.5) return; // कमज़ोर फ़ोन + तेज़ स्क्रीन: हर दूसरा फ़्रेम छोड़ो = स्थिर 60 (सबसे हल्का: 30); 90Hz जैसी पर नहीं (असमान होता)
+    this.lastF = nowF;
     const d0 = this.clock.getDelta(); this.rawDt = d0; const raw = Math.min(d0, 1 / 20); // 🎞️ फ़्रेम का समय बराबर: 120/144Hz फ़ोन पर 7–8 ms का उछलता अंतर चाल में झटका न दे; असली रुकावट (बड़ा अंतर) तुरंत माने
     this.sdt = this.sdt && Math.abs(raw - this.sdt) < this.sdt * 0.5 ? this.sdt + (raw - this.sdt) * 0.2 : raw;
     const rdt = this.sdt;
+    if (this.world) this.world.parts.rate = clamp(rdt * 60, 0.2, 1);
     if (this.rg && this.rg.on && this.state === 'menu') return; // 🍮 रसगुल्ला वाला खेल खुला — पीछे 3D नहीं बनाना (फ़ोन हल्का)
     try { this.update(rdt); } catch (e) { logErr(e, 'update ' + this.state + (this.dl ? ' dl=' + this.dl.st : '') + (this.mk ? ' mk=' + this.mk.st : '')); } // 🐞 गलती डायरी में, फ़्रेम फिर भी बने
     this.sky.position.copy(this.cam.position);
     this.sky.material.uniforms.uTime.value += rdt;
-    if (this.wx) { this.wx.update(rdt, this.state === 'play' ? (this.lastDz || 0) : 0, this); if (this.baseExp) this.renderer.toneMappingExposure = this.baseExp * (1 + this.wx.flash * 0.9); }
+    if (this.wx) this.wx.update(rdt, this.state === 'play' ? (this.lastDz || 0) : 0, this);
     const mk = this.pu && this.state !== 'menu' && this.pu.madhu > 0 ? 1 : 0;
     this.madK = damp(this.madK || 0, mk, mk ? 5 : 3, rdt);
-    if (this.madK > 0.01) this.mfx.render(this.scene, this.cam, this.madK, this.tier >= 2 ? 0.7 : 1);
-    else this.renderer.render(this.scene, this.cam);
+    if (this.baseExp) this.renderer.toneMappingExposure = this.baseExp * (1 + (this.wx ? this.wx.flash * 0.9 : 0)) * (1 + 0.08 * this.madK); // 🎨 मधुबनी: बस रंग थोड़े चटक + किनारे का बॉर्डर (पूरी स्क्रीन वाला पेंटिंग-फ़िल्टर हटाया — मालिक: "कुछ ठीक से दिख ही नहीं पाता")
+    this.renderer.render(this.scene, this.cam);
     if (this.state === 'play' && this.mom) this.mom.afterRender(this.renderer.domElement);
     if (this.state === 'play' && this.darshan && this.darshan.afterRender(this.renderer.domElement)) { // पोस्टकार्ड की तस्वीर अलग कैमरे से खिंची — असली फ़्रेम फिर से
-      if (this.madK > 0.01) this.mfx.render(this.scene, this.cam, this.madK, this.tier >= 2 ? 0.7 : 1); else this.renderer.render(this.scene, this.cam);
+      this.renderer.render(this.scene, this.cam);
     }
     const fr = this.madK > 0.3; if (fr !== this.frOn) { this.frOn = fr; this.mfx.showFrame(fr); }
   }
@@ -1264,7 +1336,8 @@ class Game {
     const fb = this.fogBase || [70, 155];
     this.scene.fog.near = fb[0]; this.scene.fog.far = fb[1]; // रात में भी उतनी ही दूर तक साफ़
     if (this.lamp) this.lamp.intensity = 34 * night;
-    this.scene.environment = this.envs[night > 0.5 ? 2 : eve > 0.5 ? 1 : 0];
+    this.scene.environment = this.lite ? null : this.envs[night > 0.5 ? 2 : eve > 0.5 ? 1 : 0];
+    if (this.lite) { this.hemi.intensity *= 1.9; this.sun.intensity *= 1.1; } // हल्का रूप: env की रोशनी नहीं, उसकी जगह आसमानी रोशनी
     this.world.sweets.setTint(1 - 0.12 * eve * (1 - night) - 0.15 * night);
     // 🌧️ मौसम: धूप/रोशनी/कोहरा/गीली सड़क
     const m = this.wx && this.wx.mods();
@@ -1415,6 +1488,7 @@ class Game {
     p.invT = Math.max(0, p.invT - dt);
     if (p.beesT > 0) { p.beesT -= dt; if (p.beesT <= 0) this.sound.bees(false); }
     for (const k of ['magnet', 'shoes', 'thali', 'madhu']) this.pu[k] = Math.max(0, this.pu[k] - dt);
+    if (this.pu.madhu > 0 && p.fly <= 0) { const MB = [0xc4161c, 0xf2a91b, 0x2e7b47, 0x2f4f9a, 0xd8457f]; this.world.parts.burst(p.x + rand(-0.35, 0.35), p.y + rand(0.15, 0.9), 0.7, MB[Math.floor(Math.random() * MB.length)], 2, 0.5, 0.5, 0.75, 0); } // 🎨 मधुबनी: पीछे रंगीन बूँदों की लकीर
     if (this.rushT > 0) {
       this.rushT -= dt;
       this.meter = Math.max(0, this.rushT / 6);
@@ -1425,6 +1499,7 @@ class Game {
     this.world.flying = p.fly > 0; // उड़ते समय पोखर/रस्सी शुरू नहीं (ऊपर से पार न हो)
     this.world.busy = this.dl.active() || (this.mk && this.mk.st !== 'off'); // डिलीवरी/बंदर के बीच पानी नहीं
     this.world.update(dt, dz, this.speed, this.ctx());
+    this.trainFx(dt);
     this.dl.update(dt, dz);
     this.darshan.update(dt, dz);
     this.tricks.update(dt);
@@ -1753,28 +1828,28 @@ class Game {
     }
   }
 
+  // 🎞️ अपने-आप ग्राफ़िक्स (24 नवंबर): दौड़ के बीच सिर्फ़ रेज़ोल्यूशन (dyn 1 → 0.7) — कोई shader नहीं बदलता, झटका नहीं।
+  // रेज़ोल्यूशन घटाकर भी धीमा = अगली दौड़ से एक दर्जा हल्का; लगातार बहुत आराम = अगली दौड़ से एक दर्जा बढ़िया (फ़ोन की हद तक)
   autoQuality(dt) {
     const q = this.perf;
     if (q.done) return;
-    if (this.runT < 3 || this.cine > 0 || (this.dl.inScene && this.dl.inScene()) || dt > 0.25) { q.t = 0; q.n = 0; q.sum = 0; return; } // शुरू के 3 सेकंड (लोड), रुके सीन, ऐप से लौटना — गिनती में नहीं
+    if (this.runT < 3 || this.cine > 0 || (this.dl.inScene && this.dl.inScene()) || dt > 0.25) { q.t = 0; q.n = 0; q.sum = 0; return; } // शुरू के 3 सेकंड, रुके सीन, ऐप से लौटना — गिनती में नहीं
     q.t += dt; q.n++; q.sum += dt;
     if (q.t < 2) return;
-    const avg = q.sum / q.n;
+    const avg = q.sum / q.n, goal = this.fpsCap ? 1 / this.fpsCap : 1 / 60;
     q.t = 0; q.n = 0; q.sum = 0;
-    if (avg <= 1 / 54) { // आराम से चल रहा: 6 सेकंड लगातार ऐसा हो तो एक दर्जा ऊपर (दौड़ में एक ही बार, फ़ोन की हद तक)
-      q.prev = 0; q.good++;
-      if (q.good >= 3 && !q.moved && this.tier > TIER_TOP()) { q.moved = true; q.good = 0; this.setTier(this.tier - 1, true); store('gfxTier2', this.tier); }
+    if (avg <= goal * 1.12) { // आराम से
+      q.good++; q.bad = 0;
+      if (this.dyn < 1 && q.good >= 2) { this.setDyn(this.dyn + 0.1); q.good = 0; return; }
+      if (q.good >= 4 && this.tier > TIER_TOP() && !q.up && avg <= goal * 0.8) { q.up = true; store('gfxTier2', this.tier - 1); } // अगली दौड़ से बढ़िया
       return;
     }
     q.good = 0;
-    if (avg <= 1 / 45) { q.prev = 0; return; } // ठीक चल रहा — देखते रहो (आगे भारी जगह आ सकती है)
-    // पिछली बार घटाने से फ़ायदा नहीं हुआ (जैसे फ़ोन ख़ुद 30fps पर बँधा हो) — दो बार ऐसा हो तो रुक जाओ
-    if (q.prev && avg > q.prev * 0.93) { if (++q.miss >= 2) { q.done = true; return; } } else q.miss = 0;
-    q.prev = avg;
-    if (this.tier >= TIERS.length - 1) return;
-    q.moved = true; this.setTier(this.tier + 1, true);
-    store('gfxTier2', this.tier);
+    if (avg <= goal * 1.3) return; // थोड़ा ही धीमा — देखते रहो
+    if (this.dyn > 0.7) { this.setDyn(this.dyn - 0.1); return; } // पहले तस्वीर थोड़ी छोटी
+    if (++q.bad >= 2 && this.tier < TIERS.length - 1 && !q.down) { q.down = true; store('gfxTier2', this.tier + 1); } // फिर भी धीमा → अगली दौड़ से हल्का
   }
+
 
 }
 

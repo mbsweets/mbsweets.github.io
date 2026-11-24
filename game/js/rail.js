@@ -183,5 +183,7 @@ export const RAIL_OBST = {
   train2: () => makeTrain(2),
   train3: () => makeTrain(3),
   engine1: () => makeTrain(1, true),
+  etrain2: () => makeTrain(2, true), // 🚆 सामने से आती पूरी गाड़ी (इंजन + डिब्बे) — 24 नवंबर
+  etrain3: () => makeTrain(3, true),
   ramp: () => makeRamp(),
 };

@@ -188,6 +188,10 @@ class Particles {
     this.c = new THREE.Color();
   }
   burst(x, y, z, color, count = 8, sp = 4, up = 2, life = 0.6, grav = -9) {
+    // density = फ़ोन के दर्जे के हिसाब से कण (हल्के फ़ोन पर कम); rate = हर फ़्रेम वाले छोटे झोंके 120/144Hz पर दुगने न हों
+    const want = count * (this.density == null ? 1 : this.density) * (count <= 2 && this.rate ? this.rate : 1);
+    count = Math.floor(want) + (Math.random() < want - Math.floor(want) ? 1 : 0);
+    if (!count) return;
     this.c.set(color);
     for (let k = 0; k < count; k++) {
       const p = this.ps[this.i];
@@ -315,10 +319,12 @@ export class World {
     this.zipRig = makeZipRig(); this.scene.add(this.zipRig);
     this.zwPool = []; this.zwaters = [];
     for (let i = 0; i < Math.ceil(ZIP_LEN / TILE) + 2; i++) { const t = makeWaterTile(i + 1); t.visible = false; this.scene.add(t); this.zwPool.push(t); }
-    for (const t of Object.keys(OBST)) { this.oPool[t] = []; for (let i = 0; i < 3; i++) { const o = this.newObs(t); o.visible = false; this.oPool[t].push(o); } }
+    // 24 नवंबर: कितनी एक साथ दिखती हैं (5 किमी की 3 दौड़ों में सबसे ज़्यादा) + 1 — दौड़ के बीच नई बनाना = कमज़ोर फ़ोन पर झटका
+    const POOL_N = { jaal: 11, vine: 11, log: 10, toran: 10, boulder: 8, haybale: 8, cans: 7, barrier: 7, thela: 7, rickshaw: 7, naav: 6, lattha: 6, bricks: 5, pothole: 5, bhains: 5, chugla: 5, chhatta: 5, bail: 5, tokri: 5, fence: 5 };
+    for (const t of Object.keys(OBST)) { this.oPool[t] = []; for (let i = 0; i < (POOL_N[t] || 4); i++) { const o = this.newObs(t); o.visible = false; this.oPool[t].push(o); } }
   }
-  newObs(t) { const o = real(() => OBST[t]()); o.userData.type = t; shadows(o, true, true); this.scene.add(o); return o; }
-  newPu(k) { const o = real(() => (PU_MAKERS[k] || makePowerup)(k)); o.visible = false; shadows(o, true, false); this.scene.add(o); return o; }
+  newObs(t) { const o = real(() => OBST[t]()); o.userData.type = t; shadows(o, true, true); this.scene.add(o); if (this.onNew) this.onNew(o); return o; }
+  newPu(k) { const o = real(() => (PU_MAKERS[k] || makePowerup)(k)); o.visible = false; shadows(o, true, false); this.scene.add(o); if (this.onNew) this.onNew(o); return o; }
 
   // 📅 आज का रास्ता: दुनिया बनाते समय Math.random की जगह तारीख़ वाला बीज (बाकी — कण, आवाज़ — असली random)
   // पंक्ति (रुकावट-मिठाई), किनारे के मकान और घटनाएँ — तीन अलग धाराएँ, ताकि खिलाड़ी की रफ़्तार से क्रम न बिगड़े
@@ -698,7 +704,7 @@ export class World {
   groundAt(x, z = 0) {
     let h = 0;
     for (const e of this.obs) {
-      if (e.dead || (e.kind !== 'train' && e.kind !== 'ramp') || e.vz) continue;
+      if (e.dead || (e.kind !== 'train' && e.kind !== 'ramp')) continue; // चलती गाड़ी की छत पर भी दौड़ सकते हैं (24 नवंबर)
       if (Math.abs(e.x - x) > e.halfW * 0.85) continue;
       const dz = z - e.z;
       if (Math.abs(dz) > e.halfL) continue;
@@ -710,8 +716,10 @@ export class World {
   railRow(z) {
     const sp = Math.max(this.speed, 12), lanes = [0, 1, 2];
     const tl = (n) => n * COACH + (n - 1) * GAP;
-    const kind = weighted([['climb', 3], ['dodge', 2], ['oncoming', this.diff > 0.25 ? 1.6 : 0.6]]);
-    const train = (lane, n, front, extra = {}) => { const L = tl(n); this.addObs(n === 1 && extra.vz ? 'engine1' : 'train' + n, lane, front - L / 2, extra); return L; };
+    // 🚆 24 नवंबर (मालिक: "कुछ रेलगाड़ी चले, कुछ स्टॉप रहे… चलती ट्रेन पे भी कूद सके, रनिंग कर सके"): ~हर 3 में 1 पंक्ति पर चलती गाड़ी; दौड़ के पहले 300 मी. में नहीं
+    const mv = this.dist > 300 ? 1 : 0;
+    const kind = this.forceRail || weighted([['climb', 3], ['dodge', 2], ['oncoming', mv * (this.diff > 0.25 ? 1.8 : 1.3)], ['convoy', mv * 1.2]]); // forceRail = सिर्फ़ जाँच के लिए
+    const train = (lane, n, front, extra = {}) => { const L = tl(n); this.addObs(extra.vz > 0 ? (n === 1 ? 'engine1' : 'etrain' + n) : 'train' + n, lane, front - L / 2, extra); return L; };
     const ramp = (lane, low) => { this.addObs('ramp', lane, low - RAMP_L / 2); for (let i = 0; i < 4; i++) { const zz = low - 1.5 - i * 2.2; this.sweets.spawn(this.sweetType(), LANES[lane], ROOF * (0.5 - (zz - (low - RAMP_L / 2)) / RAMP_L) + 0.75, zz); } };
     const roofLine = (lane, front, L) => { for (let zz = front - 1.5, k = 0; zz > front - L + 1 && k < 14; zz -= 2.3, k++) this.sweets.spawn(k % 6 === 5 ? 'chamcham' : this.sweetType(), LANES[lane], ROOF + 0.75, zz); };
     if (kind === 'climb') {
@@ -731,14 +739,23 @@ export class World {
       this.line(free, z + 4, 9);
       return (Math.max(L1, L2) + 18) / sp;
     }
-    // सामने से आता इंजन — उस लेन से हटो; बगल में ढलान वाली गाड़ी
+    if (kind === 'convoy') { // 🚃 साथ-साथ चलती गाड़ी (उसी दिशा में, गोलू से धीमी) — पीछे जुड़ी ढलान से चढ़कर चलती छत पर दौड़ो
+      const a = randi(0, 2), oth = lanes.filter((l) => l !== a), b = pick(oth), c = oth.find((l) => l !== b);
+      const vz = -rand(4.5, 6.5), k = (sp + vz) / sp, n = pick([2, 3]), L = tl(n);
+      this.addObs('ramp', a, z * k - RAMP_L / 2, { vz });
+      this.addObs('train' + n, a, z * k - RAMP_L - L / 2, { vz }); // डिब्बा ढलान के ऊपरी सिरे से ठीक सटा (दोनों साथ चलते हैं)
+      if (chance(0.6)) train(b, pick([1, 2]), z - rand(4, 14)); // बगल में खड़ी गाड़ी (या खुला)
+      this.line(c, z + 3, 7);
+      return (RAMP_L + L) / (sp + vz) + 18 / sp;
+    }
+    // 🚆 सामने से आती पूरी गाड़ी — उस लेन से हटो, या बगल की खड़ी गाड़ी की छत से कूदकर उसकी छत पर (सीटी + बत्ती + ऊपर ⚠️ निशान)
     const a = randi(0, 2), oth = lanes.filter((l) => l !== a), b = pick(oth), c = oth.find((l) => l !== b);
-    const vz = rand(6, 9);
-    const Le = tl(1), front = z * (sp + vz) / sp;
-    this.addObs('engine1', a, front - Le / 2, { vz });
-    ramp(b, z); const L = train(b, 1, z - RAMP_L); roofLine(b, z - RAMP_L, L);
+    const vz = rand(5.5, 8) + this.diff * 3, n = pick([1, 2, 2, 3]);
+    const Le = tl(n), front = z * (sp + vz) / sp;
+    this.addObs(n === 1 ? 'engine1' : 'etrain' + n, a, front - Le / 2, { vz });
+    ramp(b, z); const L = train(b, pick([1, 2]), z - RAMP_L); roofLine(b, z - RAMP_L, L);
     this.line(c, z + 3, 7);
-    return (RAMP_L + L + 18) / sp;
+    return (RAMP_L + Math.max(L, Le * sp / (sp + vz)) + 18) / sp;
   }
 
   // उड़ते समय आसमान में ख़ास मिठाइयों के डिज़ाइन (सिर्फ़ ऊपर वाली: जलेबी, लड्डू, पेड़ा, कलाकंद, मिल्क केक)

@@ -245,6 +245,7 @@ export class Sound {
   // रस्सी पर चलती घिरनी — हल्की "स्स्स्स" (हर ~0.75 से.)
   zipHum() { if (!this.ok()) return; const t = this.now(); this.hiss(t, 0.85, { vol: 0.045, type: 'bandpass', fq: 2300, q: 3, to: 2700 }); this.tone(196, t, 0.8, { vol: 0.018, type: 'triangle', to: 208 }); }
   // रस्सी पकड़ते ही धातु की "टन्न"
+  horn() { if (!this.ok()) return; const t = this.now(); for (const [f, d] of [[311, 0], [370, 0], [311, 0.62], [370, 0.62]]) this.tone(f, t + d, d ? 0.85 : 0.5, { vol: 0.07, type: 'sawtooth', att: 0.04, vib: 0.3 }); } // 🚆 रेल की सीटी "पों–पोंऽऽ"
   clank() { if (!this.ok()) return; const t = this.now(); this.tone(1480, t, 0.25, { vol: 0.06, type: 'triangle', to: 1400 }); this.tone(2210, t, 0.18, { vol: 0.035, type: 'sine' }); this.hiss(t, 0.06, { vol: 0.08, fq: 4000 }); }
   // नीचे उतरकर "धप्प"
   thud() { if (!this.ok()) return; const t = this.now(); this.tone(110, t, 0.18, { vol: 0.22, type: 'sine', to: 55 }); this.hiss(t, 0.14, { vol: 0.12, type: 'lowpass', fq: 700, to: 200 }); }
