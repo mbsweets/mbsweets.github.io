@@ -85,7 +85,7 @@ export class Rewards {
   paintBadge() {
     const b = $('#btnRw'); if (!b) return;
     const st = this.st, live = st ? st.coupons.filter((c) => !c.used && c.expires > Date.now()).length : 0;
-    b.innerHTML = `${T('rwBtn')}${st ? ` <small>${st.n}/${st.need}</small>` : ''}${live ? ` <i>${live}</i>` : ''}`;
+    b.innerHTML = `<i>🎫${live ? `<i>${live}</i>` : ''}</i><span>${T('micRw')}</span>${st ? `<small>${st.n}/${st.need}</small>` : ''}`; // होम का गोल आइकन
   }
   // ---------------- स्क्रीन ----------------
   bind() {

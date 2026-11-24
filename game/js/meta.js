@@ -105,6 +105,8 @@ const MT = [
 export const SET_REWARD = {};
 for (const it of ITEMS) if (it.set) SET_REWARD[it.set] = it.id;
 for (let s = 1; s <= 30; s++) if (!SET_REWARD[s]) SET_REWARD[s] = 200 + s * 60;
+// सेट का इनाम कपड़ा हो पर वह पहले से मिल चुका हो (जैसे 🎁 तोहफ़े में पीली पगड़ी) → दोबारा "नया!" नहीं, उसकी जगह मिठाई
+const setRw = (s) => { const rw = SET_REWARD[Math.min(s, MAX_SET)]; return typeof rw === 'string' && wardrobe.has(rw) ? 300 + s * 60 : rw; };
 export const MAX_SET = 30;
 function rng(seed) { let a = seed >>> 0; return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 function genSet(s) {
@@ -123,7 +125,7 @@ export class Missions {
   save() { S('mset', this.st); }
   get set() { return this.st.set; }
   get mult() { return 1 + Math.min(MAX_SET, this.st.done); }
-  get reward() { return SET_REWARD[Math.min(this.st.set, MAX_SET)]; }
+  get reward() { return setRw(this.st.set); }
   text(m) { const t = MT.find((x) => x.id === m.id); return L(t).replace('{n}', m.n.toLocaleString('en-IN')); }
   mReward() { return 40 + 10 * Math.min(this.st.set, 30); } // हर मिशन की मिठाई
   startRun() { this.run = {}; this.justDone = []; }
@@ -145,7 +147,7 @@ export class Missions {
     for (const m of this.st.act) if (m.p >= m.n && !m.paid) { m.paid = 1; gain += this.mReward(); done.push(m); }
     let setDone = null;
     if (this.st.act.every((m) => m.p >= m.n)) {
-      const s = this.st.set, rw = SET_REWARD[Math.min(s, MAX_SET)];
+      const s = this.st.set, rw = setRw(s);
       setDone = { set: s, reward: rw, item: typeof rw === 'string' ? rw : null, sweets: typeof rw === 'number' ? rw : 0 };
       if (setDone.item) wardrobe.give(setDone.item); else gain += rw;
       this.st.done++; this.st.set = s + 1;

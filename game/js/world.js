@@ -355,7 +355,7 @@ export class World {
     this.flexes = []; this.toFlex = 120;
     for (const d of this.decos || []) { d.visible = false; this.dPool[d.userData.dk].push(d); }
     this.decos = []; this.toDeco = rand(170, 240); this.golaWant = false;
-    if (this.racer) { this.racer.on = false; this.racer.obj.visible = false; } this.toRacer = rand(380, 520);
+    if (this.racer) { this.racer.on = false; this.racer.obj.visible = false; } this.toRacer = rand(200, 300); // पहली रेस ~15 सेकंड में
     this.toHaat = rand(600, 760); this.haatN = { '-1': 0, '1': 0 }; this.haatObs = 0; this.events = [];
     this.toMela = rand(1700, 2000); this.melaN = { '-1': 0, '1': 0 }; this.melaObs = 0; this.toBaraat = rand(1250, 1450); this.baraatQ = false;
     for (const t of this.tracks || []) { t.visible = false; this.tPool.push(t); }
@@ -375,7 +375,7 @@ export class World {
     // toNext < 0 = नीचे वाला while पहले ही फ़्रेम में z = -40 … -150 तक पंक्तियाँ बिछा देता है
     this.toNext = -110;
     this.toPu = rand(150, 200); // पहला पावर-अप ~10–13 सेकंड में (पहले 260–380 मी.)
-    this.toRoof = rand(640, 760); this.roofObs = 0; this.roofQ = false; // 🏠 पहली छत-दौड़ ~700 मी. पर (पहले मिनट में)
+    this.toRoof = rand(450, 500); this.roofObs = 0; this.roofQ = false; // 🏠 पहली छत-दौड़ ~500 मी. पर — टायर-रेस के ठीक बाद, पोखर से पहले (700 पर रखा था तो पोखर→खेत→बंदर के कारण 1.6 किमी तक नहीं आती थी)
     this.toSam = rand(420, 620); // उड़न समोसा जल्दी और ज़्यादा बार (मालिक: "बहुत कम आ रहा है")
     this.shopDist = SHOP_EVERY - 120; // पहली दुकान जल्दी
     this.shopSide = -1;
@@ -723,15 +723,18 @@ export class World {
     return extra;
   }
   // ज़मीन की ऊँचाई (डिब्बे की छत / ढलान) — खिलाड़ी और परछाईं के लिए
-  groundAt(x, z = 0) {
-    let h = 0;
+  groundAt(x, z = 0, py = null) {
+    let h = 0, wide = false;
     for (const e of this.obs) {
       if (e.dead || (e.kind !== 'train' && e.kind !== 'ramp')) continue; // चलती गाड़ी की छत पर भी दौड़ सकते हैं (24 नवंबर)
       if (Math.abs(e.x - x) > e.halfW * 0.85) continue;
+      if (py != null && e.obj.userData.bridge && ROOF - py > 1.0) continue; // बाँस का पुल: नीचे गली में हो तो वह ज़मीन नहीं (नीचे की ढलान से ऊपर आओ)
       const dz = z - e.z;
       if (Math.abs(dz) > e.halfL) continue;
-      h = Math.max(h, e.kind === 'train' ? ROOF : ROOF * (0.5 - dz / (e.rl || RAMP_L))); // rl = छोटी ढलान (छत-दौड़ की गली)
+      const v = e.kind === 'train' ? ROOF : ROOF * (0.5 - dz / (e.rl || RAMP_L)); // rl = छोटी ढलान (छत-दौड़ की गली)
+      if (v > h) { h = v; wide = e.kind === 'ramp' && e.halfW > 3; }
     }
+    this.gWide = wide; // पूरी चौड़ी सीढ़ी/गली-ढलान — बगल से घुसना मुमकिन नहीं, गिरते हुए भी ऊपर ही टिको
     return h;
   }
   houseAt(x) { for (const e of this.obs) if (!e.dead && e.obj.userData.house && Math.abs(e.z) < e.halfL && Math.abs(e.x - x) < e.halfW) return e; return null; }
@@ -745,18 +748,20 @@ export class World {
     for (let i = 0; i < N; i++) {
       const L = chance(0.5) ? 12 : 16, c0 = cur;
       this.addObs(L === 12 ? 'rhouse12' : 'rhouse16', 1, cur - L / 2);
-      // छत पर 0–2 रुकावट, हमेशा एक लेन खुली; बाकी लेनों में मिठाई
-      const nObs = i === 0 ? 1 : randi(1, 2), used = new Set(), zo = cur - L * (0.35 + 0.3 * Math.random());
+      // छत पर रुकावट — पहली छत पर कोई नहीं (सीढ़ी से छत दिखती नहीं, ऊपर पहुँचते ही टंकी = अन्याय; 24 नवंबर मालिक: "सीढ़ी पे ही मर गया");
+      // बाकी छतों पर 1–2, किनारे से कम से कम 6 मी. अंदर (पिछली छत से कूदते समय दिख जाए), हमेशा एक लेन खुली
+      // कूदकर उतरने की जगह (छत के पहले ~6 मी.) ख़ाली — रुकावट 10–12 मी. अंदर (16 मी. वाली छत), छोटी छत पर कभी-कभी 8.5–9.5 मी.
+      const nObs = i === 0 ? 0 : L === 16 ? randi(1, 2) : (chance(0.5) ? 1 : 0), used = new Set(), zo = cur - (L === 16 ? rand(10, 12) : rand(8.5, 9.5));
       for (let k = 0; k < nObs; k++) {
         const free = lanes.filter((l) => !used.has(l)); if (free.length <= 1) break;
         const l = pick(free); used.add(l);
         const t = weighted([['rtank', 3], ['rcloth', 2.5], ['rtulsi', 2]]);
-        this.addObs(t, l, k ? zo - 4 : zo, { y: H });
+        this.addObs(t, l, k ? Math.max(zo - 2.5, cur - L + 1.5) : zo, { y: H });
       }
       for (const l of lanes) if (!used.has(l) && chance(0.7)) for (let zz = c0 - 1.6, n = 0; zz > cur - L + 1 && n < 6; zz -= 2.2, n++) this.sweets.spawn(this.sweetType(), LANES[l], H + 0.75, zz);
       cur -= L;
       if (i < N - 1) {
-        const g = 6;
+        const g = 7;
         this.addObs('rgap', 1, cur - g + GAP_RAMP / 2); // गली में गिरे तो इससे फिर ऊपर
         const bl = chance(0.6) ? randi(0, 2) : -1;
         if (bl >= 0) { this.addObs('rbridge', bl, cur - g / 2); for (let k = 0; k < 3; k++) this.sweets.spawn('chamcham', LANES[bl], H + 0.75, cur - 1 - k * 2); }
@@ -766,7 +771,7 @@ export class World {
       }
     }
     this.addPu('kite', 1, cur + 4.5, H + 1.15); // 🪁 आख़िरी छत पर
-    this.roofObs = (z - cur) + 40;
+    this.roofObs = -cur + 30; // गोलू से आख़िरी छत तक + 30 मी. (पहले सिर्फ़ हिस्से की लंबाई गिनी जाती थी — 150 मी. आगे बनने के कारण आख़िरी छतों पर ही बंदर/डिलीवरी शुरू हो जाते)
     this.events.push('roof');
     return (z - cur) / sp + 1.2;
   }
@@ -926,7 +931,7 @@ export class World {
     this.railObs = Math.max(0, this.railObs - dz);
     // 🏠 छत-दौड़ (24 नवंबर)
     this.toRoof -= dz;
-    if (this.toRoof <= 0 && !this.roofQ && this.roofObs <= 0 && vill && this.tut <= 0 && this.railObs <= 0 && this.haatObs <= 0 && this.melaObs <= 0 && !this.baraatQ && !this.pond && !this.zip && !this.busy && this.shopDist > 40 && this.shopDist < SHOP_EVERY - 160) {
+    if (this.toRoof <= 0 && !this.roofQ && this.roofObs <= 0 && vill && !(this.racer && this.racer.on) && this.tut <= 0 && this.railObs <= 0 && this.haatObs <= 0 && this.melaObs <= 0 && !this.baraatQ && !this.pond && !this.zip && !this.busy && this.shopDist > 40 && this.shopDist < SHOP_EVERY - 160) {
       this.roofQ = true; this.toRoof = rand(2000, 2600);
       for (const k of ['toRail', 'toHaat', 'toMela', 'toPond', 'toBaraat']) this[k] = Math.max(this[k] || 0, 320);
       this.toFlex = Math.max(this.toFlex, 260); // सड़क के ऊपर का बैनर छत पर दौड़ते समय सिर से न टकराए
@@ -936,11 +941,11 @@ export class World {
     this.toDeco -= dz;
     const calm = (this.zone === 'village' || this.zone === 'fields') && this.haatObs <= 0 && this.melaObs <= 0 && this.railObs <= 0 && this.roofObs <= 0 && !this.roofQ && !this.pond && !this.zip;
     if (this.toDeco <= 0) {
-      this.toDeco = rand(190, 300);
+      this.toDeco = calm ? rand(190, 300) : 40; // अभी हाट/रेल/छत चल रही — थोड़ी देर बाद फिर कोशिश
       const k = this.zone === 'fields' ? pick(['gilli', 'pump']) : pick(['pump', 'gola', 'gilli', 'gola']), pool = this.dPool[k];
       if (calm && pool && pool.length) {
         const d = pool.pop(), sd = chance(0.5) ? -1 : 1;
-        d.visible = true; d.position.set(sd * 5.7, 0, SPAWN_Z - 4); d.rotation.y = sd > 0 ? -Math.PI / 2 : Math.PI / 2; d.userData.side = sd; d.userData.rang = false;
+        d.visible = true; d.position.set(sd * 5.3, 0, SPAWN_Z - 4); d.rotation.y = sd > 0 ? -Math.PI / 2 : Math.PI / 2; d.userData.side = sd; d.userData.rang = false;
         if (k === 'gilli') { d.position.x = sd * 6.2; d.rotation.y = 0; }
         this.decos.push(d);
         if (k === 'gola') this.golaWant = true;
@@ -956,14 +961,14 @@ export class World {
     }
     // 🛞 टायर वाला बच्चा: पीछे से आकर आगे निकलता, फिर थककर पीछे — गोलू आगे निकले तो इनाम
     const R = this.racer;
-    if (!R.on) { this.toRacer -= dz; if (this.toRacer <= 0) { this.toRacer = rand(900, 1300); if (calm) { R.on = true; R.ph = 0; R.t1 = 0; R.won = false; R.side = chance(0.5) ? -1 : 1; R.z = 9; R.obj.visible = true; } } }
+    if (!R.on) { this.toRacer -= dz; if (this.toRacer <= 0) { this.toRacer = calm ? rand(800, 1100) : 40; if (calm) { R.on = true; R.ph = 0; R.t1 = 0; R.won = false; R.side = chance(0.5) ? -1 : 1; R.z = 9; R.obj.visible = true; } } }
     else {
       const spd = dz / Math.max(dt, 1e-4); let v;
-      if (R.ph === 0) { v = spd * 1.14; if (R.z < -6.5) { R.ph = 1; this.events.push('racer'); } }
+      if (R.ph === 0) { v = spd * 1.32; if (R.z < -9) { R.ph = 1; this.events.push('racer'); } } // जल्दी आगे निकले (पीछे से आते समय स्क्रीन पर नहीं दिखता)
       else if (R.ph === 1) { R.t1 += dt; v = spd; if (R.t1 > 3.2) R.ph = 2; }
-      else { v = spd * 0.86; if (R.z > 1.2 && !R.won) { R.won = true; this.events.push('racerWon'); } }
+      else { v = spd * 0.72; if (R.z > 1.2 && !R.won) { R.won = true; this.events.push('racerWon'); } }
       R.z += dz - v * dt;
-      R.obj.position.set(R.side * 5.0, 0, R.z); R.obj.rotation.y = 0;
+      R.obj.position.set(R.side * 3.7, 0, R.z); R.obj.rotation.y = 0; // सड़क के किनारे, ~9 मी. आगे — खड़े फ़ोन पर भी साफ़ दिखे (4.15 पर 6 मी. आगे वह किनारे पर छोटा-सा दिखता था)
       R.obj.userData.anim(this.time || 0, v);
       if (R.z > 16 || !calm) { R.on = false; R.obj.visible = false; }
     }
