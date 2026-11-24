@@ -1,0 +1,1111 @@
+// दुनिया: सड़क, दोनों ओर के मकान, बीच-बीच में MB Sweets की दुकान + स्वागत द्वार, रुकावटें, मिठाइयाँ, पावर-अप, कण
+import * as THREE from './three.module.min.js';
+import {
+  OBST, makePowerup, makeHouse, makeAdWall, makeFlex, makePond, makeTemple, makeStalls, makeShop, makeGate,
+  sweetParts, SWEETS, SKY_SWEETS, CHUNK, ROAD_HALF, GLOW,
+} from './models.js';
+import { makeJungle, makeFields, JUNGLE_OBST, ZONE_SUB } from './jungle.js';
+import { toon, outlineMat, basic, dotTexture, repeatTex, C, OUTLINES, TEX } from './art.js';
+import { RT, shadows } from './real.js';
+import { makeHaat, makeHaatGate } from './haat.js';
+import { makeMela, makeMelaGate } from './events.js';
+import { makeTrack, makeStation, ROOF, RAMP_L, COACH, GAP } from './rail.js';
+import { rand, randi, pick, chance, weighted, clamp, lerp } from './util.js';
+import { POND_LEN, WATER_Y, TILE, POND_OBST, makeWaterTile, makeGhat, makeMakhana, makeFish, WATER, POND_TYPES, makePondDeco } from './pond.js';
+import { makeMadhubaniPu } from './madhubani.js';
+import { seeded } from './ghost.js';
+import { ZIP_LEN, ZIP_H, ZIP_OBST, makeZipRig, trimRopes, zipSag } from './zipline.js';
+import { ROOF_OBST, ROOF_POOL, GAP_RAMP, makeKitePu } from './roofs.js';
+import { makeFarmField, FARM_OBST, FARM_POOL, makeGanna } from './farm.js';
+import { DECO_MAKERS, makeTyreKid, makeGolaPu } from './bachpan.js';
+Object.assign(OBST, JUNGLE_OBST, POND_OBST, ZIP_OBST, ROOF_OBST, FARM_OBST);
+const REAL_RANDOM = Math.random;
+const real = (fn) => { const r = Math.random; Math.random = REAL_RANDOM; try { return fn(); } finally { Math.random = r; } }; // नई चीज़ बनाते समय असली random (बीज वाली गिनती न बिगड़े)
+// अपने बनाए पावर-अप (मखाना, मधुबनी, त्योहार की चिड़िया…) — बाकी models.js का makePowerup
+export const PU_MAKERS = { makhana: makeMakhana, madhubani: makeMadhubaniPu, kite: makeKitePu, ganna: makeGanna, gola: makeGolaPu };
+
+// इलाक़ा दूरी से: 2700 तक गाँव; फिर जंगल (1200 मी.) → गाँव → खेत (1100 मी.) → गाँव … हर 6000 मी. का चक्कर, दूसरे चक्कर में क्रम उल्टा
+export function zoneAt(d) {
+  if (d < 950) return 'village';
+  if (d < 1550) return 'fields'; // 🌾 पहला खेत-खलिहान ~1 किमी पर (24 नवंबर, मालिक: छत-दौड़ के बाद खेत) — पहले 4.5 किमी पर था
+  if (d < 2700) return 'village';
+  const x = (d - 2700) % 6000, k = Math.floor((d - 2700) / 6000) % 2;
+  if (x < 1200) return k ? 'fields' : 'jungle';
+  if (x < 1800) return 'village';
+  if (x < 2900) return k ? 'jungle' : 'fields';
+  return 'village';
+}
+
+export const LANE_W = 2.5;
+export const LANES = [-LANE_W, 0, LANE_W];
+export const SPAWN_Z = -150;
+// कूद (game.js भी यही इस्तेमाल करता है): v = ऊपर की रफ़्तार, g = गुरुत्व. ऊँचाई ≈ v²/2g = 1.65 मी., हवा में ≈ 0.6 से.
+export const JUMP = { v: 12.8, g: 40 }; // 19 नवंबर (मालिक: "jump बहुत कम है"): ऊँचाई 1.65 → 2.05 मी., हवा में 0.64 सेकंड (थोड़ा तेज़ गिरना — भारीपन, तैरना नहीं)
+const DESPAWN_Z = 14;
+const SHOP_EVERY = 430; // इतनी दूरी पर फिर दुकान (≈ 20–28 सेकंड)
+
+// ---------------- मिठाइयाँ (instanced — तेज़) ----------------
+class SweetSet {
+  constructor(scene, cap = 90) {
+    this.cap = cap;
+    this.meshes = {}; this.photo = {}; this.camQ = null;
+    this.qz = new THREE.Quaternion(); this.zAxis = new THREE.Vector3(0, 0, 1);
+    this.free = {};
+    this.items = [];
+    this.m = new THREE.Matrix4();
+    this.q = new THREE.Quaternion();
+    this.e = new THREE.Euler();
+    this.v = new THREE.Vector3();
+    this.s = new THREE.Vector3();
+    const zero = new THREE.Matrix4().makeScale(0, 0, 0);
+    for (const t of Object.keys(SWEETS)) {
+      const arr = [];
+      for (const p of sweetParts(t)) {
+        const add = (mat) => {
+          const im = new THREE.InstancedMesh(p.g, mat, cap);
+          im.frustumCulled = false;
+          im.castShadow = !mat.isMeshBasicMaterial;
+          im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+          for (let i = 0; i < cap; i++) im.setMatrixAt(i, zero);
+          scene.add(im);
+          arr.push(im);
+        };
+        if (p.photo) { // असली फोटो — हमेशा कैमरे की ओर (billboard), मुलायम किनारे
+          if (!this.photoMat) this.photoMat = new THREE.MeshBasicMaterial({ map: TEX.mithai, alphaTest: 0.4, alphaToCoverage: true, toneMapped: false, side: THREE.DoubleSide, color: 0xffffff });
+          this.photo[t] = true;
+          add(this.photoMat);
+          continue;
+        }
+        // चाशनी वाली मिठाई: ऊपर गीली चमक (clearcoat)
+        const m = p.cc ? new THREE.MeshPhysicalMaterial({ color: p.c, map: p.map || null, roughness: p.r, metalness: p.m || 0, normalMap: p.nm || null, normalScale: new THREE.Vector2(p.ns || 1, p.ns || 1), clearcoat: p.cc, clearcoatRoughness: p.ccr || 0.2 })
+          : toon(p.c, { r: p.r, m: p.m, nm: p.nm, ns: p.ns, vc: p.vc, map: p.map });
+        add(m);
+        if (p.ol && OUTLINES) add(outlineMat(p.ol));
+      }
+      this.meshes[t] = arr;
+      this.free[t] = [];
+      for (let i = cap - 1; i >= 0; i--) this.free[t].push(i);
+    }
+    this.zero = zero;
+    // ज़मीन पर हल्की परछाईं (फोटो वाली मिठाई ज़मीन से जुड़ी लगे) — 1 ड्रॉ
+    const sg = new THREE.PlaneGeometry(0.62, 0.62); sg.rotateX(-Math.PI / 2);
+    this.shIM = new THREE.InstancedMesh(sg, new THREE.MeshBasicMaterial({ color: 0x000000, map: dotTexture(), transparent: true, opacity: 0.3, depthWrite: false }), 160);
+    this.shIM.frustumCulled = false; this.shIM.count = 0; this.shIM.renderOrder = 1;
+    scene.add(this.shIM);
+    this.t = 0;
+  }
+  setTint(f) { if (this.photoMat) this.photoMat.color.setScalar(f); }
+  spawn(type, x, y, z) {
+    const fr = this.free[type];
+    if (fr.dirty) { fr.sort((a, b) => b - a); fr.dirty = false; }
+    const ph = Math.random() * 6; // पहले — ताकि जगह न हो तब भी random की गिनती एक जैसी (आज का रास्ता)
+    const slot = fr.pop();
+    if (slot == null) return null;
+    const it = { type, slot, x, y, z, ph, mag: false, col: 0 };
+    this.items.push(it);
+    return it;
+  }
+  release(it) {
+    for (const im of this.meshes[it.type]) { im.setMatrixAt(it.slot, this.zero); }
+    this.free[it.type].push(it.slot);
+    this.free[it.type].dirty = true;
+  }
+  clear() {
+    for (const it of this.items) this.release(it);
+    this.items.length = 0;
+    this.flush();
+  }
+  // इस हिस्से की मिठाइयाँ हटाओ (डिलीवरी के रुके पल में सामने वाला कैमरा — मिठाई कैमरे के मुँह पर न आए)
+  drop(z0, z1) { let n = 0; this.items = this.items.filter((it) => { if (it.col <= 0 && it.z > z0 && it.z < z1) { this.release(it); n++; return false; } return true; }); if (n) this.flush(); }
+  flush() {
+    const top = {};
+    for (const t in this.meshes) top[t] = 0;
+    for (const it of this.items) top[it.type] = Math.max(top[it.type], it.slot + 1);
+    for (const t in this.meshes) for (const im of this.meshes[t]) { im.count = top[t]; im.visible = top[t] > 0; im.instanceMatrix.needsUpdate = true; }
+  }
+  // ctx: {px, py, ph, magnet, collect(it)}
+  update(dt, dz, ctx) {
+    this.t += dt;
+    const keep = [];
+    for (const it of this.items) {
+      let sc = 1;
+      if (it.col > 0) {
+        // खाते हुए गोलू के मुँह की ओर
+        it.col -= dt;
+        const k = 1 - Math.exp(-22 * dt);
+        it.x += (ctx.px - it.x) * k; it.y += (ctx.py + ctx.mouth - it.y) * k; it.z += (-0.4 - it.z) * k;
+        sc = Math.max(0, it.col / 0.16);
+        if (it.col <= 0) { this.release(it); continue; }
+      } else {
+        it.z += dz;
+        if (ctx.magnet && !it.mag && it.z > -16 && it.z < 3 && Math.abs(it.x - ctx.px) < 9) it.mag = true;
+        else if (ctx.mini && !it.mag && it.z > -6 && it.z < 2 && Math.abs(it.x - ctx.px) < 2.9 && Math.abs(it.y - ctx.py - 0.9) < 2.2) it.mag = true; // 🍮 रसगुल्ला राजा
+        if (it.mag) {
+          const k = 1 - Math.exp(-9 * dt);
+          it.x += (ctx.px - it.x) * k; it.y += (ctx.py + 0.9 - it.y) * k; it.z += (0 - it.z) * k * 1.1;
+        }
+        const dx = Math.abs(it.x - ctx.px);
+        const hit = it.mag ? (dx < 0.9 && Math.abs(it.z) < 1.0 && Math.abs(it.y - ctx.py - 0.9) < 1.4)
+          : (dx < 0.85 && it.z > -0.75 && it.z - dz < 0.75 && it.y > ctx.py - 0.4 && it.y < ctx.py + ctx.ph + 0.3); // इस फ़्रेम में z=0 पार किया? (धीमे फ़ोन/तेज़ रफ़्तार में मिठाई छूटे नहीं)
+        if (hit) { it.col = 0.16; ctx.collect(it); }
+        else if (it.z > 2.6) { this.release(it); continue; } // छूटी मिठाई कैमरे के सामने न आए
+      }
+      keep.push(it);
+      const bob = it.col > 0 ? 0 : Math.sin(this.t * 3 + it.ph) * 0.08;
+      if (this.photo[it.type] && this.camQ) { this.q.copy(this.camQ); this.qz.setFromAxisAngle(this.zAxis, Math.sin(this.t * 2.4 + it.ph) * 0.12); this.q.multiply(this.qz); }
+      else { this.e.set(0.25, this.t * 2.2 + it.ph, 0); this.q.setFromEuler(this.e); }
+      this.v.set(it.x, it.y + bob, it.z);
+      this.s.setScalar(sc * (it.type === 'rasmalai' ? 1.15 : SWEETS[it.type].sky ? 1.45 : 1));
+      this.m.compose(this.v, this.q, this.s);
+      for (const im of this.meshes[it.type]) im.setMatrixAt(it.slot, this.m);
+    }
+    this.items = keep;
+    // परछाईं: पास वाली ज़मीनी मिठाइयों की
+    let n = 0;
+    for (const it of keep) {
+      if (n >= 160 || it.col > 0 || it.z < -70 || it.y > 2.6) continue;
+      const gy = this.groundAt ? this.groundAt(it.x, it.z) : 0;
+      if (it.y - gy > 2.4) continue;
+      const k = Math.max(0.35, 1 - (it.y - gy) * 0.3);
+      this.m.makeScale(k, 1, k); this.m.setPosition(it.x, gy + 0.025, it.z);
+      this.shIM.setMatrixAt(n++, this.m);
+    }
+    this.shIM.count = n; this.shIM.instanceMatrix.needsUpdate = true;
+    this.flush();
+  }
+}
+
+// ---------------- चमकते कण ----------------
+class Particles {
+  constructor(scene, n = 320) {
+    this.n = n;
+    this.pos = new Float32Array(n * 3);
+    this.col = new Float32Array(n * 3);
+    this.ps = [];
+    for (let i = 0; i < n; i++) { this.ps.push({ life: 0 }); this.pos[i * 3 + 1] = -1000; }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(this.pos, 3).setUsage(THREE.DynamicDrawUsage));
+    g.setAttribute('color', new THREE.BufferAttribute(this.col, 3).setUsage(THREE.DynamicDrawUsage));
+    this.geo = g;
+    this.pts = new THREE.Points(g, new THREE.PointsMaterial({ size: 0.42, map: dotTexture(), vertexColors: true, transparent: true, depthWrite: false, sizeAttenuation: true }));
+    this.pts.frustumCulled = false;
+    scene.add(this.pts);
+    this.i = 0;
+    this.c = new THREE.Color();
+  }
+  burst(x, y, z, color, count = 8, sp = 4, up = 2, life = 0.6, grav = -9) {
+    // density = फ़ोन के दर्जे के हिसाब से कण (हल्के फ़ोन पर कम); rate = हर फ़्रेम वाले छोटे झोंके 120/144Hz पर दुगने न हों
+    const want = count * (this.density == null ? 1 : this.density) * (count <= 2 && this.rate ? this.rate : 1);
+    count = Math.floor(want) + (Math.random() < want - Math.floor(want) ? 1 : 0);
+    if (!count) return;
+    this.c.set(color);
+    for (let k = 0; k < count; k++) {
+      const p = this.ps[this.i];
+      const idx = this.i;
+      this.i = (this.i + 1) % this.n;
+      const a = Math.random() * Math.PI * 2, r = Math.random() * sp;
+      Object.assign(p, { x, y, z, vx: Math.cos(a) * r, vy: up + Math.random() * up, vz: Math.sin(a) * r, life: life * (0.6 + Math.random() * 0.6), g: grav });
+      this.col[idx * 3] = this.c.r; this.col[idx * 3 + 1] = this.c.g; this.col[idx * 3 + 2] = this.c.b;
+    }
+  }
+  update(dt, dz) {
+    for (let i = 0; i < this.n; i++) {
+      const p = this.ps[i];
+      if (p.life <= 0) { if (this.pos[i * 3 + 1] > -999) this.pos[i * 3 + 1] = -1000; continue; }
+      p.life -= dt;
+      p.vy += p.g * dt;
+      p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt + dz;
+      this.pos[i * 3] = p.x; this.pos[i * 3 + 1] = p.life > 0 ? p.y : -1000; this.pos[i * 3 + 2] = p.z;
+    }
+    this.geo.attributes.position.needsUpdate = true;
+    this.geo.attributes.color.needsUpdate = true;
+  }
+  clear() { for (const p of this.ps) p.life = 0; }
+}
+
+// ---------------- दुनिया ----------------
+export class World {
+  constructor(scene) {
+    this.scene = scene;
+    this.sweets = new SweetSet(scene);
+    this.parts = new Particles(scene);
+    this.obs = []; this.pups = []; this.gates = []; this.flexes = []; this.events = [];
+    this.oPool = {}; this.pPool = {};
+    this.viewZ = -999; // ग्राफ़िक्स दर्जा तय करता है
+    this.chunks = { '-1': [], '1': [] };
+    this.cPool = {};
+    this.buildRoad();
+    this.prebuild();
+  }
+
+  buildRoad() {
+    const len = 210, z0 = -len / 2 + 22;
+    // असली जैसी ईंट की सड़क (उभार के साथ)
+    const rep = (t, rx, ry) => { const c = t.clone(); c.needsUpdate = true; c.wrapS = c.wrapT = THREE.RepeatWrapping; c.repeat.set(rx, ry); return c; };
+    this.roadTile = ROAD_HALF * 2 / 3;
+    this.roadTex = rep(RT.road, 3, len / this.roadTile);
+    this.roadN = rep(RT.roadN, 3, len / this.roadTile);
+    const road = new THREE.Mesh(new THREE.PlaneGeometry(ROAD_HALF * 2, len), this.roadMat = new THREE.MeshStandardMaterial({ map: this.roadTex, normalMap: this.roadN, normalScale: new THREE.Vector2(1.2, 1.2), roughness: 0.93 }));
+    road.rotation.x = -Math.PI / 2;
+    road.position.set(0, 0, z0);
+    road.receiveShadow = true;
+    this.scene.add(road);
+    // पत्थर का किनारा
+    this.curbTile = 3;
+    this.curbN = rep(RT.dirtN, 1, len / this.curbTile);
+    for (const s of [-1, 1]) {
+      const curb = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.26, len), new THREE.MeshStandardMaterial({ color: 0xcfc2a8, roughness: 0.9, normalMap: this.curbN }));
+      curb.position.set(s * (ROAD_HALF + 0.12), 0.13, z0);
+      curb.receiveShadow = true; curb.castShadow = true;
+      this.scene.add(curb);
+    }
+    // लेन की हल्की चूने की धारियाँ (घिसी हुई)
+    const c = document.createElement('canvas'); c.width = 16; c.height = 128;
+    const x = c.getContext('2d'); x.fillStyle = 'rgba(245,238,222,0.55)'; x.fillRect(4, 0, 8, 70);
+    this.dashTex = new THREE.CanvasTexture(c);
+    this.dashTex.wrapS = this.dashTex.wrapT = THREE.RepeatWrapping;
+    this.dashTex.repeat.set(1, len / 6);
+    for (const lx of [-LANE_W / 2, LANE_W / 2]) {
+      const d = new THREE.Mesh(new THREE.PlaneGeometry(0.13, len), new THREE.MeshBasicMaterial({ map: this.dashTex, transparent: true, depthWrite: false, opacity: 0.55 }));
+      d.rotation.x = -Math.PI / 2;
+      d.position.set(lx, 0.012, z0);
+      this.scene.add(d);
+    }
+    this.roadLen = len;
+    // मिट्टी वाली ज़मीन (फ़ुटपाथ)
+    this.groundTile = 5;
+    this.groundTex = rep(RT.dirt, 130 / this.groundTile, (len + 20) / this.groundTile);
+    this.groundN = rep(RT.dirtN, 130 / this.groundTile, (len + 20) / this.groundTile);
+    const gr = new THREE.Mesh(new THREE.PlaneGeometry(130, len + 20), new THREE.MeshStandardMaterial({ map: this.groundTex, normalMap: this.groundN, roughness: 0.97 }));
+    gr.rotation.x = -Math.PI / 2;
+    gr.position.set(0, -0.02, z0);
+    gr.receiveShadow = true;
+    this.scene.add(gr);
+  }
+
+  prebuild() {
+    const mk = (key, fn, n) => {
+      this.cPool[key] = [];
+      for (let i = 0; i < n; i++) {
+        GLOW.list = [];
+        const o = fn(i);
+        if (GLOW.list.length) o.userData.glows = (o.userData.glows || []).concat(GLOW.list);
+        GLOW.list = null;
+        o.visible = false; o.userData.key = key; if (!o.userData.noShadow) shadows(o, true, true); this.scene.add(o); this.cPool[key].push(o);
+      }
+    };
+    for (const s of [-1, 1]) {
+      mk('house' + s, (i) => makeHouse(s, i), 14);
+      mk('adwall' + s, (i) => makeAdWall(s, i + (s > 0 ? 2 : 0)), 2);
+      mk('pond' + s, () => makePond(s), 2);
+      mk('temple' + s, () => makeTemple(s), 2);
+      mk('stalls' + s, () => makeStalls(s), 2);
+      mk('shop' + s, () => makeShop(s), 2);
+      mk('haat' + s, (i) => makeHaat(s, i), 7);
+      mk('mela' + s, (i) => makeMela(s, i), 4);
+      if (s < 0) mk('station' + s, (i) => makeStation(s, i), 3);
+      mk('jungle' + s, (i) => makeJungle(s, i), 12);
+      mk('fields' + s, (i) => makeFarmField(s, i), 12); // 🌾 असली जैसे खेत (बैल-हल, पुआल, सरसों)
+    }
+    mk('gate', () => makeGate(), 2);
+    mk('flex', (i) => makeFlex(i), 4);
+    mk('haatgate', () => makeHaatGate(), 1);
+    mk('melagate', () => makeMelaGate(), 1);
+    this.tPool = []; this.tracks = [];
+    for (let i = 0; i < 17; i++) { const t = makeTrack(); t.visible = false; this.scene.add(t); this.tPool.push(t); }
+    // पावर-अप और रुकावटें पहले से (पहली बार अटके नहीं)
+    for (const k of ['magnet', 'shoes', 'shield', 'samosa', 'thali', 'madhubani', 'makhana', 'makhana', 'kite', 'kite', 'ganna', 'ganna', 'gola']) { (this.pPool[k] = this.pPool[k] || []).push(this.newPu(k)); }
+    // 🚣 पोखर: पानी के टुकड़े + दो घाट
+    this.wPool = []; this.waters = [];
+    for (let i = 0; i < Math.ceil(POND_LEN / TILE) + 2; i++) { const t = makeWaterTile(i); t.visible = false; this.scene.add(t); this.wPool.push(t); }
+    this.fish = [makeFish(), makeFish()].map((o) => { this.scene.add(o); return { o, t: 1 }; }); this.toFish = 2;
+    this.ghats = [makeGhat(), makeGhat()]; for (const gh of this.ghats) { gh.visible = false; shadows(gh, true, true); this.scene.add(gh); }
+    this.pondDeco = {}; for (const t of POND_TYPES) { const d = makePondDeco(t); this.scene.add(d); this.pondDeco[t] = d; } // 🪷/🐟/🪔 तीन तरह के पोखर
+    // 🌳 जंगल की रस्सी: रस्सियाँ-मचान + नीचे नदी (पोखर वाले पानी के टुकड़े, अलग)
+    this.zipRig = makeZipRig(); this.scene.add(this.zipRig);
+    this.zwPool = []; this.zwaters = [];
+    for (let i = 0; i < Math.ceil(ZIP_LEN / TILE) + 2; i++) { const t = makeWaterTile(i + 1); t.visible = false; this.scene.add(t); this.zwPool.push(t); }
+    // 24 नवंबर: कितनी एक साथ दिखती हैं (5 किमी की 3 दौड़ों में सबसे ज़्यादा) + 1 — दौड़ के बीच नई बनाना = कमज़ोर फ़ोन पर झटका
+    const POOL_N = { jaal: 11, vine: 11, log: 10, toran: 10, boulder: 8, haybale: 8, cans: 7, barrier: 7, thela: 7, rickshaw: 7, naav: 6, lattha: 6, bricks: 5, pothole: 5, bhains: 5, chugla: 5, chhatta: 5, bail: 5, tokri: 5, fence: 5, train2: 5, cow: 5, ...ROOF_POOL, ...FARM_POOL };
+    for (const t of Object.keys(OBST)) { this.oPool[t] = []; for (let i = 0; i < (POOL_N[t] || 4); i++) { const o = this.newObs(t); o.visible = false; this.oPool[t].push(o); } }
+    // 🧒 बचपन वाले नज़ारे (फ़ुटपाथ पर) + टायर वाला बच्चा — पहले से बने
+    this.dPool = {}; for (const k of Object.keys(DECO_MAKERS)) this.dPool[k] = [0, 1].map(() => { const o = real(() => DECO_MAKERS[k]()); o.visible = false; o.userData.dk = k; shadows(o, true, false); this.scene.add(o); if (this.onNew) this.onNew(o); return o; });
+    this.racer = { obj: real(() => makeTyreKid()), on: false }; this.racer.obj.visible = false; shadows(this.racer.obj, true, false); this.scene.add(this.racer.obj);
+  }
+  newObs(t) { const o = real(() => OBST[t]()); o.userData.type = t; shadows(o, true, true); this.scene.add(o); if (this.onNew) this.onNew(o); return o; }
+  newPu(k) { const o = real(() => (PU_MAKERS[k] || makePowerup)(k)); o.visible = false; shadows(o, true, false); this.scene.add(o); if (this.onNew) this.onNew(o); return o; }
+
+  // 📅 आज का रास्ता: दुनिया बनाते समय Math.random की जगह तारीख़ वाला बीज (बाकी — कण, आवाज़ — असली random)
+  // पंक्ति (रुकावट-मिठाई), किनारे के मकान और घटनाएँ — तीन अलग धाराएँ, ताकि खिलाड़ी की रफ़्तार से क्रम न बिगड़े
+  // हर पंक्ति / हर मकान का अपना बीज (क्रम-संख्या से) — एक जगह फ़र्क़ पड़े तो आगे का रास्ता न बिगड़े
+  setSeed(str) { this.seedStr = str || null; this.rngs = str ? { evt: seeded(str + ':evt') } : null; }
+  gen(fn, k = 'evt') {
+    if (!this.rngs) return fn();
+    const r = Math.random; Math.random = typeof k === 'string' ? this.rngs[k] : k;
+    try { return fn(); } finally { Math.random = r; }
+  }
+  // ---------- नया खेल ----------
+  reset(tutorial) { return this.gen(() => this._reset(tutorial)); }
+  _reset(tutorial) {
+    this.rowN = 0; this.chunkN = { '-1': 0, '1': 0 };
+    for (const o of this.obs) this.relObs(o);
+    for (const p of this.pups) { p.obj.visible = false; this.pPool[p.kind].push(p.obj); }
+    for (const g of this.gates) { g.visible = false; this.cPool[g.userData.key].push(g); }
+    for (const f of this.flexes) { f.visible = false; this.cPool.flex.push(f); }
+    this.flexes = []; this.toFlex = 120;
+    for (const d of this.decos || []) { d.visible = false; this.dPool[d.userData.dk].push(d); }
+    this.decos = []; this.toDeco = rand(170, 240); this.golaWant = false;
+    if (this.racer) { this.racer.on = false; this.racer.obj.visible = false; } this.toRacer = rand(380, 520);
+    this.toHaat = rand(600, 760); this.haatN = { '-1': 0, '1': 0 }; this.haatObs = 0; this.events = [];
+    this.toMela = rand(1700, 2000); this.melaN = { '-1': 0, '1': 0 }; this.melaObs = 0; this.toBaraat = rand(1250, 1450); this.baraatQ = false;
+    for (const t of this.tracks || []) { t.visible = false; this.tPool.push(t); }
+    this.tracks = []; this.toRail = rand(950, 1150); this.railObs = 0; this.stationN = 0;
+    for (const t of this.waters || []) { t.visible = false; this.wPool.push(t); }
+    this.waters = []; for (const gh of this.ghats || []) gh.visible = false;
+    this.pond = null; this.pondFirst = false; for (const f of this.fish || []) { f.t = 1; f.o.visible = false; } this.yOff = 0;
+    this.toPond = rand(560, 640); this.pondN = 0; this.pondType = null; this.lastPondType = null; this.afterWater = 0; this.flying = false; // पहला पोखर जल्दी (मालिक: "बहुत दूर दौड़ने के बाद आता है")
+    for (const k in this.pondDeco || {}) this.pondDeco[k].visible = false;
+    for (const t of this.zwaters || []) { t.visible = false; this.zwPool.push(t); }
+    this.zwaters = []; this.zip = null; this.toZip = rand(250, 420); if (this.zipRig) this.zipRig.visible = false;
+    for (const s of ['-1', '1']) { for (const c of this.chunks[s]) this.relChunk(c); this.chunks[s] = []; }
+    this.obs = []; this.pups = []; this.gates = [];
+    this.sweets.clear(); this.parts.clear();
+    this.dist = 0; this.diff = 0; this.speed = 14; this.zone = 'village'; this.calm = 0;
+    // 24 नवंबर (मालिक: "खाली रोड पर गोलू दौड़ता रहता है"): पहली पंक्ति ~40 मी. आगे (≈3 सेकंड), बाकी सड़क भी अभी से भरी.
+    // toNext < 0 = नीचे वाला while पहले ही फ़्रेम में z = -40 … -150 तक पंक्तियाँ बिछा देता है
+    this.toNext = -110;
+    this.toPu = rand(150, 200); // पहला पावर-अप ~10–13 सेकंड में (पहले 260–380 मी.)
+    this.toRoof = rand(640, 760); this.roofObs = 0; this.roofQ = false; // 🏠 पहली छत-दौड़ ~700 मी. पर (पहले मिनट में)
+    this.toSam = rand(420, 620); // उड़न समोसा जल्दी और ज़्यादा बार (मालिक: "बहुत कम आ रहा है")
+    this.shopDist = SHOP_EVERY - 120; // पहली दुकान जल्दी
+    this.shopSide = -1;
+    this.lastType = { '-1': '', '1': '' };
+    this.tut = tutorial ? 3 : 0;
+    this.tutRows = [];
+    this.farZ = { '-1': 22, '1': 22 };
+    for (const s of [-1, 1]) while (this.farZ[s] > SPAWN_Z - 20) this.spawnChunk(s);
+    this.line(1, -13, 8, 'rasgulla'); // पहले मीटर से रसगुल्लों की लड़ी (गोलू की लेन में)
+    if (this.fest) this.fest.reset();
+  }
+
+  // ---------- किनारे के मकान ----------
+  getChunk(key) {
+    const p = this.cPool[key];
+    if (!p || !p.length) return null;
+    const o = p.pop();
+    o.visible = true;
+    return o;
+  }
+  relChunk(o) { o.visible = false; this.cPool[o.userData.key].push(o); }
+  spawnChunk(side) { if (!this.rngs) return this._spawnChunk(side); this.chunkN[side] = (this.chunkN[side] || 0) + 1; return this.gen(() => this._spawnChunk(side), seeded(`${this.seedStr}:c${side}:${this.chunkN[side]}`)); }
+  _spawnChunk(side) {
+    const zc = this.farZ[side] - CHUNK / 2;
+    const zone = zoneAt(this.dist - zc);
+    let type;
+    const os = this.openSide; // 📮 मिथिला दर्शन की जगह के पास खुले खेत (मकान जगह से न टकराएँ)
+    const ot = os && os.type || 'fields';
+    if (os && String(os.side) === String(side) && zc < os.z1 && zc > os.z0 && this.cPool[ot + side] && this.cPool[ot + side].length) type = ot;
+    else if (this.pond && zc < this.pond.a + 12 && zc > this.pond.b - 12 && !(side === this.shopSide && this.shopDist >= SHOP_EVERY)) { // पोखर के किनारे: बाग़-खेत-मंदिर
+      type = weighted([['pond', this.lastType[side] === 'pond' ? 0 : 2], ['fields', 2.5], ['temple', this.lastType[side] === 'temple' ? 0 : 0.8]]);
+      if (!this.cPool[type + side].length) type = 'house';
+    } else if (zone === 'jungle' && this.cPool['jungle' + side].length) {
+      type = 'jungle';
+    } else if (zone === 'fields' && !(side === this.shopSide && this.shopDist >= SHOP_EVERY) && this.cPool['fields' + side].length) {
+      type = this.lastType[side] !== 'pond' && this.cPool['pond' + side].length && chance(0.14) ? 'pond' : 'fields'; // बीच-बीच में मखाना पोखर
+    } else if (side === this.shopSide && this.shopDist >= SHOP_EVERY && this.cPool['shop' + side].length) {
+      type = 'shop';
+      this.shopDist = 0;
+      this.shopSide = -side;
+      const g = this.getChunk('gate');
+      if (g) { g.position.set(0, 0, zc + CHUNK / 2 - 1); this.gates.push(g); }
+    } else if (side < 0 && this.stationN > 0 && this.cPool['station' + side] && this.cPool['station' + side].length) {
+      type = 'station';
+      this.stationN--;
+    } else if (this.melaN[side] > 0 && this.cPool['mela' + side].length) {
+      type = 'mela';
+      this.melaN[side]--;
+    } else if (this.haatN[side] > 0 && this.cPool['haat' + side].length) {
+      type = 'haat';
+      this.haatN[side]--;
+    } else {
+      const last = this.lastType[side];
+      type = weighted([['house', 6], ['adwall', last === 'adwall' ? 0 : 1.1], ['pond', last === 'pond' ? 0 : 1.0], ['temple', last === 'temple' ? 0 : 0.6], ['stalls', last === 'stalls' ? 0 : 1.0]]);
+      if (!this.cPool[type + side].length) type = 'house';
+      if (!this.cPool['house' + side].length) type = pick(['adwall', 'pond', 'temple', 'stalls'].filter((t) => this.cPool[t + side].length));
+    }
+    const o = this.getChunk(type + side);
+    this.lastType[side] = type;
+    if (o) { o.position.z = zc; this.chunks[side].push(o); }
+    this.farZ[side] -= CHUNK;
+  }
+
+  // ---------- रुकावटें / पावर-अप ----------
+  getObs(t) {
+    const p = this.oPool[t];
+    const o = p && p.length ? p.pop() : this.newObs(t);
+    o.visible = true;
+    o.rotation.set(0, 0, 0);
+    return o;
+  }
+  relObs(e) { e.obj.visible = false; this.oPool[e.type].push(e.obj); }
+  addObs(t, lane, z, extra = {}) {
+    const sub = ZONE_SUB[zoneAt(this.dist - z)];
+    if (sub && sub[t] && !extra.vz && !extra.shift && !extra.need) t = sub[t];
+    if (this.fest) t = this.fest.swapObs(t, extra); // 🪔 त्योहार: कुछ बैरियर की जगह चुगला
+    const obj = this.getObs(t);
+    const u = obj.userData;
+    const e = { obj, type: t, kind: u.kind, lane, x: LANES[lane], z, vz: 0, halfW: u.halfW, halfL: u.halfL, yMin: u.yMin, yMax: u.yMax, px: false, pz: false, dead: false, ...extra };
+    if (t === 'rickshaw' && e.vz > 0) obj.rotation.y = 0; // सामने से आता (मुँह +z)
+    else if (t === 'rickshaw') obj.rotation.y = chance(0.5) ? Math.PI : 0;
+    if (t === 'thela' || t === 'cans' || t === 'bricks' || t === 'tokri') obj.rotation.y = chance(0.5) ? Math.PI : 0;
+    if (t === 'bail') obj.rotation.y = e.vz > 0 ? Math.PI : (chance(0.5) ? Math.PI : 0);
+    if (t === 'bhains') obj.rotation.y = chance(0.5) ? 0 : Math.PI;
+    if (t === 'boulder' || t === 'haybale' || t === 'log') obj.rotation.y = chance(0.5) ? 0 : Math.PI;
+    if (t === 'band' || t === 'ghodi') obj.rotation.y = Math.PI;
+    if (t === 'cow') { obj.rotation.y = e.cross ? 0 : (chance(0.5) ? 0 : Math.PI); }
+    obj.position.set(e.x, this.inZip(z) ? ZIP_H + zipSag(z - this.zip.a) : this.inPond(z) ? WATER_Y * 0.85 : 0, z); // पोखर में चीज़ें पानी पर, रस्सी पर ऊपर
+    if (extra.y) { obj.position.y = extra.y; e.yMin += extra.y; e.yMax += extra.y; } // छत पर रखी रुकावट
+    if (u.rl) e.rl = u.rl;
+    this.obs.push(e);
+    return e;
+  }
+  addPu(kind, lane, z, y = 1.05) {
+    const p = this.pPool[kind];
+    const obj = p.length ? p.pop() : this.newPu(kind);
+    obj.visible = true;
+    const e = { obj, kind, x: LANES[lane], y, z, t: Math.random() * 5 };
+    obj.position.set(e.x, e.y, z);
+    this.pups.push(e);
+    return e;
+  }
+
+  // ---------- मिठाई के पैटर्न ----------
+  // ऑर्डर चालू हो तो उसकी मिठाइयाँ ज़्यादा (delivery.js → this.boost)
+  sweetType() { const b = this.boost || {}; return weighted([['rasgulla', 60 + (b.rasgulla || 0)], ['gulabjamun', 22 + (b.gulabjamun || 0)], ['balushahi', 12 + (b.balushahi || 0)], ['chamcham', 6 + (b.chamcham || 0)]]); }
+  line(lane, z, n, type = this.sweetType(), y = 0.7, gap = 2.0) {
+    for (let i = 0; i < n; i++) this.sweets.spawn(type, LANES[lane], y + this.yOff, z - i * gap);
+  }
+  // ऊपर की मिठाइयाँ ठीक उसी राह पर जिस पर गोलू कूदकर जाता है — रफ़्तार जितनी, छलाँग उतनी लंबी; एक कूद में पूरी पंक्ति
+  // (रुकावट से थोड़ा पहले उछलना = सही समय; top: 2.5 सामान्य, कम/ज़्यादा = थोड़ी नीची/ऊँची)
+  arc(lane, zc, type = this.sweetType(), top = 2.5) {
+    const v = JUMP.v, g = JUMP.g, air = 2 * v / g, sp = Math.max(10, this.speed);
+    const L = clamp(sp * air, 7, 28), d0 = clamp(sp * air * 0.32, 2.4, 8.5);
+    const n = clamp(Math.round(L / 1.6), 7, 14), hk = top / 2.5;
+    const mid = Math.floor(n / 2);
+    for (let i = 0; i < n; i++) {
+      const s = i / (n - 1), tt = s * air;
+      const z = zc + d0 - s * L;
+      const y = 0.8 + Math.max(0, v * tt - 0.5 * g * tt * tt) * hk;
+      const tp = i === mid && chance(0.28) ? 'rasmalai' : type;
+      this.sweets.spawn(tp, LANES[lane], y + this.yOff, z);
+    }
+  }
+
+  blockType() {
+    if (this.haatObs > 0) return weighted([['bail', 2.2], ['bhains', 2.4], ['thela', 1.6], ['cow', 1]]);
+    return weighted([['rickshaw', 3], ['thela', 3], ['cow', this.diff > 0.1 ? 1.4 : 0.6], ['bhains', this.diff > 0.2 ? 0.6 : 0]]);
+  }
+  oneType() {
+    if (this.haatObs > 0) return weighted([['tokri', 3.2], ['bhains', 1.6], ['bail', 1.2], ['thela', 1.2], ['cans', 0.8], ['toran', 1.2], ['mud', 0.6]]);
+    const d = this.diff;
+    return weighted([['rickshaw', 2.4], ['thela', 2.4], ['cow', 1.0], ['cans', 1.6], ['barrier', 1.8], ['toran', d > 0.05 ? 1.4 : 0.5], ['bricks', 1.2], ['mud', 0.8],
+      ['pothole', d > 0.08 ? 1.3 : 0], ['kapda', d > 0.12 ? 1.0 : 0], ['taar', d > 0.2 ? 0.9 : 0]]);
+  }
+
+  // एक "पंक्ति" — हमेशा कोई न कोई रास्ता खुला. 📅 आज के रास्ते में कठिनाई 5% के कदमों में (सबका क्रम एक जैसा रहे)
+  spawnRow(z) {
+    if (!this.rngs) return this._spawnRow(z);
+    const real = this.diff; this.diff = Math.round(real * 20) / 20; this.rowN++;
+    try { return this.gen(() => this._spawnRow(z), seeded(`${this.seedStr}:r${this.rowN}`)); } finally { this.diff = real; }
+  }
+  _spawnRow(z) {
+    const d = this.diff;
+    const lanes = [0, 1, 2];
+    const others = (l) => lanes.filter((x) => x !== l);
+    // ट्यूटोरियल
+    if (this.tut > 0) {
+      const step = 4 - this.tut; // 1,2,3
+      this.tut--;
+      if (step === 1) { this.addObs('rickshaw', 1, z, { need: 'lane' }); this.line(0, z + 6, 5, 'rasgulla'); this.line(2, z + 6, 5, 'rasgulla'); return 2.0; }
+      if (step === 2) { for (const l of lanes) this.addObs('barrier', l, z, { need: 'jump' }); this.arc(1, z, 'gulabjamun'); return 2.0; }
+      this.addObs('toran', 0, z, { need: 'roll' }); this.addObs('toran', 1, z); this.addObs('toran', 2, z);
+      this.line(1, z + 4, 6, 'balushahi', 0.5);
+      return 2.0;
+    }
+    if (this.melaObs > 0) { // मेला: तीनों लेन में मिठाई की बारिश
+      for (let q = 0; q < 3; q++) { if ((q + Math.floor(z)) % 2) this.arc(q, z, this.sweetType(), 2.2); else this.line(q, z + 5, 6, pick(['gulabjamun', 'balushahi', 'chamcham'])); }
+      if (chance(0.3)) this.sweets.spawn('rasmalai', LANES[randi(0, 2)], 0.9, z - 6);
+      return 0.1;
+    }
+    if (this.railObs > 0) return this.railRow(z);
+    if (this.roofQ) { this.roofQ = false; return this.roofSection(z); }
+    // 🚣 पोखर: पंक्ति की सारी चीज़ें (z+8 … z-16) पानी के अंदर हों तभी पानी वाली पंक्ति; किनारे/घाट पर पड़े तो खाली;
+    // पानी पर सड़क की चीज़ें (समोसा, ईंट, गाय…) कभी नहीं — पहले पोखर के शुरू/आख़िर में चढ़ जाती थीं
+    if (this.zip) { // 🌳 रस्सी वाला हिस्सा: पूरी पंक्ति रस्सी के ऊपर हो तभी रस्सी वाली पंक्ति, किनारे पर ख़ाली
+      const Z = this.zip, top = z + 9, bot = z - 20;
+      if (top < Z.a - 26 && bot > Z.b + 18) return this.zipRow(z);
+      if (bot < Z.a + 3 && top > Z.b - 24) return 0; // उतरने के बाद थोड़ी ख़ाली सड़क
+    }
+    if (this.pond) {
+      const P = this.pond, top = z + 9, bot = z - 20;
+      if (top < P.a - 1 && bot > P.b + 1) return this.pondRow(z);
+      if (bot < P.a + 3 && top > P.b - 3) return 0;
+    }
+    if (this.baraatQ) { // बारात सामने से आती — एक लेन खुली
+      this.baraatQ = false;
+      const vz = 2.2, sc = (zz) => zz * (this.speed + vz) / this.speed;
+      const a = randi(0, 2), others2 = lanes.filter((x) => x !== a);
+      this.addObs('ghodi', others2[0], sc(z), { vz }); this.addObs('band', others2[1], sc(z - 1), { vz });
+      this.line(a, z + 4, 6, 'chamcham');
+      const b = a === 1 ? pick([0, 2]) : 1, o3 = lanes.filter((x) => x !== b);
+      const z2 = z - Math.max(14, this.speed * 0.95);
+      for (const l of o3) this.addObs('band', l, sc(z2), { vz });
+      this.line(b, z2 + 4, 6, 'balushahi');
+      this.events.push('baraat');
+      return 1.0;
+    }
+    const kind = this.calm > 0 ? 'breather' : weighted([ // 📮 मिथिला दर्शन की जगह के सामने: सिर्फ़ मिठाई
+      ['single', lerp(4, 1.6, d)], ['double', lerp(0.9, 3.2, d)], ['jumpAll', 1.1], ['rollAll', lerp(0.6, 1.3, d)],
+      ['mixed', lerp(0.3, 2.2, d)], ['moving', d > 0.15 ? lerp(0.5, 1.5, d) : 0], ['cow', d > 0.1 ? 0.8 : 0], ['breather', lerp(1.3, 0.35, d)],
+      ['jumpLane', d > 0.22 ? lerp(0.6, 1.7, d) : 0], ['zigzag', d > 0.35 ? lerp(0.5, 1.6, d) : 0], ['rollJump', d > 0.3 ? lerp(0.5, 1.4, d) : 0],
+      ['goats', d > 0.1 && this.haatObs <= 0 ? lerp(0.6, 1.0, d) : 0], ['swerve', d > 0.3 ? lerp(0.4, 1.3, d) : 0],
+    ]);
+    const gap2 = Math.max(9, this.speed * 0.62); // दूसरी पंक्ति कितनी पीछे (समय के हिसाब से — हर रफ़्तार पर संभव)
+    let extra = 0;
+    let freeLane = randi(0, 2);
+    if (kind === 'single') {
+      const l = randi(0, 2), t = this.oneType();
+      this.addObs(t, l, z);
+      freeLane = pick(others(l));
+      if (t === 'barrier' || t === 'cans' || t === 'bricks') { if (chance(0.5)) { this.arc(l, z); freeLane = -1; } else this.line(freeLane, z + 5, 5); }
+      else if (t === 'toran') this.line(l, z + 4, 5, this.sweetType(), 0.45);
+      else this.line(freeLane, z + 5, 5);
+    } else if (kind === 'double') {
+      freeLane = randi(0, 2);
+      for (const l of others(freeLane)) this.addObs(chance(0.25) ? 'cans' : this.blockType(), l, z, {});
+      this.line(freeLane, z + 6, 6);
+      extra = 0.18;
+    } else if (kind === 'jumpAll') {
+      for (const l of lanes) this.addObs(this.haatObs > 0 ? (chance(0.7) ? 'tokri' : 'cans') : weighted([['barrier', 3], ['cans', 1.3], ['pothole', d > 0.08 ? 1 : 0]]), l, z);
+      freeLane = randi(0, 2);
+      this.arc(freeLane, z);
+    } else if (kind === 'rollAll') {
+      const rt = this.haatObs > 0 ? 'toran' : weighted([['toran', 2], ['kapda', d > 0.12 ? 1.4 : 0], ['taar', d > 0.2 ? 1.2 : 0]]);
+      for (const l of lanes) this.addObs(rt, l, z);
+      freeLane = randi(0, 2);
+      this.line(freeLane, z + 4, 6, this.sweetType(), 0.45);
+    } else if (kind === 'mixed') {
+      const perm = [...lanes].sort(() => Math.random() - 0.5);
+      this.addObs(this.blockType(), perm[0], z);
+      this.addObs(chance(0.5) ? 'barrier' : 'cans', perm[1], z);
+      this.addObs(chance(0.7) ? 'toran' : 'bricks', perm[2], z);
+      this.arc(perm[1], z);
+      freeLane = -1;
+      extra = 0.2;
+    } else if (kind === 'moving') {
+      const l = randi(0, 2);
+      // सामने से आता रिक्शा: इतनी दूर से छोड़ो कि अपनी पंक्ति के साथ ही पहुँचे (दूसरी पंक्ति पर न चढ़े)
+      const vz = rand(5, 8);
+      const farm = zoneAt(this.dist - z) === 'fields', slow = this.haatObs > 0 || farm; // खेत में: सामने से धीरे आती बैलगाड़ी
+      this.addObs(farm ? 'bailgadi' : this.haatObs > 0 ? 'bail' : 'rickshaw', l, z * (this.speed + (slow ? vz * 0.45 : vz)) / this.speed, { vz: slow ? vz * 0.45 : vz });
+      freeLane = pick(others(l));
+      this.line(freeLane, z + 4, 7);
+      extra = 0.35;
+    } else if (kind === 'goats') { // बकरियाँ सड़क पार करती — कहीं भी कूदो
+      const from = pick([0, 2]);
+      const e = this.addObs('goats', from, z, { cross: { from, to: 2 - from, t: 0, dur: 2.6 }, noTurn: true });
+      e.obj.rotation.y = from === 0 ? 0 : Math.PI;
+      freeLane = -1;
+      this.arc(1, z, this.sweetType(), 2.8);
+      extra = 0.2;
+    } else if (kind === 'swerve') { // सामने से आता ई-रिक्शा अचानक लेन बदले (पहले डगमगाता है)
+      const a = pick([0, 1, 2]), b = a === 1 ? pick([0, 2]) : 1, c = [0, 1, 2].find((l) => l !== a && l !== b);
+      const vz = rand(5, 7);
+      this.addObs('rickshaw', a, z * (this.speed + vz) / this.speed, { vz, shift: { from: a, to: b, t: 0, dur: 0.75, at: -64 } });
+      freeLane = c;
+      this.line(c, z + 4, 7);
+      extra = 0.45;
+    } else if (kind === 'cow') {
+      const from = pick([0, 2]), to = 1;
+      this.addObs('cow', from, z, { cross: { from, to, t: 0, dur: 1.5 } });
+      freeLane = from === 0 ? 2 : 0;
+      this.line(freeLane, z + 5, 6);
+      extra = 0.15;
+    } else if (kind === 'jumpLane') { // पहले सब पर कूदो, फिर तुरंत लेन बदलो
+      for (const l of lanes) this.addObs(chance(0.6) ? 'barrier' : 'cans', l, z);
+      this.arc(randi(0, 2), z);
+      freeLane = randi(0, 2);
+      for (const l of others(freeLane)) this.addObs(this.blockType(), l, z - gap2 - 3, {});
+      this.line(freeLane, z - gap2 + 2, 5);
+      extra = 0.75;
+    } else if (kind === 'zigzag') { // बाएँ-दाएँ दो बार
+      const a = pick([0, 2]), b = 2 - a;
+      for (const l of others(a)) this.addObs(this.blockType(), l, z, {});
+      this.line(a, z + 5, 4);
+      for (const l of others(b)) this.addObs(chance(0.3) ? 'cans' : this.blockType(), l, z - gap2 - 4, {});
+      this.line(b, z - gap2 + 1, 4);
+      freeLane = b;
+      extra = 0.8;
+    } else if (kind === 'rollJump') { // लुढ़को, फिर कूदो
+      for (const l of lanes) this.addObs('toran', l, z);
+      this.line(randi(0, 2), z + 4, 5, this.sweetType(), 0.45);
+      for (const l of lanes) this.addObs(chance(0.65) ? 'barrier' : 'bricks', l, z - gap2 - 2);
+      freeLane = randi(0, 2);
+      this.arc(freeLane, z - gap2 - 2);
+      extra = 0.75;
+    } else { // breather — टेढ़ी-मेढ़ी मिठाई
+      let l = randi(0, 2);
+      const tp = this.sweetType();
+      for (let i = 0; i < 12; i++) {
+        if (i % 4 === 3) l = clamp(l + pick([-1, 1]), 0, 2);
+        this.sweets.spawn(tp, LANES[l], 0.7, z + 8 - i * 2.0);
+      }
+      freeLane = l;
+      if (chance(0.35)) this.addObs('bricks', pick(others(l)), z - 6);
+    }
+    // पावर-अप
+    if (this.toSam <= 0 && freeLane >= 0 && !this.waterSoon()) { // उड़न समोसा — पोखर/रस्सी के पास नहीं (उड़ते-उड़ते पानी पार न हो)
+      this.addPu('samosa', freeLane, z - 7);
+      this.toSam = rand(850, 1250);
+      this.toPu = Math.max(this.toPu, 200);
+    } else if (this.toPu <= 0 && freeLane >= 0) {
+      this.addPu(weighted([['magnet', 4], ['shoes', 3], ['shield', 2.6], ['thali', this.dist > 300 ? 2.4 : 0], ['madhubani', this.dist > 700 ? 2.2 : 0]]), freeLane, z - 7);
+      this.toPu = rand(420, 700) * lerp(1, 1.7, this.diff); // आगे चलकर बूस्टर कम
+    }
+    if (this.fest) this.fest.row(z, freeLane);
+    if (freeLane >= 0 && zoneAt(this.dist - z) === 'fields' && chance(0.22)) this.addPu('ganna', freeLane, z - 3); // 🎋 खेत में गन्ना
+    else if (freeLane >= 0 && this.golaWant) { this.golaWant = false; this.addPu('gola', freeLane, z - 3); } // 🍧 ठेले के पास गोला
+    return extra;
+  }
+
+  inPond(z) { return !!this.pond && z < this.pond.a - 1 && z > this.pond.b + 1; }
+  // पोखर/रस्सी अभी है, जल्दी आने वाली है, या अभी-अभी ख़त्म हुई (100 मी.) — तब उड़न समोसा नहीं
+  waterSoon() { return !!this.pond || !!this.zip || this.afterWater > 0 || (this.toPond < 450 && this.zone !== 'jungle') || (this.toZip < 450 && this.zone === 'jungle'); }
+  inZip(z) { return !!this.zip && z < this.zip.a - 1 && z > this.zip.b + 1; }
+  // 🌳 रस्सी की एक पंक्ति — लटका लट्ठा (पैर उठाओ) / मधुमक्खी का छत्ता (रस्सी बदलो); हमेशा एक रस्सी खुली
+  zipRow(z) {
+    const lanes = [0, 1, 2], others = (l) => lanes.filter((x) => x !== l), d = this.diff;
+    this.yOff = ZIP_H + zipSag(z - this.zip.a); // रस्सी के झोल पर
+    let free = randi(0, 2);
+    const kind = weighted([['lattha', 1.4], ['chhatta', 1.3], ['mix', d > 0.25 ? 1.2 : 0.4], ['breather', 0.8]]);
+    if (kind === 'lattha') { const n = chance(0.5) ? 2 : 1, bl = others(free).slice(0, n); for (const l of bl) { this.addObs('lattha', l, z); this.arc(l, z); } this.line(free, z + 5, 5); if (n === 1) free = -1; }
+    else if (kind === 'chhatta') { for (const l of others(free)) this.addObs('chhatta', l, z); this.line(free, z + 6, 7); }
+    else if (kind === 'mix') { const [a, b] = others(free); this.addObs('chhatta', a, z); this.addObs('lattha', b, z); this.arc(b, z); this.line(free, z + 5, 5); }
+    else { let l = randi(0, 2); const tp = this.sweetType(); for (let i = 0; i < 12; i++) { if (i % 4 === 3) l = clamp(l + pick([-1, 1]), 0, 2); this.sweets.spawn(tp, LANES[l], 0.7 + ZIP_H + zipSag(z + 8 - i * 2.0 - this.zip.a), z + 8 - i * 2.0); } }
+    this.yOff = 0;
+    return 0.15;
+  }
+  // 🚣 पोखर की एक पंक्ति — हमेशा एक रास्ता खुला
+  pondRow(z) {
+    const d = this.diff, lanes = [0, 1, 2], others = (l) => lanes.filter((x) => x !== l);
+    this.yOff = WATER_Y;
+    let freeLane = randi(0, 2), extra = 0;
+    const ty = this.pondType, fsh = ty === 'machh', dp = ty === 'deep';
+    const kind = !this.pondFirst ? 'breather' : weighted([['nets', fsh ? 2.2 : 1.2], ['logs', dp ? 1.0 : 1.5], ['boats', fsh ? 2.4 : 1.6], ['ducks', dp ? 1.8 : 1.0], ['mixed', d > 0.3 ? 1.2 : 0.3], ['breather', dp ? 1.4 : 0.9]]);
+    this.pondFirst = true;
+    if (kind === 'nets') { for (const l of lanes) this.addObs('jaal', l, z); this.line(freeLane, z + 4, 6, this.sweetType(), 0.5); }
+    else if (kind === 'logs') {
+      const l = randi(0, 2); this.addObs('log', l, z);
+      if (chance(0.5)) { const l2 = pick(others(l)); this.addObs('log', l2, z); freeLane = others(l).find((x) => x !== l2); } else freeLane = pick(others(l));
+      this.arc(l, z); this.line(freeLane, z + 5, 5);
+    } else if (kind === 'boats') { for (const l of others(freeLane)) this.addObs('naav', l, z); this.line(freeLane, z + 6, 7); extra = 0.2; }
+    else if (kind === 'ducks') {
+      const from = pick([0, 2]); const e = this.addObs('batak', from, z, { cross: { from, to: 2 - from, t: 0, dur: 2.8 }, noTurn: true });
+      e.obj.rotation.y = from === 0 ? -Math.PI / 2 : Math.PI / 2; freeLane = -1; this.arc(1, z, this.sweetType(), 2.6); extra = 0.2;
+    } else if (kind === 'mixed') {
+      const perm = [...lanes].sort(() => Math.random() - 0.5);
+      this.addObs('naav', perm[0], z); this.addObs('log', perm[1], z); this.addObs('jaal', perm[2], z);
+      this.arc(perm[1], z); freeLane = -1; extra = 0.25;
+    } else { let l = randi(0, 2); const tp = this.sweetType(); for (let i = 0; i < 12; i++) { if (i % 4 === 3) l = clamp(l + pick([-1, 1]), 0, 2); this.sweets.spawn(tp, LANES[l], 0.7 + WATER_Y, z + 8 - i * 2.0); } freeLane = l; }
+    if (freeLane >= 0 && chance(ty === 'makhana' ? 0.5 : 0.25)) this.addPu('makhana', freeLane, z - 6);
+    this.yOff = 0;
+    if (this.fest) this.fest.row(z, freeLane);
+    return extra;
+  }
+  // ज़मीन की ऊँचाई (डिब्बे की छत / ढलान) — खिलाड़ी और परछाईं के लिए
+  groundAt(x, z = 0) {
+    let h = 0;
+    for (const e of this.obs) {
+      if (e.dead || (e.kind !== 'train' && e.kind !== 'ramp')) continue; // चलती गाड़ी की छत पर भी दौड़ सकते हैं (24 नवंबर)
+      if (Math.abs(e.x - x) > e.halfW * 0.85) continue;
+      const dz = z - e.z;
+      if (Math.abs(dz) > e.halfL) continue;
+      h = Math.max(h, e.kind === 'train' ? ROOF : ROOF * (0.5 - dz / (e.rl || RAMP_L))); // rl = छोटी ढलान (छत-दौड़ की गली)
+    }
+    return h;
+  }
+  houseAt(x) { for (const e of this.obs) if (!e.dead && e.obj.userData.house && Math.abs(e.z) < e.halfL && Math.abs(e.x - x) < e.halfW) return e; return null; }
+  // 🏠 छत-दौड़: चौड़ी सीढ़ी → 4–6 पक्के घर (छत पर रुकावटें), बीच में गली (बाँस का पुल / चचरी-ढलान) → आख़िरी छत पर पतंग
+  roofSection(z) {
+    const sp = Math.max(this.speed, 12), N = randi(4, 6), H = ROOF, lanes = [0, 1, 2];
+    let cur = z;
+    this.addObs('rstair', 1, cur - RAMP_L / 2);
+    for (let i = 0; i < 4; i++) { const zz = cur - 1.6 - i * 2.1; this.sweets.spawn(this.sweetType(), LANES[1], H * (0.5 - (zz - (cur - RAMP_L / 2)) / RAMP_L) + 0.75, zz); }
+    cur -= RAMP_L;
+    for (let i = 0; i < N; i++) {
+      const L = chance(0.5) ? 12 : 16, c0 = cur;
+      this.addObs(L === 12 ? 'rhouse12' : 'rhouse16', 1, cur - L / 2);
+      // छत पर 0–2 रुकावट, हमेशा एक लेन खुली; बाकी लेनों में मिठाई
+      const nObs = i === 0 ? 1 : randi(1, 2), used = new Set(), zo = cur - L * (0.35 + 0.3 * Math.random());
+      for (let k = 0; k < nObs; k++) {
+        const free = lanes.filter((l) => !used.has(l)); if (free.length <= 1) break;
+        const l = pick(free); used.add(l);
+        const t = weighted([['rtank', 3], ['rcloth', 2.5], ['rtulsi', 2]]);
+        this.addObs(t, l, k ? zo - 4 : zo, { y: H });
+      }
+      for (const l of lanes) if (!used.has(l) && chance(0.7)) for (let zz = c0 - 1.6, n = 0; zz > cur - L + 1 && n < 6; zz -= 2.2, n++) this.sweets.spawn(this.sweetType(), LANES[l], H + 0.75, zz);
+      cur -= L;
+      if (i < N - 1) {
+        const g = 6;
+        this.addObs('rgap', 1, cur - g + GAP_RAMP / 2); // गली में गिरे तो इससे फिर ऊपर
+        const bl = chance(0.6) ? randi(0, 2) : -1;
+        if (bl >= 0) { this.addObs('rbridge', bl, cur - g / 2); for (let k = 0; k < 3; k++) this.sweets.spawn('chamcham', LANES[bl], H + 0.75, cur - 1 - k * 2); }
+        const al = pick(lanes.filter((l) => l !== bl)); // गली के ऊपर कूदने वाली मिठाई की मेहराब
+        for (let k = 0; k < 7; k++) { const f = k / 6; this.sweets.spawn(k === 3 ? 'rasmalai' : this.sweetType(), LANES[al], H + 0.9 + Math.sin(f * Math.PI) * 1.6, cur + 1.5 - f * (g + 3)); }
+        cur -= g;
+      }
+    }
+    this.addPu('kite', 1, cur + 4.5, H + 1.15); // 🪁 आख़िरी छत पर
+    this.roofObs = (z - cur) + 40;
+    this.events.push('roof');
+    return (z - cur) / sp + 1.2;
+  }
+
+  // रेल ज़ोन की एक पंक्ति — हमेशा एक रास्ता: खुली लेन या ढलान से छत पर
+  railRow(z) {
+    const sp = Math.max(this.speed, 12), lanes = [0, 1, 2];
+    const tl = (n) => n * COACH + (n - 1) * GAP;
+    // 🚆 24 नवंबर (मालिक: "कुछ रेलगाड़ी चले, कुछ स्टॉप रहे… चलती ट्रेन पे भी कूद सके, रनिंग कर सके"): ~हर 3 में 1 पंक्ति पर चलती गाड़ी; दौड़ के पहले 300 मी. में नहीं
+    const mv = this.dist > 300 ? 1 : 0;
+    const kind = this.forceRail || weighted([['climb', 3], ['dodge', 2], ['oncoming', mv * (this.diff > 0.25 ? 1.8 : 1.3)], ['convoy', mv * 1.2]]); // forceRail = सिर्फ़ जाँच के लिए
+    const train = (lane, n, front, extra = {}) => { const L = tl(n); this.addObs(extra.vz > 0 ? (n === 1 ? 'engine1' : 'etrain' + n) : 'train' + n, lane, front - L / 2, extra); return L; };
+    const ramp = (lane, low) => { this.addObs('ramp', lane, low - RAMP_L / 2); for (let i = 0; i < 4; i++) { const zz = low - 1.5 - i * 2.2; this.sweets.spawn(this.sweetType(), LANES[lane], ROOF * (0.5 - (zz - (low - RAMP_L / 2)) / RAMP_L) + 0.75, zz); } };
+    const roofLine = (lane, front, L) => { for (let zz = front - 1.5, k = 0; zz > front - L + 1 && k < 14; zz -= 2.3, k++) this.sweets.spawn(k % 6 === 5 ? 'chamcham' : this.sweetType(), LANES[lane], ROOF + 0.75, zz); };
+    if (kind === 'climb') {
+      const a = randi(0, 2), oth = lanes.filter((l) => l !== a), b = pick(oth), c = oth.find((l) => l !== b);
+      const n = pick([2, 3]);
+      ramp(a, z);
+      const L = train(a, n, z - RAMP_L);
+      roofLine(a, z - RAMP_L, L);
+      const L2 = train(b, pick([1, 2]), z - rand(2, 10));
+      this.line(c, z + 3, 6);
+      if (chance(0.5)) this.sweets.spawn('rasmalai', LANES[a], ROOF + 1.1, z - RAMP_L - L + 2);
+      return (RAMP_L + Math.max(L, L2) + 18) / sp;
+    }
+    if (kind === 'dodge') {
+      const free = randi(0, 2), oth = lanes.filter((l) => l !== free);
+      const L1 = train(oth[0], pick([1, 2]), z), L2 = train(oth[1], pick([1, 2]), z - rand(3, 12));
+      this.line(free, z + 4, 9);
+      return (Math.max(L1, L2) + 18) / sp;
+    }
+    if (kind === 'convoy') { // 🚃 साथ-साथ चलती गाड़ी (उसी दिशा में, गोलू से धीमी) — पीछे जुड़ी ढलान से चढ़कर चलती छत पर दौड़ो
+      const a = randi(0, 2), oth = lanes.filter((l) => l !== a), b = pick(oth), c = oth.find((l) => l !== b);
+      const vz = -rand(4.5, 6.5), k = (sp + vz) / sp, n = pick([2, 3]), L = tl(n);
+      this.addObs('ramp', a, z * k - RAMP_L / 2, { vz });
+      this.addObs('train' + n, a, z * k - RAMP_L - L / 2, { vz }); // डिब्बा ढलान के ऊपरी सिरे से ठीक सटा (दोनों साथ चलते हैं)
+      if (chance(0.6)) train(b, pick([1, 2]), z - rand(4, 14)); // बगल में खड़ी गाड़ी (या खुला)
+      this.line(c, z + 3, 7);
+      return (RAMP_L + L) / (sp + vz) + 18 / sp;
+    }
+    // 🚆 सामने से आती पूरी गाड़ी — उस लेन से हटो, या बगल की खड़ी गाड़ी की छत से कूदकर उसकी छत पर (सीटी + बत्ती + ऊपर ⚠️ निशान)
+    const a = randi(0, 2), oth = lanes.filter((l) => l !== a), b = pick(oth), c = oth.find((l) => l !== b);
+    const vz = rand(5.5, 8) + this.diff * 3, n = pick([1, 2, 2, 3]);
+    const Le = tl(n), front = z * (sp + vz) / sp;
+    this.addObs(n === 1 ? 'engine1' : 'etrain' + n, a, front - Le / 2, { vz });
+    ramp(b, z); const L = train(b, pick([1, 2]), z - RAMP_L); roofLine(b, z - RAMP_L, L);
+    this.line(c, z + 3, 7);
+    return (RAMP_L + Math.max(L, Le * sp / (sp + vz)) + 18) / sp;
+  }
+
+  // उड़ते समय आसमान में ख़ास मिठाइयों के डिज़ाइन (सिर्फ़ ऊपर वाली: जलेबी, लड्डू, पेड़ा, कलाकंद, मिल्क केक)
+  // लौटाता है: सुनहरे छल्लों की जगहें [{lane, z}]
+  skyTrail(sec, speed, y, lane = 1) {
+    const len = Math.min(240, sec * Math.max(speed, 18) * 0.92);
+    const rings = [];
+    const S = SKY_SWEETS, sp = (t, l, yy, z) => this.sweets.spawn(t, LANES[l], yy, z);
+    let z = -16, l = lane, k = 0;
+    // उड़ान शुरू: नीचे से ऊपर चढ़ती लड़ी
+    for (let i = 0; i < 6; i++) sp(i % 2 ? 'jalebi' : 'laddoo', l, 1.4 + (y - 0.5) * (i / 5), -6 - i * 2.2);
+    while (z > -16 - len) {
+      const pat = ['line', 'zig', 'ring', 'wave', 'shower', 'ring'][k++ % 6];
+      if (pat === 'line') { const t = pick(S); for (let i = 0; i < 8; i++) sp(i === 7 ? 'milkcake' : t, l, y + 0.9, z - i * 2.2); z -= 8 * 2.2; }
+      else if (pat === 'zig') { for (let i = 0; i < 9; i++) { if (i % 3 === 0 && i) l = clamp(l + (l === 0 ? 1 : l === 2 ? -1 : pick([-1, 1])), 0, 2); sp(i % 2 ? 'peda' : 'jalebi', l, y + 0.9, z - i * 2.3); } z -= 9 * 2.3; }
+      else if (pat === 'ring') { // छल्ले के बीच से: आगे-पीछे मिठाई, बीच में मिल्क केक
+        l = clamp(l + pick([-1, 0, 1]), 0, 2);
+        const zc = z - 8;
+        rings.push({ lane: l, z: zc });
+        for (let i = -3; i <= 3; i++) sp(i === 0 ? 'milkcake' : 'kalakand', l, y + 0.95, zc + i * 1.6);
+        z -= 18;
+      } else if (pat === 'wave') { const t = pick(['laddoo', 'jalebi']); for (let i = 0; i < 10; i++) sp(t, l, y + 0.9 + Math.sin(i * 0.9) * 0.5, z - i * 2.1); z -= 21; }
+      else { // तीनों लेन में बारिश — जो लेन चुनो, मिठाई ही मिठाई
+        for (let r = 0; r < 4; r++) for (let q = 0; q < 3; q++) sp(S[(r + q) % S.length], q, y + 0.9, z - r * 2.6);
+        z -= 4 * 2.6;
+      }
+      z -= 5;
+      if (k % 4 === 0) sp('rasmalai', l, y + 0.9, z + 2.5);
+    }
+    return rings;
+  }
+  // उतरने की जगह साफ़ करो (ठीक नीचे पड़ी रुकावट से मरना अन्याय होगा)
+  clearNear(z0, z1) {
+    for (const e of this.obs) if (!e.dead && e.z > z0 && e.z < z1) { e.dead = true; e.flyX = rand(-6, 6); }
+  }
+
+  // ---------- हर फ़्रेम ----------
+  update(dt, dz, speed, ctx) {
+    this.gen(() => this._gen(dt, dz, speed));
+    this.sweets.update(dt, dz, ctx);
+    this.parts.update(dt, dz);
+  }
+  _gen(dt, dz, speed) {
+    this.speed = Math.max(8, speed);
+    this.dist += dz;
+    const zn = zoneAt(this.dist);
+    if (zn !== this.zone) { this.zone = zn; this.events.push(zn); } // जंगल / खेत / गाँव — घोषणा
+    this.diff = clamp(this.dist / 2400, 0, 1);
+    this.shopDist += dz;
+    this.calm = Math.max(0, (this.calm || 0) - dz);
+    this.toPu -= dz;
+    this.toSam -= dz;
+    // सड़क खिसकाओ
+    this.roadTex.offset.y += dz / this.roadTile; this.roadN.offset.y = this.roadTex.offset.y;
+    this.groundTex.offset.y += dz / this.groundTile; this.groundN.offset.y = this.groundTex.offset.y;
+    this.curbN.offset.y += dz / this.curbTile;
+    this.dashTex.offset.y += dz / 6;
+    // मकान
+    for (const s of [-1, 1]) {
+      const arr = this.chunks[s];
+      for (const c of arr) { c.position.z += dz; c.visible = c.position.z + CHUNK / 2 > this.viewZ; } // हल्के दर्जे में दूर के मकान नहीं बनाओ (कोहरे में छिपे ही हैं)
+      while (arr.length && arr[0].position.z - CHUNK / 2 > DESPAWN_Z) this.relChunk(arr.shift());
+      this.farZ[s] += dz;
+      while (this.farZ[s] > SPAWN_Z - 20) this.spawnChunk(s);
+      for (const c of arr) { if (c.userData.halwai) c.userData.halwai.rotation.z = Math.sin(this.dist * 0.15) * 0.06; if (c.userData.anim) c.userData.anim(this.time, c.position.z > -70); }
+    }
+    for (let i = this.gates.length - 1; i >= 0; i--) {
+      const g = this.gates[i];
+      g.position.z += dz;
+      g.visible = g.position.z < 5.2; // कैमरे के ठीक सामने गेट की लटकती लड़ी पूरी स्क्रीन न ढके
+      if ((g.userData.type === 'haatgate' || g.userData.type === 'melagate') && !g.userData.said && g.position.z > -6) { g.userData.said = true; this.events.push(g.userData.type === 'haatgate' ? 'haat' : 'mela'); }
+      if (g.position.z > DESPAWN_Z + 6) { g.visible = false; this.cPool[g.userData.key].push(g); this.gates.splice(i, 1); }
+    }
+    // सड़क के ऊपर बैनर
+    // मिथिला हाट (हर ~1.1–1.5 किमी)
+    this.toHaat -= dz;
+    const vill = this.zone === 'village' && zoneAt(this.dist + 175) === 'village'; // हाट/मेला/रेल/बारात सिर्फ़ गाँव में
+    if (this.toHaat <= 0 && vill && this.cPool.haatgate.length && this.shopDist > 60 && this.shopDist < SHOP_EVERY - 150) {
+      this.haatN = { '-1': 6, '1': 6 };
+      this.haatObs = 6 * CHUNK + 170;
+      const hg = this.getChunk('haatgate');
+      hg.userData.said = false;
+      hg.position.set(0, 0, Math.min(this.farZ['-1'], this.farZ['1']) - 2);
+      this.gates.push(hg);
+      this.toHaat = rand(1100, 1500);
+    }
+    this.haatObs = Math.max(0, this.haatObs - dz);
+    // मेला (बोनस: रुकावट नहीं, मिठाई ही मिठाई)
+    this.toMela -= dz;
+    if (this.toMela <= 0 && vill && this.haatObs <= 0 && this.cPool.melagate.length && this.shopDist > 60 && this.shopDist < SHOP_EVERY - 130) {
+      this.melaN = { '-1': 4, '1': 4 };
+      this.melaObs = 4 * CHUNK + 150;
+      const mgate = this.getChunk('melagate');
+      mgate.userData.said = false;
+      mgate.position.set(0, 0, Math.min(this.farZ['-1'], this.farZ['1']) - 2);
+      this.gates.push(mgate);
+      this.toMela = rand(2200, 2800);
+    }
+    this.melaObs = Math.max(0, this.melaObs - dz);
+    // मधुबनी रेलगाड़ी ज़ोन
+    this.toRail -= dz;
+    if (this.toRail <= 0 && vill && this.haatObs <= 0 && this.melaObs <= 0 && !this.baraatQ && this.shopDist > 40 && this.shopDist < SHOP_EVERY - 120 && this.tPool.length > 15) {
+      const len = 250;
+      this.railObs = len; this.stationN = 3;
+      for (let z = SPAWN_Z + 12; z > SPAWN_Z - len - 80; z -= 20) { const t = this.tPool.pop(); if (!t) break; t.visible = true; t.position.set(0, 0, z); this.tracks.push(t); }
+      this.toRail = rand(1700, 2300);
+      this.events.push('rail');
+    }
+    this.railObs = Math.max(0, this.railObs - dz);
+    // 🏠 छत-दौड़ (24 नवंबर)
+    this.toRoof -= dz;
+    if (this.toRoof <= 0 && !this.roofQ && this.roofObs <= 0 && vill && this.tut <= 0 && this.railObs <= 0 && this.haatObs <= 0 && this.melaObs <= 0 && !this.baraatQ && !this.pond && !this.zip && !this.busy && this.shopDist > 40 && this.shopDist < SHOP_EVERY - 160) {
+      this.roofQ = true; this.toRoof = rand(2000, 2600);
+      for (const k of ['toRail', 'toHaat', 'toMela', 'toPond', 'toBaraat']) this[k] = Math.max(this[k] || 0, 320);
+      this.toFlex = Math.max(this.toFlex, 260); // सड़क के ऊपर का बैनर छत पर दौड़ते समय सिर से न टकराए
+    }
+    this.roofObs = Math.max(0, this.roofObs - dz);
+    // 🧒 फ़ुटपाथ पर बचपन वाले नज़ारे
+    this.toDeco -= dz;
+    const calm = (this.zone === 'village' || this.zone === 'fields') && this.haatObs <= 0 && this.melaObs <= 0 && this.railObs <= 0 && this.roofObs <= 0 && !this.roofQ && !this.pond && !this.zip;
+    if (this.toDeco <= 0) {
+      this.toDeco = rand(190, 300);
+      const k = this.zone === 'fields' ? pick(['gilli', 'pump']) : pick(['pump', 'gola', 'gilli', 'gola']), pool = this.dPool[k];
+      if (calm && pool && pool.length) {
+        const d = pool.pop(), sd = chance(0.5) ? -1 : 1;
+        d.visible = true; d.position.set(sd * 5.7, 0, SPAWN_Z - 4); d.rotation.y = sd > 0 ? -Math.PI / 2 : Math.PI / 2; d.userData.side = sd; d.userData.rang = false;
+        if (k === 'gilli') { d.position.x = sd * 6.2; d.rotation.y = 0; }
+        this.decos.push(d);
+        if (k === 'gola') this.golaWant = true;
+      }
+    }
+    for (let i = this.decos.length - 1; i >= 0; i--) {
+      const d = this.decos[i]; d.position.z += dz;
+      const near = d.position.z > -75;
+      if (near && d.userData.anim) d.userData.anim(this.time || 0);
+      if (near && d.userData.splash && Math.random() < 0.35) this.parts.burst(d.position.x + d.userData.side * -0.36, 0.35, d.position.z, 0xcfeefa, 2, 0.9, 1.3, 0.35, 0);
+      if (d.userData.bell && !d.userData.rang && d.position.z > -32) { d.userData.rang = true; this.events.push('golaBell'); }
+      if (d.position.z > DESPAWN_Z + 6) { d.visible = false; this.dPool[d.userData.dk].push(d); this.decos.splice(i, 1); }
+    }
+    // 🛞 टायर वाला बच्चा: पीछे से आकर आगे निकलता, फिर थककर पीछे — गोलू आगे निकले तो इनाम
+    const R = this.racer;
+    if (!R.on) { this.toRacer -= dz; if (this.toRacer <= 0) { this.toRacer = rand(900, 1300); if (calm) { R.on = true; R.ph = 0; R.t1 = 0; R.won = false; R.side = chance(0.5) ? -1 : 1; R.z = 9; R.obj.visible = true; } } }
+    else {
+      const spd = dz / Math.max(dt, 1e-4); let v;
+      if (R.ph === 0) { v = spd * 1.14; if (R.z < -6.5) { R.ph = 1; this.events.push('racer'); } }
+      else if (R.ph === 1) { R.t1 += dt; v = spd; if (R.t1 > 3.2) R.ph = 2; }
+      else { v = spd * 0.86; if (R.z > 1.2 && !R.won) { R.won = true; this.events.push('racerWon'); } }
+      R.z += dz - v * dt;
+      R.obj.position.set(R.side * 5.0, 0, R.z); R.obj.rotation.y = 0;
+      R.obj.userData.anim(this.time || 0, v);
+      if (R.z > 16 || !calm) { R.on = false; R.obj.visible = false; }
+    }
+    for (let i = this.tracks.length - 1; i >= 0; i--) { const t = this.tracks[i]; t.position.z += dz; if (t.position.z > DESPAWN_Z + 12) { t.visible = false; this.tPool.push(t); this.tracks.splice(i, 1); } }
+    // 🌳 जंगल की रस्सी (नदी के ऊपर)
+    this.toZip -= dz;
+    if (this.toZip <= 0 && !this.zip && !this.pond && !this.flying && !this.busy && this.zone === 'jungle' && zoneAt(this.dist + ZIP_LEN + 160) === 'jungle' && this.railObs <= 0 && this.haatObs <= 0 && this.melaObs <= 0 && !this.baraatQ) {
+      let far = SPAWN_Z - 20;
+      for (const e of this.obs) if (!e.dead) far = Math.min(far, e.z - (e.halfL || 1) - 4);
+      for (const u of this.pups) far = Math.min(far, u.z - 4);
+      const a = far, b = a - ZIP_LEN;
+      for (let z = a + 8 - TILE / 2; z > b - 8 - TILE / 2 + 0.1; z -= TILE) { const t = this.zwPool.pop(); if (!t) break; t.visible = true; t.position.set(0, 0, z); this.zwaters.push(t); }
+      this.zipRig.visible = true; this.zipRig.position.set(0, 0, a);
+      this.zip = { a, b };
+      this.toZip = rand(900, 1300); this.toPond = Math.max(this.toPond, ZIP_LEN + 200);
+      this.events.push('zip');
+    }
+    if (this.zip) {
+      this.zip.a += dz; this.zip.b += dz; this.zipRig.position.z += dz; trimRopes(this.zipRig);
+      for (let i = this.zwaters.length - 1; i >= 0; i--) { const t = this.zwaters[i]; t.position.z += dz; if (t.position.z - TILE / 2 > DESPAWN_Z) { t.visible = false; this.zwPool.push(t); this.zwaters.splice(i, 1); } }
+      if (WATER.nm && !this.pond) { WATER.nm.offset.y += dz / 13; WATER.nm.offset.x = Math.sin((this.time || 0) * 0.6) * 0.04; }
+      if (this.zip.b - 6 > DESPAWN_Z) { this.zipRig.visible = false; this.zip = null; this.afterWater = 100; }
+    }
+    // 🚣 मखाना पोखर
+    this.toPond -= dz;
+    this.afterWater = Math.max(0, this.afterWater - dz);
+    if (!this.pondN && this.dist > 650 && this.toPond > 220 && !this.busy) this.toPond = 220; // पहला पोखर जल्दी (डिलीवरी ने आगे खिसकाया हो तब भी)
+    if (this.toPond <= 0 && !this.pond && !this.zip && !this.flying && !this.busy && this.zone !== 'jungle' && zoneAt(this.dist + POND_LEN + 180) !== 'jungle' && this.haatObs <= 0 && this.melaObs <= 0 && this.railObs <= 0 && !this.baraatQ && this.shopDist > 40 && this.shopDist < SHOP_EVERY - 60) {
+      let far = SPAWN_Z - 20; // पिछली सड़क-पंक्ति की चीज़ों (सामने से आती बैलगाड़ी समेत) से आगे से शुरू
+      for (const e of this.obs) if (!e.dead) far = Math.min(far, e.z - (e.halfL || 1) - 4);
+      for (const u of this.pups) far = Math.min(far, u.z - 4);
+      const a = far, b = a - POND_LEN;
+      for (let z = a - TILE / 2; z > b - TILE / 2 + 0.1; z -= TILE) { const t = this.wPool.pop(); if (!t) break; t.visible = true; t.position.set(0, 0, z); this.waters.push(t); }
+      const [g1, g2] = this.ghats; g1.visible = true; g1.position.set(0, 0, a); g1.rotation.y = 0; g2.visible = true; g2.position.set(0, 0, b); g2.rotation.y = Math.PI;
+      this.pond = { a, b }; this.pondFirst = false;
+      // किस्म: पहला हमेशा मखाना (पोस्टकार्ड), फिर बदल-बदलकर
+      const ty = this.pondType = this.pondN++ === 0 ? 'makhana' : pick(POND_TYPES.filter((t) => t !== this.lastPondType)); this.lastPondType = ty;
+      const dc = this.pondDeco[ty]; dc.visible = true; dc.position.set(0, 0, a);
+      this.toPond = rand(1000, 1300); this.toRail = Math.max(this.toRail, POND_LEN + 150); this.toHaat = Math.max(this.toHaat, POND_LEN + 120); this.toMela = Math.max(this.toMela, POND_LEN + 120); this.toBaraat = Math.max(this.toBaraat, POND_LEN + 120); // हर ~1–1.3 किमी पर (जंगल छोड़कर)
+      this.events.push('pond');
+    }
+    if (this.pond) {
+      this.pond.a += dz; this.pond.b += dz;
+      for (const gh of this.ghats) if (gh.visible) gh.position.z += dz;
+      { const dc = this.pondDeco[this.pondType]; if (dc) { dc.position.z += dz; if (dc.userData.anim) dc.userData.anim(this.time || 0); } }
+      for (let i = this.waters.length - 1; i >= 0; i--) { const t = this.waters[i]; t.position.z += dz; if (t.position.z - TILE / 2 > DESPAWN_Z) { t.visible = false; this.wPool.push(t); this.waters.splice(i, 1); } }
+      if (this.ghats[0].position.z > DESPAWN_Z + 4) this.ghats[0].visible = false;
+      if (this.pond.b > DESPAWN_Z + 4) { this.ghats[1].visible = false; this.pond = null; this.afterWater = 100; const dc = this.pondDeco[this.pondType]; if (dc) dc.visible = false; }
+      if (WATER.nm) { WATER.nm.offset.y += dz / 13; WATER.nm.offset.x = Math.sin((this.time || 0) * 0.6) * 0.04; }
+      // 🐟 मछली उछलती — पानी का एहसास (सजावट, टक्कर नहीं)
+      this.toFish -= dt;
+      const fz = real(() => rand(-42, -16));
+      if (this.toFish <= 0 && this.pond && fz < this.pond.a - 4 && fz > this.pond.b + 4) {
+        const f = this.fish.find((q) => q.t >= 1);
+        if (f) {
+          real(() => { const sd = chance(0.5) ? 1 : -1; f.x = sd * (chance(0.5) ? 1.25 : ROAD_HALF + rand(0.5, 1.6)); f.z = fz; f.dir = chance(0.5) ? 1 : -1; f.h = rand(1.0, 1.6); });
+          f.t = 0; f.o.visible = true; this.parts.burst(f.x, WATER_Y + 0.05, f.z, 0xe9fbff, 10, 2.2, 2.4, 0.5); this.events.push('fish');
+        }
+        this.toFish = real(() => (this.pondType === 'machh' ? rand(0.45, 1.1) : rand(1.1, 2.6))); // मछुआरों के घाट पर ज़्यादा मछलियाँ
+      }
+    }
+    for (const f of this.fish) {
+      if (f.t >= 1) continue;
+      f.t = Math.min(1, f.t + dt / 0.85); f.z += dz;
+      const u = f.t, y = WATER_Y - 0.1 + Math.sin(u * Math.PI) * f.h;
+      f.o.position.set(f.x + f.dir * (u - 0.5) * 1.4, y, f.z); f.o.rotation.set(0, f.dir * Math.PI / 2, 0); f.o.rotateX((u - 0.5) * 2.4); f.o.rotateZ(Math.sin(u * 30) * 0.15);
+      if (f.t >= 1) { f.o.visible = false; this.parts.burst(f.o.position.x, WATER_Y + 0.05, f.z, 0xe9fbff, 12, 2.6, 2.8, 0.55); }
+    }
+    // बारात
+    this.toBaraat -= dz;
+    if (this.toBaraat <= 0 && vill && this.haatObs <= 0 && this.melaObs <= 0) { this.baraatQ = true; this.toBaraat = rand(1500, 2000); }
+    this.time = (this.time || 0) + dt;
+    this.toFlex -= dz;
+    if (this.toFlex <= 0) {
+      const z = SPAWN_Z - 6;
+      const nearGate = this.gates.some((g) => Math.abs(g.position.z - z) < 45);
+      if (!nearGate && this.cPool.flex.length && zoneAt(this.dist - z) !== 'jungle') { // जंगल में सड़क पर बैनर नहीं
+        const pool = this.cPool.flex, f = pool.splice(randi(0, pool.length - 1), 1)[0];
+        f.visible = true; f.position.set(0, 0, z); this.flexes.push(f);
+        this.toFlex = rand(170, 260);
+      } else this.toFlex = 30;
+    }
+    for (let i = this.flexes.length - 1; i >= 0; i--) {
+      const f = this.flexes[i];
+      f.position.z += dz;
+      f.userData.cloth.rotation.x = Math.sin(this.dist * 0.05 + i) * 0.06;
+      if (f.position.z > DESPAWN_Z + 6) { f.visible = false; this.cPool.flex.push(f); this.flexes.splice(i, 1); }
+    }
+    // नई पंक्तियाँ
+    this.toNext -= dz;
+    while (this.toNext <= 0) {
+      const z = SPAWN_Z - this.toNext;
+      const extra = this.spawnRow(z);
+      const gapT = lerp(1.5, 0.65, Math.pow(this.diff, 0.85)) + extra;
+      const sp = this.rngs && this.speedAt ? this.speedAt(this.dist) : speed; // 📅 आज के रास्ते में पंक्तियों की दूरी सिर्फ़ दूरी से (सबकी एक जैसी)
+      this.toNext += Math.max(16, sp * gapT);
+    }
+    // रुकावटें
+    for (let i = this.obs.length - 1; i >= 0; i--) {
+      const e = this.obs[i];
+      e.z += dz + e.vz * dt;
+      if (e.obj.userData.dance) e.obj.userData.dance(this.time || 0);
+      if ((e.type === 'chhatta' || e.type === 'lattha') && e.z > 2.5) e.obj.visible = false; // रस्सी वाली चीज़ें कैमरे से न टकराएँ
+      if (e.cross && e.z > -38 && e.cross.t < 1) {
+        e.cross.t = Math.min(1, e.cross.t + dt / e.cross.dur);
+        const t = e.cross.t, k = t * t * (3 - 2 * t);
+        e.x = lerp(LANES[e.cross.from], LANES[e.cross.to], k);
+        e.lane = k < 0.5 ? e.cross.from : e.cross.to;
+        if (!e.noTurn) e.obj.rotation.y = (e.cross.to > e.cross.from ? -1 : 1) * Math.PI / 2 * (t < 1 ? 1 : 0.4);
+        if (e.obj.userData.inner) e.obj.userData.inner.position.y = Math.abs(Math.sin(t * 18)) * 0.05;
+      }
+      if (e.shift && !e.dead) {
+        const sh = e.shift;
+        if (e.z > sh.at - 26 && e.z <= sh.at) e.obj.rotation.z = Math.sin(this.time * 22) * 0.06; // डगमगाना = चेतावनी
+        if (e.z > sh.at && sh.t < 1) {
+          sh.t = Math.min(1, sh.t + dt / sh.dur);
+          const k = sh.t * sh.t * (3 - 2 * sh.t);
+          e.x = lerp(LANES[sh.from], LANES[sh.to], k); e.lane = k < 0.5 ? sh.from : sh.to;
+          e.obj.rotation.z = (sh.to > sh.from ? -1 : 1) * Math.sin(k * Math.PI) * 0.12;
+        }
+      }
+      if (e.dead) {
+        e.fly = (e.fly || 0) + dt;
+        e.obj.position.y += (8 - e.fly * 22) * dt;
+        e.obj.rotation.x += dt * 9; e.obj.rotation.z += dt * 6;
+        e.obj.position.x += e.flyX * dt;
+      }
+      e.obj.position.x = e.dead ? e.obj.position.x : e.x;
+      e.obj.position.z = e.z;
+      if (e.z - e.halfL > DESPAWN_Z || (e.dead && e.fly > 1.2)) { this.relObs(e); this.obs.splice(i, 1); }
+    }
+    // पावर-अप
+    for (let i = this.pups.length - 1; i >= 0; i--) {
+      const p = this.pups[i];
+      p.t += dt;
+      p.z += dz;
+      p.obj.position.set(p.x, p.y + Math.sin(p.t * 3) * 0.15, p.z);
+      p.obj.userData.inner.rotation.y += dt * 2.2;
+      p.obj.userData.ring.rotation.set(Math.PI / 2, 0, p.t * 2);
+      p.obj.userData.ring.scale.setScalar(1 + Math.sin(p.t * 5) * 0.06);
+      for (const ch of p.obj.userData.inner.children) if (ch.userData.wing) ch.rotation.y = ch.userData.wing * Math.sin(p.t * 14) * 0.5;
+      if (p.z > DESPAWN_Z || p.taken) { p.obj.visible = false; this.pPool[p.kind].push(p.obj); this.pups.splice(i, 1); }
+    }
+  }
+}

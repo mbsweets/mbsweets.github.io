@@ -1,0 +1,14 @@
+# Rasgulla Run — assets and licenses
+
+- **Code** (`js/*.js` except `three.module.min.js`): written for MB Sweets (Maa Bhagwati Mishthan Bhandar, Nanaura Chowk, Darbhanga).
+- **three.js r160** (`js/three.module.min.js`): MIT license — see `js/three-LICENSE.txt`.
+- **Fonts** Baloo 2, Mukta: SIL Open Font License — see `fonts/OFL-*.txt`.
+- **Images in `img/`** (walls, props, road, band, sky, skyline, sign, gate, flex, og): drawn from code for this project (Madhubani-style SVG motifs authored for MB Sweets, rendered to WebP). No third-party image packs.
+- **`img/logo.webp`**: MB Sweets shop logo, owned by the shop.
+- **`img/mithai.webp`**: cut-outs from the shop's own photos of its sweets (taken by the owner), owned by the shop.
+- **Realistic surfaces** (brick road, soil, plaster weathering, sweet textures, sky): generated in code at runtime (`js/real.js`).
+- **Golu character (main)**: 3D model created by the shop owner (`models/golu.bin`, `img/golu.webp`, converted from the owner's `sample.glb`). Made on Hugging Face from the owner's own ChatGPT-generated image; the file name and 1024 px texture match the Microsoft TRELLIS image-to-3D app (model licence: MIT). Bones/skin weights and all animation added in code (`js/golu3d.js`).
+- **Golu fallback**: modelled in code (`js/golu.js`) from a reference image the owner generated for the shop.
+- **Haat, baraat, mela, railway, sky scene, jalebi, samosa** (`js/haat.js`, `js/events.js`, `js/rail.js`, `js/skyshow.js`, `js/models.js`): modelled in code, original. Station board style is generic; no railway logos used.
+- **Jungle and fields zones, night lanterns and fireflies** (`js/jungle.js`): modelled in code, original.
+- **Music and sound effects**: synthesized in code (`js/audio.js`), original.
