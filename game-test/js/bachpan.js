@@ -19,15 +19,15 @@ const std = (o) => new THREE.MeshStandardMaterial(Object.assign({ roughness: 0.8
 // ---------- 🛞 टायर वाला बच्चा ----------
 export function makeTyreKid() {
   const g = new THREE.Group();
-  const kid = makeVillager({ kind: 'kid', mode: 'walk', cloth: 0xf4efe6 }); kid.scale.setScalar(0.82); g.add(kid);
-  const tyre = new THREE.Group(); tyre.position.set(0, 0.42, -0.85); g.add(tyre);
-  const t = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.09, 10, 24), std({ color: 0x1d1d1d, roughness: 0.75 })); t.rotation.y = PI / 2; t.castShadow = true; tyre.add(t);
-  for (let i = 0; i < 6; i++) { const b = new THREE.Mesh(G.box(0.2, 0.02, 0.02), std({ color: 0x333333 })); b.position.set(0.09, Math.cos(i / 6 * PI * 2) * 0.34, Math.sin(i / 6 * PI * 2) * 0.34); tyre.add(b); } // टायर की धारियाँ (घूमता दिखे)
+  const kid = makeVillager({ kind: 'kid', mode: 'walk', cloth: 0xe8742a }); kid.scale.setScalar(1.06); g.add(kid); // केसरिया गंजी — फ़ुटपाथ की भीड़ में भी अलग दिखे
+  const tyre = new THREE.Group(); tyre.position.set(0, 0.5, -0.95); g.add(tyre);
+  const t = new THREE.Mesh(new THREE.TorusGeometry(0.4, 0.1, 10, 24), std({ color: 0x1d1d1d, roughness: 0.75 })); t.rotation.y = PI / 2; t.castShadow = true; tyre.add(t);
+  for (let i = 0; i < 6; i++) { const b = new THREE.Mesh(G.box(0.2, 0.02, 0.02), std({ color: 0x333333 })); b.position.set(0.1, Math.cos(i / 6 * PI * 2) * 0.4, Math.sin(i / 6 * PI * 2) * 0.4); tyre.add(b); } // टायर की धारियाँ (घूमता दिखे)
   const stick = new THREE.Mesh(G.cyl(0.018, 0.022, 0.95, 6), std({ color: 0x7a5a2c })); stick.position.set(0.18, 0.75, -0.5); stick.rotation.x = 0.95; g.add(stick);
   g.userData.anim = (t2, sp) => {
     if (kid.userData.anim) kid.userData.anim(t2 * 1.6);
     kid.position.y = Math.abs(Math.sin(t2 * 11)) * 0.09;
-    tyre.rotation.x -= (sp || 0) * 0.016 / 0.43; tyre.position.x = Math.sin(t2 * 3) * 0.05;
+    tyre.rotation.x -= (sp || 0) * 0.016 / 0.5; tyre.position.x = Math.sin(t2 * 3) * 0.05;
     stick.rotation.x = 0.95 + Math.sin(t2 * 11) * 0.08;
   };
   return g;

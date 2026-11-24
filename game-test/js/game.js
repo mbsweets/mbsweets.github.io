@@ -337,6 +337,7 @@ class Game {
     this.view = { y: lerp(4.9, 4.3, t), z: lerp(8.3, 7.4, t), fov: lerp(72, 60, t), ly: lerp(0.9, 1.3, t), lz: lerp(-12, -9, t) };
     this.cam.fov = this.view.fov;
     this.cam.updateProjectionMatrix();
+    if (this.state === 'menu') this.fitMenu();
   }
 
   // ------------------------------------------------ इनपुट
@@ -416,8 +417,13 @@ class Game {
   // ------------------------------------------------ UI
   bindUI() {
     const click = (sel, fn) => { const el = $(sel); if (el) el.addEventListener('click', (e) => { e.preventDefault(); this.sound.init(); this.sound.click(); fn(); }); };
-    click('#btnPlay', () => { this.goFull(); this.start(); });
-    click('#btnAgain', () => this.afterAd(() => this.start(this.lastOpts && this.lastOpts.daily ? { daily: true, ghost: this.dayTop } : this.lastOpts || {})));
+    click('#btnPlay', () => { this.goFull(); this.playChosen(); this.start(); });
+    // 🎭 होम पर किरदार बदलो (‹ ›), बंद वाला: एक दौड़ मुफ़्त / मिठाई से खोलो
+    click('#chPrev', () => this.menuChar(-1)); click('#chNext', () => this.menuChar(1));
+    $('#chState').addEventListener('click', (e) => { const b = e.target.closest('[data-buy]'); if (!b) return; this.sound.init(); const id = b.dataset.buy;
+      if (wardrobe.buy(id)) { wardrobe.equip(id); this.viewChar = null; this.wearNow(); this.celebrate(id); this.refreshMenu(); } else { this.toast(T('nextBuy', (itemById(id).cost - wallet.v).toLocaleString('en-IN'), itemById(id).icon), 1400, 'warn'); } });
+    click('#newGo', () => { $('#newS').hidden = true; this.menuChar(1); });
+    click('#btnAgain', () => this.afterAd(() => { if (this.trialChar) { this.trialChar = null; this.viewChar = null; this.wearNow(); } this.start(this.lastOpts && this.lastOpts.daily ? { daily: true, ghost: this.dayTop } : this.lastOpts || {}); })); // मुफ़्त आज़माइश एक ही दौड़
     click('#btnHome', () => this.afterAd(() => this.toMenu()));
     click('#revAd', () => this.reviveAd());
     click('#revPay', () => this.revivePay());
@@ -483,7 +489,8 @@ class Game {
   }
   refreshMenu() {
     if (this.rw && this.rw.on) this.rw.paintBadge(); // भाषा बदली हो तो इनाम-बटन भी
-    const gb = $('#btnShop'); if (gb && this.gshop) gb.innerHTML = T('gsBtn') + (this.gshop.canCollect() ? ' <i>1</i>' : '');
+    const gb = $('#btnShop'); if (gb && this.gshop) gb.innerHTML = `<i>🏪${this.gshop.canCollect() ? '<i>1</i>' : ''}</i><span>${T('micShop')}</span>`;
+    this.paintChar();
     const ft = $('#festTag'); if (ft) { ft.hidden = !(this.fest && this.fest.on); ft.textContent = T('festTag'); }
     const wt = $('#wxTag'); if (wt) { const k = this.wx && this.wx.on && this.wx.temp != null ? this.wx.kind : null; wt.hidden = !k; if (k) wt.textContent = T('wxTag', WX_ICON[k], T('wx_' + k), this.wx.temp); }
     $('#ttl').dataset.text = T('title');
@@ -586,7 +593,9 @@ class Game {
     if (this.dl) { this.dl.reset(); this.tricks.reset(); this.emo.clear(); this.boat.visible = false; if (this.pu) this.pu.madhu = 0; this.ghost.off(); this.world.setSeed(null); }
     this.paintDaily(); if (this.story) this.story.paint();
     if (this.sound.ctx && !this.sound.playing) this.sound.startMusic();
+    this.viewChar = null; this.paintChar();
     this.checkRaja();
+    setTimeout(() => { if (this.state === 'menu') this.maybeNew(); }, 1200);
     if (!PORTAL && store('lang3') == null) $('#langS').hidden = false; // पहली बार: भाषा चुनो (फिर रोज़ का इनाम)
     else if (this.needProfile()) this.lb.askProfile(() => { if (!skipDaily) this.meta.maybeDaily(); }); // पुराने खिलाड़ी: एक बार नाम-ज़िला
     else if (!skipDaily && (!PORTAL || this.runs > 0)) this.meta.maybeDaily(); // पोर्टल पर पहली बार सीधे खेल (एक क्लिक)
@@ -651,13 +660,64 @@ class Game {
     const el = $('#overNext'); if (!el) return;
     const ug = upcomingGift(), rj = rajaState();
     let h = '';
-    if (ug) { const it = itemById(ug); h = T('giftNext', it.icon + ' ' + L(it)); }
+    const tc = this.trialChar && !wardrobe.has(this.trialChar) ? itemById(this.trialChar) : null;
+    if (tc) h = T('trialBuy', tc.icon + ' ' + L(tc), tc.cost.toLocaleString('en-IN'));
+    else if (ug) { const it = itemById(ug); h = T('giftNext', it.icon + ' ' + L(it)); }
     else if (rj === 'tomorrow') h = T('rajaTom');
     else {
       const w = wallet.v, nx = ITEMS.filter((it) => it.cost && !wardrobe.has(it.id) && it.cost > w).sort((a, b) => a.cost - b.cost)[0];
       if (nx) h = T('nextBuy', (nx.cost - w).toLocaleString('en-IN'), nx.icon + ' ' + L(nx));
     }
     el.hidden = !h; el.textContent = h;
+  }
+  // ---------- 🎭 होम का किरदार ----------
+  menuChar(step) {
+    const ids = ITEMS.filter((it) => it.slot === 'char').map((it) => it.id), cur = this.viewChar || wardrobe.outfit.char || 'c_golu';
+    const id = ids[(ids.indexOf(cur) + step + ids.length) % ids.length];
+    this.sound.init(); this.sound.click();
+    if (wardrobe.has(id)) { wardrobe.equip(id); this.viewChar = null; } else this.viewChar = id;
+    this.wearNow({ ...wardrobe.outfit, char: id }); this.golu.dance = 1.4;
+    this.paintChar();
+  }
+  tryLeft(id) { let t = {}; try { t = JSON.parse(store('tries') || '{}'); } catch (e) { t = {}; } return t[id] !== new Date().toDateString(); }
+  paintChar() {
+    const nm = $('#chName'); if (!nm) return;
+    const id = this.viewChar || wardrobe.outfit.char || 'c_golu', it = itemById(id) || itemById('c_golu'), own = wardrobe.has(id);
+    nm.textContent = it.icon + ' ' + L(it);
+    $('#chPow').textContent = it.pow ? T(it.pow) : '';
+    let st = '';
+    if (own) st = `<span class="chok">${T('chMine')}</span>`;
+    else {
+      st = `<span>🔒 ${it.gift ? T('wGift', it.gift) : it.day2 ? T('wTom') : ''}</span>`;
+      if (it.cost) st += `<button data-buy="${id}" class="${wallet.v < it.cost ? 'poor' : ''}">🔓 ${it.cost.toLocaleString('en-IN')} 🍬</button>`;
+      if (!this.tryLeft(id)) st += `<span>${T('chTried')}</span>`;
+    }
+    $('#chState').innerHTML = st;
+    const pb = $('#btnPlay'), trial = !own && this.tryLeft(id);
+    pb.textContent = trial ? T('tryFree') : T('play'); pb.classList.toggle('try', trial);
+    this.fitMenu();
+  }
+  // छोटे फ़ोन पर दोनों ओर के आइकन नीचे वाले "खेलो" हिस्से पर न चढ़ें — जगह कम हो तो छोटे करो
+  fitMenu() {
+    const m = $('#menu'); if (!m || m.hidden) return;
+    const mb = m.querySelector('.mbottom'); if (!mb) return;
+    m.classList.remove('t1', 't2', 't3');
+    const over = () => { const lim = mb.getBoundingClientRect().top - 6; return [...m.querySelectorAll('.mside')].some((s) => s.getBoundingClientRect().bottom > lim); };
+    for (const c of ['t1', 't2', 't3']) { if (!over()) return; m.classList.add(c); }
+  }
+  // "खेलो" दबाया: बंद किरदार दिख रहा हो तो आज का एक मुफ़्त मौक़ा, नहीं तो अपना वाला किरदार
+  playChosen() {
+    const id = this.viewChar; this.trialChar = null;
+    if (!id || wardrobe.has(id)) return;
+    if (this.tryLeft(id)) { let t = {}; try { t = JSON.parse(store('tries') || '{}'); } catch (e) { t = {}; } t[id] = new Date().toDateString(); store('tries', JSON.stringify(t)); this.trialChar = id; }
+    else { this.viewChar = null; this.wearNow(); }
+  }
+  // 🆕 नए संस्करण पर एक बार "नया क्या है"
+  maybeNew() {
+    if (store('new24') === '1') return;
+    const busy = ['#langS', '#profS', '#dailyS', '#unlockS', '#rateS'].some((q) => $(q) && !$(q).hidden);
+    if (busy) return;
+    store('new24', '1'); $('#newS').hidden = false;
   }
   // 🍮 अगले दिन: रसगुल्ला राजा मुफ़्त
   checkRaja() { if (rajaState() === 'due' && giveRaja()) setTimeout(() => this.meta.showUnlocks(['c_raja']), 700); }
@@ -701,7 +761,7 @@ class Game {
     this.state = 'play';
     // 🎬 शुरुआत (24 नवंबर, मालिक: "स्टार्टिंग में कुछ शो नहीं करता"): कैमरा सामने से घूमकर पीछे — गोलू डिब्बा लिए भागता, ठीक पीछे मधुमक्खियाँ.
     // खिलाड़ी उसी समय चला सकता है (पहली रुकावट ~3 सेकंड पर). नए खिलाड़ी (पहली 3 दौड़) को थोड़ा लंबा.
-    this.introDur = this.introT = opts.story != null ? 0 : ((stats.v.runs || 0) < 3 ? 2.0 : 1.3);
+    this.introDur = this.introT = opts.story != null ? 0 : ((stats.v.runs || 0) < 3 ? 2.2 : 1.8);
     if (this.introT > 0) { this.sound.bees(true); this.cheer('bees', 1500, -1, true, 'warn'); } else this.cheer('go', 900, -1, true);
     this.clean = 0; this.sweetMark = 100;
     this.mult = this.ms.mult; this.rs = {}; this.hsT = 0;
@@ -1417,11 +1477,12 @@ class Game {
       this.world.update(rdt, 0, 14, { px: 0, py: 0, ph: H_STAND, mouth: 1.7, magnet: false, collect: () => {} });
       const t = performance.now() / 1000;
       // चौड़ी स्क्रीन पर गोलू बीच में, बटन दाईं ओर
-      const wide = this.cam.aspect > 1.33 && !this.wardOpen ? 1.6 : 0;
+      const wide = 0; // 24 नवंबर: नया होम — किरदार हमेशा बीच में (बटन दोनों ओर)
       const wk = this.wardK = damp(this.wardK || 0, this.wardOpen ? 1 : 0, 6, rdt);
       const sk = this.shopK = damp(this.shopK || 0, this.goShopOpen ? 1 : 0, 4, rdt); // 🏪 दुकान देखते समय कैमरा उधर
-      this.cam.position.set(lerp(Math.sin(t * 0.35) * 1.2 * (1 - wk) + wide, 0.3 + Math.sin(t * 0.3) * 0.5, sk), lerp(lerp(2.4, 1.9, wk), 2.5, sk), lerp(lerp(5.4, 4.3, wk), 4.6, sk));
-      this.cam.lookAt(lerp(wide, -0.7, sk), lerp(lerp(1.45, 0.35, wk), 1.2, sk), lerp(-1, -4.4, sk));
+      const port = this.cam.aspect < 0.9 ? 1 : 0; // खड़े फ़ोन पर किरदार बड़ा, बीच में (ऊपर लोगो, नीचे बटन)
+      this.cam.position.set(lerp(Math.sin(t * 0.35) * (port ? 0.6 : 1.2) * (1 - wk) + wide, 0.3 + Math.sin(t * 0.3) * 0.5, sk), lerp(lerp(port ? 1.75 : 2.4, 1.9, wk), 2.5, sk), lerp(lerp(port ? 5.0 : 5.4, 4.3, wk), 4.6, sk));
+      this.cam.lookAt(lerp(wide, -0.7, sk), lerp(lerp(port ? 0.95 : 1.45, 0.35, wk), 1.2, sk), lerp(-1, -4.4, sk));
       if (sk > 0.002) g.root.position.set(1.3 * sk, 0, -3.4 * sk); // दुकान के बगल में खड़ा गोलू
       this.gshop.update(rdt); this.fixJhola(rdt);
       if (this.celebT > 0) { // नया कपड़ा — चमक और घूमना
@@ -1482,7 +1543,7 @@ class Game {
     // खिलाड़ी
     p.laneT += dt;
     { const W = 26, e = Math.exp(-W * dt), d = p.x - p.tx, v0 = p.vx || 0, c = v0 + W * d; p.x = p.tx + (d + c * dt) * e; p.vx = (v0 - W * c * dt) * e; } // 🏃 लेन बदलना: स्प्रिंग जैसी नरम चाल — शुरू और रुकना दोनों नरम, फिर भी ~0.18 सेकंड में
-    const gy = this.world.groundAt(p.x, 0); // डिब्बे की छत / ढलान
+    const gy = this.world.groundAt(p.x, 0, p.y), gWide = this.world.gWide; // डिब्बे की छत / ढलान
     p.gy = gy;
     if (p.fly > 0) {
       p.fly -= dt;
@@ -1493,14 +1554,15 @@ class Game {
     } else if (p.ground && gy < p.y - 0.06) { // छत ख़त्म — नीचे गिरो
       p.ground = false; p.vy = 0; p.coy = 0.12; // किनारे से गिरते ही ज़रा देर तक कूद चलेगा
     } else if (p.ground) {
-      if (gy - p.y < 0.45) p.y = gy; // ढलान पर चढ़ो / छत पर दौड़ो (बगल से दीवार पर नहीं चढ़ना)
+      if (gy - p.y < 0.45 + dz * 0.8 || gWide) p.y = gy; // ढलान पर चढ़ो / छत पर दौड़ो (बगल से दीवार पर नहीं चढ़ना) — कम फ़्रेम (30fps) पर एक फ़्रेम में ज़्यादा चढ़ाई भी
     }
     if (p.fly <= 0 && !p.ground) {
       const prevY = p.y;
       p.vy += GRAV * dt;
       p.y += p.vy * dt;
       p.air += dt;
-      const floor = prevY >= gy - 0.3 ? gy : 0; // ऊपर से आए तो छत, बगल से तो ज़मीन
+      const floor = prevY >= gy - 0.3 - dz * 0.8 || gWide ? gy : 0; // ऊपर से आए (गली में गिरकर चौड़ी ढलान पर पहुँचे तो उसी पर — 30fps पर तेज़ दौड़ में ढलान के अंदर से निकलकर दीवार से टकराता था) तो छत, बगल से तो ज़मीन (ढलान तेज़ी से उठे तो भी उसी पर)
+      if (p.y < floor && p.vy > 0 && floor > 0.3) p.y = floor; // ढलान/सीढ़ी पर कूदते समय सतह के नीचे न धँसे — ऊपर से ही उछले (24 नवंबर: "सीढ़ी पे ही मर गया")
       if (p.y <= floor && p.vy <= 0) {
         const imp = -p.vy; // ज़मीन पर कितनी ज़ोर से
         p.y = floor; p.vy = 0; p.ground = true; p.air = 0;
@@ -1557,6 +1619,7 @@ class Game {
     this.world.flying = p.fly > 0; // उड़ते समय पोखर/रस्सी शुरू नहीं (ऊपर से पार न हो)
     this.world.busy = this.dl.active() || (this.mk && this.mk.st !== 'off'); // डिलीवरी/बंदर के बीच पानी नहीं
     this.world.update(dt, dz, this.speed, this.ctx());
+    if (p.fly <= 0) { const g2 = this.world.groundAt(p.x, 0, p.y); if (this.world.gWide && g2 > p.y && g2 - p.y < 1.4) { p.y = g2; if (!p.ground && p.vy <= 0) { p.ground = true; p.vy = 0; p.air = 0; } } } // चौड़ी सीढ़ी/गली-ढलान: दुनिया खिसकने के बाद भी पैर सतह पर (30fps तेज़ दौड़ में गली से उठती ढलान के अंदर रह जाता, फिर अगले घर की दीवार से टकराता)
     this.trainFx(dt);
     this.dl.update(dt, dz);
     this.darshan.update(dt, dz);
@@ -1665,7 +1728,7 @@ class Game {
       else if (fx === 'trail' && Math.random() < 0.55) this.world.parts.burst(p.x + rand(-0.3, 0.3), p.y + rand(0.6, 1.6), 0.9, [0xffd24d, 0xd8457f, 0x7fd3ff, 0xffffff][Math.floor(Math.random() * 4)], 1, 0.4, 0.6, 0.7, 0);
     }
     this.toMonkey -= dz;
-    if (this.toMonkey <= 0 && this.mk.st === 'off' && p.fly <= 0 && !p.boat && !p.zip && !this.world.zip && !this.world.pond && !this.dl.active() && this.world.railObs <= 0 && this.world.roofObs <= 0 && this.world.melaObs <= 0 && this.rushT <= 0 && p.invT <= 0) this.monkeyStart();
+    if (this.toMonkey <= 0 && this.mk.st === 'off' && p.fly <= 0 && !p.boat && !p.zip && !this.world.zip && !this.world.pond && !this.dl.active() && this.world.railObs <= 0 && this.world.roofObs <= 0 && !this.world.roofQ && this.world.melaObs <= 0 && this.rushT <= 0 && p.invT <= 0) this.monkeyStart(); // छत-दौड़ तय हो चुकी हो (roofQ) तब भी बंदर नहीं
     this.updateMonkey(dt);
     this.updateBees(dt);
     this.updateCam(rdt);
@@ -1709,7 +1772,8 @@ class Game {
           this.world.parts.burst(p.x, 0.3, 0.2, 0x6b4a2b, 14, 3, 3, 0.6);
         }
       } else {
-        const oy = (e.kind === 'train' ? p.y < e.yMax - 0.35 : p.y < e.yMax) && p.y + ph > e.yMin;
+        if (e.obj.userData.bridge) continue; // बाँस का पुल सिर्फ़ चलने की सतह — नीचे से निकलो तो टक्कर नहीं
+        const oy = (e.kind === 'train' ? p.y < e.yMax - (e.obj.userData.house || e.obj.userData.bridge ? 0.9 : 0.35) : p.y < e.yMax) && p.y + ph > e.yMin; // घर की छत: सीढ़ी/ढलान के सिरे पर थोड़ा नीचे हो तो भी चढ़ जाए
         if (e.type === 'chugla' && ox && oz && !oy && !e.cnt && !e.dead && p.y >= e.yMax - 0.05) { e.cnt = true; this.fest.jumped(e); }
         if (ox && oz && oy) {
           const side = e.pz && !e.px;
@@ -1728,7 +1792,7 @@ class Game {
       e.px = ox; e.pz = oz;
     }
     for (const u of this.world.pups) {
-      if (!u.taken && Math.abs(u.x - p.x) < 1.0 && Math.abs(u.z) < 1.0 && Math.abs(p.y - (u.y - 1.05)) < 2.4) this.takePu(u); // छत पर रखी चीज़ (पतंग) भी
+      if (!u.taken && Math.abs(u.x - p.x) < (u.kind === 'kite' ? 4 : 1.0) && Math.abs(u.z) < 1.0 && Math.abs(p.y - (u.y - 1.05)) < 2.4) this.takePu(u); // छत पर रखी चीज़ (पतंग) भी; पतंग किसी भी लेन से
     }
   }
 
@@ -1770,7 +1834,8 @@ class Game {
     let tx = p.x, ty = 2.2, tz = 18;
     if (this.state === 'dying' || this.state === 'over' || this.state === 'revive') { ty = 1.7; tz = 0.4; }
     else if (p.beesT > 0) { ty = p.y + 1.7; tz = 2.4; }
-    else if (this.introT > (this.introDur || 2) * 0.5) { ty = p.y + 1.8; tz = 1.6; } // 🎬 शुरुआत: झुंड ठीक पीछे (सामने वाले कैमरे में दिखे), कैमरा पीछे पहुँचे उससे पहले पीछे छूटता है
+    else if (this.introT > (this.introDur || 2) * 0.5) { ty = p.y + 1.8; tz = 1.6; } // 🎬 शुरुआत: झुंड ठीक पीछे (सामने वाले कैमरे में दिखे)
+    else if (this.state === 'play' && this.runT < 5.5) { ty = p.y + 3.4; tz = 3.4; } // फिर कुछ सेकंड गोलू के ऊपर-पीछे पीछा करता दिखे (स्क्रीन के ऊपर), फिर पीछे छूटे
     this.beeC.x = damp(this.beeC.x, tx, 6, dt); this.beeC.y = damp(this.beeC.y, ty, 6, dt); this.beeC.z = damp(this.beeC.z, tz, 4, dt);
     const t = performance.now() / 1000;
     const close = this.state === 'dying' || this.state === 'over' || this.state === 'revive';

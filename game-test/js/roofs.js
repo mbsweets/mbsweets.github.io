@@ -12,7 +12,7 @@ import { rand, pick, chance } from './util.js';
 
 const PI = Math.PI;
 export const RW = 8.4;          // घर की चौड़ाई — तीनों लेन ढके (±2.5 + किनारा)
-export const GAP_RAMP = 3.2;    // गली में चचरी-ढलान की लंबाई
+export const GAP_RAMP = 4.6;  // कम ढलान — कम फ़्रेम वाले फ़ोन पर भी चढ़ जाए    // गली में चचरी-ढलान की लंबाई
 const G = {
   box: (x, y, z) => new THREE.BoxGeometry(x, y, z),
   cyl: (a, b, h, s = 10) => new THREE.CylinderGeometry(a, b, h, s),
@@ -258,7 +258,7 @@ export function makeTulsi() { // तुलसी चौरा — कूदो
   for (let i = 0; i < 4; i++) mg.add(G.box(0.2, 0.2, 0.02), mat4(0, 0.4, 0.48, 0, i * PI / 2, PI / 4), 0xf2a91b);
   for (let i = 0; i < 14; i++) mg.add(G.sph(0.11 + rnd() * 0.06, 7, 5), mat4((rnd() - 0.5) * 0.4, 0.95 + rnd() * 0.25, (rnd() - 0.5) * 0.4), rnd() < 0.5 ? 0x2e6b2e : 0x3e8a3a);
   const m = mg.mesh(0); m.castShadow = true; g.add(m);
-  g.userData = { kind: 'low', halfW: 0.9, halfL: 0.5, yMin: 0, yMax: 0.95 };
+  g.userData = { kind: 'low', halfW: 0.9, halfL: 0.36, yMin: 0, yMax: 0.85 }; // बैरियर जितना कूदने लायक
   return g;
 }
 
