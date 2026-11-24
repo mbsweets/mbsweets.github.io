@@ -353,3 +353,6 @@ export function shadows(obj, cast = true, receive = true) {
     }
   });
 }
+
+// नए किरदार/खेत/छत (chars.js, farm) भी यही बनावट-औज़ार इस्तेमाल करें
+export const RTU = { noiseCanvas, normalFrom, tex };

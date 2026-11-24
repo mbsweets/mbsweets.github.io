@@ -36,31 +36,36 @@ export function buyUp(k) {
 // slot: head / body / feet / extra; set = किस मिशन-सेट पर खुले; cost = मिठाई देकर भी ले सकते
 export const ITEMS = [
   { id: 'h_gamchha', slot: 'head', icon: '👳', hi: 'गमछा पगड़ी', en: 'Gamchha Turban', def: 1 },
-  { id: 'h_peeli', slot: 'head', icon: '🟡', hi: 'पीयर पगड़ी', en: 'Yellow Turban', set: 1, cost: 1500 },
-  { id: 'h_kesari', slot: 'head', icon: '🧡', hi: 'केसरिया साफ़ा', en: 'Saffron Safa', set: 7, cost: 3000 },
+  { id: 'h_peeli', slot: 'head', icon: '🟡', hi: 'पीयर पगड़ी', en: 'Yellow Turban', set: 1, cost: 400 },
+  { id: 'h_kesari', slot: 'head', icon: '🧡', hi: 'केसरिया साफ़ा', en: 'Saffron Safa', set: 7, cost: 1200 },
   { id: 'h_pag', slot: 'head', icon: '🔴', hi: 'मिथिला पाग', en: 'Mithila Paag', set: 10, cost: 4500 },
   { id: 'h_mor', slot: 'head', icon: '🦚', hi: 'मोर पंख', en: 'Peacock Feather', set: 15, cost: 6000 },
   { id: 'h_holi', slot: 'head', icon: '🌈', hi: 'होली पगड़ी', en: 'Holi Turban', set: 16, cost: 6500 },
   { id: 'h_mukut', slot: 'head', icon: '👑', hi: 'राजा मुकुट', en: 'Royal Crown', set: 30, cost: 15000 },
   { id: 'b_safed', slot: 'body', icon: '👕', hi: 'उज्जर कुर्ता', en: 'White Kurta', def: 1 },
-  { id: 'b_peela', slot: 'body', icon: '💛', hi: 'पीयर कुर्ता', en: 'Yellow Kurta', set: 3, cost: 2000 },
-  { id: 'b_hara', slot: 'body', icon: '💚', hi: 'हरियर कुर्ता', en: 'Green Kurta', set: 8, cost: 3500 },
+  { id: 'b_peela', slot: 'body', icon: '💛', hi: 'पीयर कुर्ता', en: 'Yellow Kurta', set: 3, cost: 600 },
+  { id: 'b_hara', slot: 'body', icon: '💚', hi: 'हरियर कुर्ता', en: 'Green Kurta', set: 8, cost: 1500 },
   { id: 'b_jersey', slot: 'body', icon: '🏏', hi: 'क्रिकेट जर्सी', en: 'Cricket Jersey', set: 12, cost: 5000 },
   { id: 'b_dulha', slot: 'body', icon: '🤵', hi: 'दूल्हा शेरवानी', en: 'Groom Sherwani', set: 18, cost: 7500 },
   { id: 'b_cape', slot: 'body', icon: '🦸', hi: 'सुपरहीरो केप', en: 'Superhero Cape', set: 20, cost: 9000 },
   { id: 'f_chappal', slot: 'feet', icon: '🩴', hi: 'चप्पल', en: 'Chappal', def: 1 },
-  { id: 'f_khadau', slot: 'feet', icon: '🪵', hi: 'खड़ाऊँ', en: 'Khadau', set: 4, cost: 2000 },
+  { id: 'f_khadau', slot: 'feet', icon: '🪵', hi: 'खड़ाऊँ', en: 'Khadau', set: 4, cost: 600 },
   { id: 'f_sports', slot: 'feet', icon: '👟', hi: 'स्पोर्ट्स जूता', en: 'Sports Shoes', set: 9, cost: 4000 },
   { id: 'f_sona', slot: 'feet', icon: '✨', hi: 'सोनाक जूता', en: 'Golden Shoes', set: 25, cost: 12000 },
   { id: 'x_none', slot: 'extra', icon: '➖', hi: 'किछु नहि', en: 'Nothing', def: 1 },
-  { id: 'x_chashma', slot: 'extra', icon: '😎', hi: 'करिया चश्मा', en: 'Cool Shades', set: 5, cost: 2500 },
+  { id: 'x_chashma', slot: 'extra', icon: '😎', hi: 'करिया चश्मा', en: 'Cool Shades', set: 5, cost: 800 },
   { id: 'x_gubbara', slot: 'extra', icon: '🎈', hi: 'गुब्बारा', en: 'Balloon', set: 13, cost: 5500 },
   { id: 'x_chamak', slot: 'extra', icon: '🌟', hi: 'मिठाइक चमक', en: 'Sweet Sparkle Trail', daily7: 1, cost: 8000 },
+  // 🎭 किरदार (24 नवंबर) — gift = पहली दौड़ों का तोहफ़ा, day2 = अगले दिन मुफ़्त (कल फिर आओ), cost = मिठाई देकर भी
+  { id: 'c_golu', slot: 'char', icon: '🧒', hi: 'गोलू', en: 'Golu', def: 1 },
+  { id: 'c_bunty', slot: 'char', icon: '🐒', hi: 'बंटी बंदर', en: 'Bunty Monkey', gift: 3, cost: 2500, pow: 'powJump' },
+  { id: 'c_pahal', slot: 'char', icon: '💪', hi: 'पहलवान चाचा', en: 'Pahalwan Chacha', gift: 5, cost: 5000, pow: 'powSmash' },
+  { id: 'c_raja', slot: 'char', icon: '🍮', hi: 'रसगुल्ला राजा', en: 'Rasgulla Raja', day2: 1, cost: 6000, pow: 'powMagnet' },
   { id: 'h_mbpag', slot: 'head', icon: '🧾', hi: 'MB Sweets पाग', en: 'MB Sweets Paag', bill: 1 }, // सिर्फ़ दुकान के बिल वाले गेम कोड से
 ];
-export const SLOTS = ['head', 'body', 'feet', 'extra'];
+export const SLOTS = ['char', 'head', 'body', 'feet', 'extra'];
 export const itemById = (id) => ITEMS.find((x) => x.id === id);
-const DEF_OUTFIT = { head: 'h_gamchha', body: 'b_safed', feet: 'f_chappal', extra: 'x_none' };
+const DEF_OUTFIT = { char: 'c_golu', head: 'h_gamchha', body: 'b_safed', feet: 'f_chappal', extra: 'x_none' };
 export const wardrobe = {
   get owned() { const o = J('owned', []); for (const it of ITEMS) if (it.def && !o.includes(it.id)) o.push(it.id); return o; },
   has(id) { return this.owned.includes(id); },
@@ -100,6 +105,8 @@ const MT = [
 export const SET_REWARD = {};
 for (const it of ITEMS) if (it.set) SET_REWARD[it.set] = it.id;
 for (let s = 1; s <= 30; s++) if (!SET_REWARD[s]) SET_REWARD[s] = 200 + s * 60;
+// सेट का इनाम कपड़ा हो पर वह पहले से मिल चुका हो (जैसे 🎁 तोहफ़े में पीली पगड़ी) → दोबारा "नया!" नहीं, उसकी जगह मिठाई
+const setRw = (s) => { const rw = SET_REWARD[Math.min(s, MAX_SET)]; return typeof rw === 'string' && wardrobe.has(rw) ? 300 + s * 60 : rw; };
 export const MAX_SET = 30;
 function rng(seed) { let a = seed >>> 0; return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 function genSet(s) {
@@ -118,7 +125,7 @@ export class Missions {
   save() { S('mset', this.st); }
   get set() { return this.st.set; }
   get mult() { return 1 + Math.min(MAX_SET, this.st.done); }
-  get reward() { return SET_REWARD[Math.min(this.st.set, MAX_SET)]; }
+  get reward() { return setRw(this.st.set); }
   text(m) { const t = MT.find((x) => x.id === m.id); return L(t).replace('{n}', m.n.toLocaleString('en-IN')); }
   mReward() { return 40 + 10 * Math.min(this.st.set, 30); } // हर मिशन की मिठाई
   startRun() { this.run = {}; this.justDone = []; }
@@ -140,7 +147,7 @@ export class Missions {
     for (const m of this.st.act) if (m.p >= m.n && !m.paid) { m.paid = 1; gain += this.mReward(); done.push(m); }
     let setDone = null;
     if (this.st.act.every((m) => m.p >= m.n)) {
-      const s = this.st.set, rw = SET_REWARD[Math.min(s, MAX_SET)];
+      const s = this.st.set, rw = setRw(s);
       setDone = { set: s, reward: rw, item: typeof rw === 'string' ? rw : null, sweets: typeof rw === 'number' ? rw : 0 };
       if (setDone.item) wardrobe.give(setDone.item); else gain += rw;
       this.st.done++; this.st.set = s + 1;
@@ -186,6 +193,21 @@ export function checkBadges() {
   return fresh;
 }
 export const badgesGot = () => J('badges', []);
+
+// ---------------- 🎁 पहली 5 दौड़: हर दौड़ के बाद कुछ नया (24 नवंबर, CrazyGames पर पहले मिनट में छोड़ने वाले) ----------------
+// जो पहले से है वो छोड़कर अगला. पुराने खिलाड़ियों को भी (गिनती अलग: giftN) — नए किरदार उन्हें भी मिलें
+export const GIFTS = ['h_peeli', 'x_chashma', 'c_bunty', 'b_peela', 'c_pahal'];
+const giftIdx = () => { let n = J('giftN', 0); while (n < GIFTS.length && wardrobe.has(GIFTS[n])) n++; return n; };
+export function upcomingGift() { const n = giftIdx(); return n < GIFTS.length ? GIFTS[n] : null; }
+export function takeGift() { const n = giftIdx(); if (n >= GIFTS.length) { S('giftN', n); return null; } const id = GIFTS[n]; wardrobe.give(id); S('giftN', n + 1); return id; }
+// 🍮 रसगुल्ला राजा: पहले दिन खेलो → अगले दिन मुफ़्त (D1 लौटना)
+export function rajaState() {
+  if (wardrobe.has('c_raja')) return 'have';
+  const f = J('firstDay', 0), t = today();
+  if (!f) { S('firstDay', t); return 'tomorrow'; }
+  return f < t ? 'due' : 'tomorrow';
+}
+export function giveRaja() { return wardrobe.give('c_raja'); }
 
 // ---------------- हेडस्टार्ट: उड़न समोसे से शुरुआत ----------------
 export const HEADSTART_COST = 500;

@@ -426,7 +426,7 @@ export class Delivery {
   holding() { return this.inScene() || this.st === 'go' || this.st === 'ride'; }
   canStart() {
     const g = this.g, w = g.world, p = g.p;
-    if (g.state !== 'play' || !g.tutDone || w.tut > 0 || p.fly > 0 || p.boat || w.pond || w.railObs > 0 || w.melaObs > 0 || w.haatObs > 0 || w.baraatQ || (g.mk && g.mk.st !== 'off')) return false;
+    if (g.state !== 'play' || !g.tutDone || w.tut > 0 || p.fly > 0 || p.boat || w.pond || w.railObs > 0 || w.roofObs > 0 || w.roofQ || w.melaObs > 0 || w.haatObs > 0 || w.baraatQ || (g.mk && g.mk.st !== 'off')) return false;
     return zoneAt(w.dist) !== 'jungle' && zoneAt(w.dist + 750) !== 'jungle';
   }
   // रास्ते की एक लंबी पट्टी ख़ाली (दुकान/घर के आगे टक्कर न हो)

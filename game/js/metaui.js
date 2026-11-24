@@ -13,7 +13,7 @@ const rewardHtml = (rw) => (typeof rw === 'string' ? `${itemById(rw).icon} ${nm(
 
 export class MetaUI {
   constructor(game) {
-    this.g = game; this.tab = 'ms'; this.slot = 'head'; this.preview = null;
+    this.g = game; this.tab = 'ms'; this.slot = 'char'; this.preview = null;
     for (const b of document.querySelectorAll('#metaTabs button')) b.addEventListener('click', () => { this.g.sound.click(); this.show(b.dataset.m); });
     $('#metaClose').addEventListener('click', () => { this.g.sound.click(); this.close(); });
     $('#dailyGet').addEventListener('click', () => this.claim());
@@ -136,8 +136,8 @@ export class MetaUI {
       let st;
       if (on) st = `<em class="on">✔ ${T('wWorn')}</em>`;
       else if (own) st = `<em>${T('wWear')}</em>`;
-      else st = `<small>🔒 ${it.set ? T('wSet', it.set) : it.bill ? T('wBill') : T('wDaily7')}</small>${it.cost ? `<button class="wbuy${wallet.v < it.cost ? ' poor' : ''}" data-buy="${it.id}">${RG}${fmt(it.cost)}</button>` : ''}`;
-      return `<div class="witem${on ? ' on' : ''}${own ? '' : ' lock'}${prev ? ' prev' : ''}" data-it="${it.id}"><b>${it.icon}</b><span>${nm(it)}</span>${st}</div>`;
+      else st = `<small>🔒 ${it.gift ? T('wGift', it.gift) : it.day2 ? T('wTom') : it.set ? T('wSet', it.set) : it.bill ? T('wBill') : T('wDaily7')}</small>${it.cost ? `<button class="wbuy${wallet.v < it.cost ? ' poor' : ''}" data-buy="${it.id}">${RG}${fmt(it.cost)}</button>` : ''}`;
+      return `<div class="witem${on ? ' on' : ''}${own ? '' : ' lock'}${prev ? ' prev' : ''}" data-it="${it.id}"><b>${it.icon}</b><span>${nm(it)}</span>${it.pow ? `<i class="wpow">${T(it.pow)}</i>` : ''}${st}</div>`;
     }).join('');
     $('#wardNote').textContent = this.preview ? T('wTry') : T('wNote');
   }
@@ -162,7 +162,10 @@ export class MetaUI {
   nextUnlock() {
     const id = (this.unq || []).shift(); if (!id) return;
     const it = itemById(id); this.unId = id;
-    $('#unIcon').textContent = it.icon; $('#unName').textContent = nm(it);
+    // 🎁 पहले डिब्बा हिलता है, फिर खुलकर चीज़ दिखती है
+    { const ut = $('#unTitle'); if (ut) ut.textContent = it.slot === 'char' ? '🎭 ' + T('charNew') : T('unTitle'); } // किरदार हो तो "नया किरदार!"
+    const ic = $('#unIcon'); ic.textContent = '🎁'; ic.classList.remove('pop'); ic.classList.add('shake'); $('#unName').textContent = T('giftNew');
+    clearTimeout(this.unT); this.unT = setTimeout(() => { ic.classList.remove('shake'); void ic.offsetWidth; ic.classList.add('pop'); ic.textContent = it.icon; $('#unName').textContent = nm(it) + (it.pow ? ' — ' + T(it.pow) : ''); this.g.sound.power(); }, 850);
     $('#unlockS').hidden = false;
     const c = $('#unConf'); c.innerHTML = '';
     for (let i = 0; i < 36; i++) { const s = document.createElement('i'); s.style.left = Math.random() * 100 + '%'; s.style.background = ['#D1261C', '#F2A91B', '#2E7B47', '#D8457F', '#2F6FB6', '#fff'][i % 6]; s.style.animationDelay = Math.random() * 0.8 + 's'; s.style.animationDuration = 1.6 + Math.random() * 1.2 + 's'; c.appendChild(s); }

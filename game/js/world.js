@@ -15,14 +15,19 @@ import { POND_LEN, WATER_Y, TILE, POND_OBST, makeWaterTile, makeGhat, makeMakhan
 import { makeMadhubaniPu } from './madhubani.js';
 import { seeded } from './ghost.js';
 import { ZIP_LEN, ZIP_H, ZIP_OBST, makeZipRig, trimRopes, zipSag } from './zipline.js';
-Object.assign(OBST, JUNGLE_OBST, POND_OBST, ZIP_OBST);
+import { ROOF_OBST, ROOF_POOL, GAP_RAMP, makeKitePu } from './roofs.js';
+import { makeFarmField, FARM_OBST, FARM_POOL, makeGanna } from './farm.js';
+import { DECO_MAKERS, makeTyreKid, makeGolaPu } from './bachpan.js';
+Object.assign(OBST, JUNGLE_OBST, POND_OBST, ZIP_OBST, ROOF_OBST, FARM_OBST);
 const REAL_RANDOM = Math.random;
 const real = (fn) => { const r = Math.random; Math.random = REAL_RANDOM; try { return fn(); } finally { Math.random = r; } }; // नई चीज़ बनाते समय असली random (बीज वाली गिनती न बिगड़े)
 // अपने बनाए पावर-अप (मखाना, मधुबनी, त्योहार की चिड़िया…) — बाकी models.js का makePowerup
-export const PU_MAKERS = { makhana: makeMakhana, madhubani: makeMadhubaniPu };
+export const PU_MAKERS = { makhana: makeMakhana, madhubani: makeMadhubaniPu, kite: makeKitePu, ganna: makeGanna, gola: makeGolaPu };
 
 // इलाक़ा दूरी से: 2700 तक गाँव; फिर जंगल (1200 मी.) → गाँव → खेत (1100 मी.) → गाँव … हर 6000 मी. का चक्कर, दूसरे चक्कर में क्रम उल्टा
 export function zoneAt(d) {
+  if (d < 950) return 'village';
+  if (d < 1550) return 'fields'; // 🌾 पहला खेत-खलिहान ~1 किमी पर (24 नवंबर, मालिक: छत-दौड़ के बाद खेत) — पहले 4.5 किमी पर था
   if (d < 2700) return 'village';
   const x = (d - 2700) % 6000, k = Math.floor((d - 2700) / 6000) % 2;
   if (x < 1200) return k ? 'fields' : 'jungle';
@@ -134,6 +139,7 @@ class SweetSet {
       } else {
         it.z += dz;
         if (ctx.magnet && !it.mag && it.z > -16 && it.z < 3 && Math.abs(it.x - ctx.px) < 9) it.mag = true;
+        else if (ctx.mini && !it.mag && it.z > -6 && it.z < 2 && Math.abs(it.x - ctx.px) < 2.9 && Math.abs(it.y - ctx.py - 0.9) < 2.2) it.mag = true; // 🍮 रसगुल्ला राजा
         if (it.mag) {
           const k = 1 - Math.exp(-9 * dt);
           it.x += (ctx.px - it.x) * k; it.y += (ctx.py + 0.9 - it.y) * k; it.z += (0 - it.z) * k * 1.1;
@@ -299,7 +305,7 @@ export class World {
       mk('mela' + s, (i) => makeMela(s, i), 4);
       if (s < 0) mk('station' + s, (i) => makeStation(s, i), 3);
       mk('jungle' + s, (i) => makeJungle(s, i), 12);
-      mk('fields' + s, (i) => makeFields(s, i), 12);
+      mk('fields' + s, (i) => makeFarmField(s, i), 12); // 🌾 असली जैसे खेत (बैल-हल, पुआल, सरसों)
     }
     mk('gate', () => makeGate(), 2);
     mk('flex', (i) => makeFlex(i), 4);
@@ -308,7 +314,7 @@ export class World {
     this.tPool = []; this.tracks = [];
     for (let i = 0; i < 17; i++) { const t = makeTrack(); t.visible = false; this.scene.add(t); this.tPool.push(t); }
     // पावर-अप और रुकावटें पहले से (पहली बार अटके नहीं)
-    for (const k of ['magnet', 'shoes', 'shield', 'samosa', 'thali', 'madhubani', 'makhana', 'makhana']) { (this.pPool[k] = this.pPool[k] || []).push(this.newPu(k)); }
+    for (const k of ['magnet', 'shoes', 'shield', 'samosa', 'thali', 'madhubani', 'makhana', 'makhana', 'kite', 'kite', 'ganna', 'ganna', 'gola']) { (this.pPool[k] = this.pPool[k] || []).push(this.newPu(k)); }
     // 🚣 पोखर: पानी के टुकड़े + दो घाट
     this.wPool = []; this.waters = [];
     for (let i = 0; i < Math.ceil(POND_LEN / TILE) + 2; i++) { const t = makeWaterTile(i); t.visible = false; this.scene.add(t); this.wPool.push(t); }
@@ -320,8 +326,11 @@ export class World {
     this.zwPool = []; this.zwaters = [];
     for (let i = 0; i < Math.ceil(ZIP_LEN / TILE) + 2; i++) { const t = makeWaterTile(i + 1); t.visible = false; this.scene.add(t); this.zwPool.push(t); }
     // 24 नवंबर: कितनी एक साथ दिखती हैं (5 किमी की 3 दौड़ों में सबसे ज़्यादा) + 1 — दौड़ के बीच नई बनाना = कमज़ोर फ़ोन पर झटका
-    const POOL_N = { jaal: 11, vine: 11, log: 10, toran: 10, boulder: 8, haybale: 8, cans: 7, barrier: 7, thela: 7, rickshaw: 7, naav: 6, lattha: 6, bricks: 5, pothole: 5, bhains: 5, chugla: 5, chhatta: 5, bail: 5, tokri: 5, fence: 5 };
+    const POOL_N = { jaal: 11, vine: 11, log: 10, toran: 10, boulder: 8, haybale: 8, cans: 7, barrier: 7, thela: 7, rickshaw: 7, naav: 6, lattha: 6, bricks: 5, pothole: 5, bhains: 5, chugla: 5, chhatta: 5, bail: 5, tokri: 5, fence: 5, train2: 5, cow: 5, ...ROOF_POOL, ...FARM_POOL };
     for (const t of Object.keys(OBST)) { this.oPool[t] = []; for (let i = 0; i < (POOL_N[t] || 4); i++) { const o = this.newObs(t); o.visible = false; this.oPool[t].push(o); } }
+    // 🧒 बचपन वाले नज़ारे (फ़ुटपाथ पर) + टायर वाला बच्चा — पहले से बने
+    this.dPool = {}; for (const k of Object.keys(DECO_MAKERS)) this.dPool[k] = [0, 1].map(() => { const o = real(() => DECO_MAKERS[k]()); o.visible = false; o.userData.dk = k; shadows(o, true, false); this.scene.add(o); if (this.onNew) this.onNew(o); return o; });
+    this.racer = { obj: real(() => makeTyreKid()), on: false }; this.racer.obj.visible = false; shadows(this.racer.obj, true, false); this.scene.add(this.racer.obj);
   }
   newObs(t) { const o = real(() => OBST[t]()); o.userData.type = t; shadows(o, true, true); this.scene.add(o); if (this.onNew) this.onNew(o); return o; }
   newPu(k) { const o = real(() => (PU_MAKERS[k] || makePowerup)(k)); o.visible = false; shadows(o, true, false); this.scene.add(o); if (this.onNew) this.onNew(o); return o; }
@@ -344,6 +353,9 @@ export class World {
     for (const g of this.gates) { g.visible = false; this.cPool[g.userData.key].push(g); }
     for (const f of this.flexes) { f.visible = false; this.cPool.flex.push(f); }
     this.flexes = []; this.toFlex = 120;
+    for (const d of this.decos || []) { d.visible = false; this.dPool[d.userData.dk].push(d); }
+    this.decos = []; this.toDeco = rand(170, 240); this.golaWant = false;
+    if (this.racer) { this.racer.on = false; this.racer.obj.visible = false; } this.toRacer = rand(200, 300); // पहली रेस ~15 सेकंड में
     this.toHaat = rand(600, 760); this.haatN = { '-1': 0, '1': 0 }; this.haatObs = 0; this.events = [];
     this.toMela = rand(1700, 2000); this.melaN = { '-1': 0, '1': 0 }; this.melaObs = 0; this.toBaraat = rand(1250, 1450); this.baraatQ = false;
     for (const t of this.tracks || []) { t.visible = false; this.tPool.push(t); }
@@ -359,8 +371,11 @@ export class World {
     this.obs = []; this.pups = []; this.gates = [];
     this.sweets.clear(); this.parts.clear();
     this.dist = 0; this.diff = 0; this.speed = 14; this.zone = 'village'; this.calm = 0;
-    this.toNext = 60;
-    this.toPu = rand(260, 380);
+    // 24 नवंबर (मालिक: "खाली रोड पर गोलू दौड़ता रहता है"): पहली पंक्ति ~40 मी. आगे (≈3 सेकंड), बाकी सड़क भी अभी से भरी.
+    // toNext < 0 = नीचे वाला while पहले ही फ़्रेम में z = -40 … -150 तक पंक्तियाँ बिछा देता है
+    this.toNext = -110;
+    this.toPu = rand(150, 200); // पहला पावर-अप ~10–13 सेकंड में (पहले 260–380 मी.)
+    this.toRoof = rand(450, 500); this.roofObs = 0; this.roofQ = false; // 🏠 पहली छत-दौड़ ~500 मी. पर — टायर-रेस के ठीक बाद, पोखर से पहले (700 पर रखा था तो पोखर→खेत→बंदर के कारण 1.6 किमी तक नहीं आती थी)
     this.toSam = rand(420, 620); // उड़न समोसा जल्दी और ज़्यादा बार (मालिक: "बहुत कम आ रहा है")
     this.shopDist = SHOP_EVERY - 120; // पहली दुकान जल्दी
     this.shopSide = -1;
@@ -369,6 +384,7 @@ export class World {
     this.tutRows = [];
     this.farZ = { '-1': 22, '1': 22 };
     for (const s of [-1, 1]) while (this.farZ[s] > SPAWN_Z - 20) this.spawnChunk(s);
+    this.line(1, -13, 8, 'rasgulla'); // पहले मीटर से रसगुल्लों की लड़ी (गोलू की लेन में)
     if (this.fest) this.fest.reset();
   }
 
@@ -448,14 +464,16 @@ export class World {
     if (t === 'band' || t === 'ghodi') obj.rotation.y = Math.PI;
     if (t === 'cow') { obj.rotation.y = e.cross ? 0 : (chance(0.5) ? 0 : Math.PI); }
     obj.position.set(e.x, this.inZip(z) ? ZIP_H + zipSag(z - this.zip.a) : this.inPond(z) ? WATER_Y * 0.85 : 0, z); // पोखर में चीज़ें पानी पर, रस्सी पर ऊपर
+    if (extra.y) { obj.position.y = extra.y; e.yMin += extra.y; e.yMax += extra.y; } // छत पर रखी रुकावट
+    if (u.rl) e.rl = u.rl;
     this.obs.push(e);
     return e;
   }
-  addPu(kind, lane, z) {
+  addPu(kind, lane, z, y = 1.05) {
     const p = this.pPool[kind];
     const obj = p.length ? p.pop() : this.newPu(kind);
     obj.visible = true;
-    const e = { obj, kind, x: LANES[lane], y: 1.05, z, t: Math.random() * 5 };
+    const e = { obj, kind, x: LANES[lane], y, z, t: Math.random() * 5 };
     obj.position.set(e.x, e.y, z);
     this.pups.push(e);
     return e;
@@ -508,11 +526,11 @@ export class World {
     if (this.tut > 0) {
       const step = 4 - this.tut; // 1,2,3
       this.tut--;
-      if (step === 1) { this.addObs('rickshaw', 1, z, { need: 'lane' }); this.line(0, z + 6, 5, 'rasgulla'); this.line(2, z + 6, 5, 'rasgulla'); return 1.6; }
-      if (step === 2) { for (const l of lanes) this.addObs('barrier', l, z, { need: 'jump' }); this.arc(1, z, 'gulabjamun'); return 1.6; }
+      if (step === 1) { this.addObs('rickshaw', 1, z, { need: 'lane' }); this.line(0, z + 6, 5, 'rasgulla'); this.line(2, z + 6, 5, 'rasgulla'); return 2.0; }
+      if (step === 2) { for (const l of lanes) this.addObs('barrier', l, z, { need: 'jump' }); this.arc(1, z, 'gulabjamun'); return 2.0; }
       this.addObs('toran', 0, z, { need: 'roll' }); this.addObs('toran', 1, z); this.addObs('toran', 2, z);
       this.line(1, z + 4, 6, 'balushahi', 0.5);
-      return 1.6;
+      return 2.0;
     }
     if (this.melaObs > 0) { // मेला: तीनों लेन में मिठाई की बारिश
       for (let q = 0; q < 3; q++) { if ((q + Math.floor(z)) % 2) this.arc(q, z, this.sweetType(), 2.2); else this.line(q, z + 5, 6, pick(['gulabjamun', 'balushahi', 'chamcham'])); }
@@ -520,6 +538,7 @@ export class World {
       return 0.1;
     }
     if (this.railObs > 0) return this.railRow(z);
+    if (this.roofQ) { this.roofQ = false; return this.roofSection(z); }
     // 🚣 पोखर: पंक्ति की सारी चीज़ें (z+8 … z-16) पानी के अंदर हों तभी पानी वाली पंक्ति; किनारे/घाट पर पड़े तो खाली;
     // पानी पर सड़क की चीज़ें (समोसा, ईंट, गाय…) कभी नहीं — पहले पोखर के शुरू/आख़िर में चढ़ जाती थीं
     if (this.zip) { // 🌳 रस्सी वाला हिस्सा: पूरी पंक्ति रस्सी के ऊपर हो तभी रस्सी वाली पंक्ति, किनारे पर ख़ाली
@@ -587,7 +606,8 @@ export class World {
       const l = randi(0, 2);
       // सामने से आता रिक्शा: इतनी दूर से छोड़ो कि अपनी पंक्ति के साथ ही पहुँचे (दूसरी पंक्ति पर न चढ़े)
       const vz = rand(5, 8);
-      this.addObs(this.haatObs > 0 ? 'bail' : 'rickshaw', l, z * (this.speed + vz) / this.speed, { vz: this.haatObs > 0 ? vz * 0.45 : vz });
+      const farm = zoneAt(this.dist - z) === 'fields', slow = this.haatObs > 0 || farm; // खेत में: सामने से धीरे आती बैलगाड़ी
+      this.addObs(farm ? 'bailgadi' : this.haatObs > 0 ? 'bail' : 'rickshaw', l, z * (this.speed + (slow ? vz * 0.45 : vz)) / this.speed, { vz: slow ? vz * 0.45 : vz });
       freeLane = pick(others(l));
       this.line(freeLane, z + 4, 7);
       extra = 0.35;
@@ -653,6 +673,8 @@ export class World {
       this.toPu = rand(420, 700) * lerp(1, 1.7, this.diff); // आगे चलकर बूस्टर कम
     }
     if (this.fest) this.fest.row(z, freeLane);
+    if (freeLane >= 0 && zoneAt(this.dist - z) === 'fields' && chance(0.22)) this.addPu('ganna', freeLane, z - 3); // 🎋 खेत में गन्ना
+    else if (freeLane >= 0 && this.golaWant) { this.golaWant = false; this.addPu('gola', freeLane, z - 3); } // 🍧 ठेले के पास गोला
     return extra;
   }
 
@@ -701,17 +723,59 @@ export class World {
     return extra;
   }
   // ज़मीन की ऊँचाई (डिब्बे की छत / ढलान) — खिलाड़ी और परछाईं के लिए
-  groundAt(x, z = 0) {
-    let h = 0;
+  groundAt(x, z = 0, py = null) {
+    let h = 0, wide = false;
     for (const e of this.obs) {
       if (e.dead || (e.kind !== 'train' && e.kind !== 'ramp')) continue; // चलती गाड़ी की छत पर भी दौड़ सकते हैं (24 नवंबर)
       if (Math.abs(e.x - x) > e.halfW * 0.85) continue;
+      if (py != null && e.obj.userData.bridge && ROOF - py > 1.0) continue; // बाँस का पुल: नीचे गली में हो तो वह ज़मीन नहीं (नीचे की ढलान से ऊपर आओ)
       const dz = z - e.z;
       if (Math.abs(dz) > e.halfL) continue;
-      h = Math.max(h, e.kind === 'train' ? ROOF : ROOF * (0.5 - dz / RAMP_L));
+      const v = e.kind === 'train' ? ROOF : ROOF * (0.5 - dz / (e.rl || RAMP_L)); // rl = छोटी ढलान (छत-दौड़ की गली)
+      if (v > h) { h = v; wide = e.kind === 'ramp' && e.halfW > 3; }
     }
+    this.gWide = wide; // पूरी चौड़ी सीढ़ी/गली-ढलान — बगल से घुसना मुमकिन नहीं, गिरते हुए भी ऊपर ही टिको
     return h;
   }
+  houseAt(x) { for (const e of this.obs) if (!e.dead && e.obj.userData.house && Math.abs(e.z) < e.halfL && Math.abs(e.x - x) < e.halfW) return e; return null; }
+  // 🏠 छत-दौड़: चौड़ी सीढ़ी → 4–6 पक्के घर (छत पर रुकावटें), बीच में गली (बाँस का पुल / चचरी-ढलान) → आख़िरी छत पर पतंग
+  roofSection(z) {
+    const sp = Math.max(this.speed, 12), N = randi(4, 6), H = ROOF, lanes = [0, 1, 2];
+    let cur = z;
+    this.addObs('rstair', 1, cur - RAMP_L / 2);
+    for (let i = 0; i < 4; i++) { const zz = cur - 1.6 - i * 2.1; this.sweets.spawn(this.sweetType(), LANES[1], H * (0.5 - (zz - (cur - RAMP_L / 2)) / RAMP_L) + 0.75, zz); }
+    cur -= RAMP_L;
+    for (let i = 0; i < N; i++) {
+      const L = chance(0.5) ? 12 : 16, c0 = cur;
+      this.addObs(L === 12 ? 'rhouse12' : 'rhouse16', 1, cur - L / 2);
+      // छत पर रुकावट — पहली छत पर कोई नहीं (सीढ़ी से छत दिखती नहीं, ऊपर पहुँचते ही टंकी = अन्याय; 24 नवंबर मालिक: "सीढ़ी पे ही मर गया");
+      // बाकी छतों पर 1–2, किनारे से कम से कम 6 मी. अंदर (पिछली छत से कूदते समय दिख जाए), हमेशा एक लेन खुली
+      // कूदकर उतरने की जगह (छत के पहले ~6 मी.) ख़ाली — रुकावट 10–12 मी. अंदर (16 मी. वाली छत), छोटी छत पर कभी-कभी 8.5–9.5 मी.
+      const nObs = i === 0 ? 0 : L === 16 ? randi(1, 2) : (chance(0.5) ? 1 : 0), used = new Set(), zo = cur - (L === 16 ? rand(10, 12) : rand(8.5, 9.5));
+      for (let k = 0; k < nObs; k++) {
+        const free = lanes.filter((l) => !used.has(l)); if (free.length <= 1) break;
+        const l = pick(free); used.add(l);
+        const t = weighted([['rtank', 3], ['rcloth', 2.5], ['rtulsi', 2]]);
+        this.addObs(t, l, k ? Math.max(zo - 2.5, cur - L + 1.5) : zo, { y: H });
+      }
+      for (const l of lanes) if (!used.has(l) && chance(0.7)) for (let zz = c0 - 1.6, n = 0; zz > cur - L + 1 && n < 6; zz -= 2.2, n++) this.sweets.spawn(this.sweetType(), LANES[l], H + 0.75, zz);
+      cur -= L;
+      if (i < N - 1) {
+        const g = 7;
+        this.addObs('rgap', 1, cur - g + GAP_RAMP / 2); // गली में गिरे तो इससे फिर ऊपर
+        const bl = chance(0.6) ? randi(0, 2) : -1;
+        if (bl >= 0) { this.addObs('rbridge', bl, cur - g / 2); for (let k = 0; k < 3; k++) this.sweets.spawn('chamcham', LANES[bl], H + 0.75, cur - 1 - k * 2); }
+        const al = pick(lanes.filter((l) => l !== bl)); // गली के ऊपर कूदने वाली मिठाई की मेहराब
+        for (let k = 0; k < 7; k++) { const f = k / 6; this.sweets.spawn(k === 3 ? 'rasmalai' : this.sweetType(), LANES[al], H + 0.9 + Math.sin(f * Math.PI) * 1.6, cur + 1.5 - f * (g + 3)); }
+        cur -= g;
+      }
+    }
+    this.addPu('kite', 1, cur + 4.5, H + 1.15); // 🪁 आख़िरी छत पर
+    this.roofObs = -cur + 30; // गोलू से आख़िरी छत तक + 30 मी. (पहले सिर्फ़ हिस्से की लंबाई गिनी जाती थी — 150 मी. आगे बनने के कारण आख़िरी छतों पर ही बंदर/डिलीवरी शुरू हो जाते)
+    this.events.push('roof');
+    return (z - cur) / sp + 1.2;
+  }
+
   // रेल ज़ोन की एक पंक्ति — हमेशा एक रास्ता: खुली लेन या ढलान से छत पर
   railRow(z) {
     const sp = Math.max(this.speed, 12), lanes = [0, 1, 2];
@@ -865,6 +929,49 @@ export class World {
       this.events.push('rail');
     }
     this.railObs = Math.max(0, this.railObs - dz);
+    // 🏠 छत-दौड़ (24 नवंबर)
+    this.toRoof -= dz;
+    if (this.toRoof <= 0 && !this.roofQ && this.roofObs <= 0 && vill && !(this.racer && this.racer.on) && this.tut <= 0 && this.railObs <= 0 && this.haatObs <= 0 && this.melaObs <= 0 && !this.baraatQ && !this.pond && !this.zip && !this.busy && this.shopDist > 40 && this.shopDist < SHOP_EVERY - 160) {
+      this.roofQ = true; this.toRoof = rand(2000, 2600);
+      for (const k of ['toRail', 'toHaat', 'toMela', 'toPond', 'toBaraat']) this[k] = Math.max(this[k] || 0, 320);
+      this.toFlex = Math.max(this.toFlex, 260); // सड़क के ऊपर का बैनर छत पर दौड़ते समय सिर से न टकराए
+    }
+    this.roofObs = Math.max(0, this.roofObs - dz);
+    // 🧒 फ़ुटपाथ पर बचपन वाले नज़ारे
+    this.toDeco -= dz;
+    const calm = (this.zone === 'village' || this.zone === 'fields') && this.haatObs <= 0 && this.melaObs <= 0 && this.railObs <= 0 && this.roofObs <= 0 && !this.roofQ && !this.pond && !this.zip;
+    if (this.toDeco <= 0) {
+      this.toDeco = calm ? rand(190, 300) : 40; // अभी हाट/रेल/छत चल रही — थोड़ी देर बाद फिर कोशिश
+      const k = this.zone === 'fields' ? pick(['gilli', 'pump']) : pick(['pump', 'gola', 'gilli', 'gola']), pool = this.dPool[k];
+      if (calm && pool && pool.length) {
+        const d = pool.pop(), sd = chance(0.5) ? -1 : 1;
+        d.visible = true; d.position.set(sd * 5.3, 0, SPAWN_Z - 4); d.rotation.y = sd > 0 ? -Math.PI / 2 : Math.PI / 2; d.userData.side = sd; d.userData.rang = false;
+        if (k === 'gilli') { d.position.x = sd * 6.2; d.rotation.y = 0; }
+        this.decos.push(d);
+        if (k === 'gola') this.golaWant = true;
+      }
+    }
+    for (let i = this.decos.length - 1; i >= 0; i--) {
+      const d = this.decos[i]; d.position.z += dz;
+      const near = d.position.z > -75;
+      if (near && d.userData.anim) d.userData.anim(this.time || 0);
+      if (near && d.userData.splash && Math.random() < 0.35) this.parts.burst(d.position.x + d.userData.side * -0.36, 0.35, d.position.z, 0xcfeefa, 2, 0.9, 1.3, 0.35, 0);
+      if (d.userData.bell && !d.userData.rang && d.position.z > -32) { d.userData.rang = true; this.events.push('golaBell'); }
+      if (d.position.z > DESPAWN_Z + 6) { d.visible = false; this.dPool[d.userData.dk].push(d); this.decos.splice(i, 1); }
+    }
+    // 🛞 टायर वाला बच्चा: पीछे से आकर आगे निकलता, फिर थककर पीछे — गोलू आगे निकले तो इनाम
+    const R = this.racer;
+    if (!R.on) { this.toRacer -= dz; if (this.toRacer <= 0) { this.toRacer = calm ? rand(800, 1100) : 40; if (calm) { R.on = true; R.ph = 0; R.t1 = 0; R.won = false; R.side = chance(0.5) ? -1 : 1; R.z = 9; R.obj.visible = true; } } }
+    else {
+      const spd = dz / Math.max(dt, 1e-4); let v;
+      if (R.ph === 0) { v = spd * 1.32; if (R.z < -9) { R.ph = 1; this.events.push('racer'); } } // जल्दी आगे निकले (पीछे से आते समय स्क्रीन पर नहीं दिखता)
+      else if (R.ph === 1) { R.t1 += dt; v = spd; if (R.t1 > 3.2) R.ph = 2; }
+      else { v = spd * 0.72; if (R.z > 1.2 && !R.won) { R.won = true; this.events.push('racerWon'); } }
+      R.z += dz - v * dt;
+      R.obj.position.set(R.side * 3.7, 0, R.z); R.obj.rotation.y = 0; // सड़क के किनारे, ~9 मी. आगे — खड़े फ़ोन पर भी साफ़ दिखे (4.15 पर 6 मी. आगे वह किनारे पर छोटा-सा दिखता था)
+      R.obj.userData.anim(this.time || 0, v);
+      if (R.z > 16 || !calm) { R.on = false; R.obj.visible = false; }
+    }
     for (let i = this.tracks.length - 1; i >= 0; i--) { const t = this.tracks[i]; t.position.z += dz; if (t.position.z > DESPAWN_Z + 12) { t.visible = false; this.tPool.push(t); this.tracks.splice(i, 1); } }
     // 🌳 जंगल की रस्सी (नदी के ऊपर)
     this.toZip -= dz;

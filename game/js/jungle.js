@@ -18,7 +18,7 @@ const LEAF = [0x2f6b3a, 0x3c7d3f, 0x285c33, 0x4a8c46, 0x356f2e];
 const BARK = [0x5a3a22, 0x6b4426, 0x4a3020];
 
 // ---------------- पेड़-पौधे ----------------
-function treeRound(mg, x, z, s) { // बरगद/आम जैसा गोल
+export function treeRound(mg, x, z, s) { // बरगद/आम जैसा गोल
   mg.add(G.cyl(0.3 * s, 0.45 * s, 3.2 * s, 7), mat4(x, 1.6 * s, z), pick(BARK));
   const c = pick(LEAF);
   for (let i = 0; i < 4; i++) mg.add(G.ico(1.25 * s * rand(0.8, 1.15), 1), mat4(x + rand(-1, 1) * s, (3.6 + rand(0, 1.1)) * s, z + rand(-1, 1) * s, 0, rand(0, 3), 0, 1, rand(0.75, 0.95), 1), i % 2 ? c : pick(LEAF));
@@ -29,7 +29,7 @@ function treeTall(mg, x, z, s) { // ऊँचा साल
   const c = pick(LEAF);
   for (let i = 0; i < 3; i++) { const g = G.ico((1.5 - i * 0.35) * s, 1); g.scale(1, 0.55, 1); mg.add(g, mat4(x, (4.2 + i * 1.25) * s, z, 0, rand(0, 3), 0), i === 1 ? pick(LEAF) : c); }
 }
-function treePalm(mg, x, z, s) { // ताड़
+export function treePalm(mg, x, z, s) { // ताड़
   const lean = rand(-0.12, 0.12);
   for (let i = 0; i < 6; i++) mg.add(G.cyl(0.15 * s, 0.18 * s, 0.85 * s, 6), mat4(x + i * lean * s, (0.42 + i * 0.82) * s, z, 0, 0, -lean), 0x7a5a36);
   const tx = x + 6 * lean * s, ty = 5.1 * s;
