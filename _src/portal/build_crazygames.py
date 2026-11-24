@@ -75,6 +75,15 @@ def main():
         raise SystemExit(f'cardShare 3 भाषाओं में नहीं मिला ({n})')
     (out / 'js/i18n.js').write_text(t, encoding='utf-8')
 
+    # ---- फ़ोटो-कार्ड (दौड़ का कार्ड + दर्शन पोस्टकार्ड): QR और वेबसाइट का पता नहीं — दुकान का नाम/लोगो रहता है (24 नवंबर) ----
+    for rel, pat in (('js/moment.js', r"load\('img/qr_game\.png'\)"), ('js/darshan.js', r"loadImg\('img/qr_game\.png'\)")):
+        t = (out / rel).read_text(encoding='utf-8')
+        t, n1 = re.subn(pat, 'null', t)
+        t, n2 = re.subn(r"'mbsweets\.github\.io/game'", "''", t)
+        if n1 != 1 or n2 != 1:
+            raise SystemExit(f'{rel}: QR/पता नहीं मिला ({n1}, {n2})')
+        (out / rel).write_text(t, encoding='utf-8')
+
     # ---- जाँच: कोई बाहरी पता बचा तो नहीं ----
     bad = []
     for rel in files:
