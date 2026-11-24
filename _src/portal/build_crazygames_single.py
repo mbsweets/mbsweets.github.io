@@ -51,7 +51,9 @@ html = re.sub(r'<link rel="icon" href="(img/[^"]+)">', r'<link rel="icon" data-r
 html = re.sub(r'<img src="(img/[^"]+)"', r'<img data-rr-src="\1"', html)
 
 patch = ('<script>(function(){var A=window.__RR_A=%s;'
-         'var F=window.fetch;window.fetch=function(u,o){if(typeof u==="string"&&A[u])u=A[u];return F.call(this,u,o)};'
+         'var F=window.fetch;window.fetch=function(u,o){if(typeof u==="string"&&A[u]){var s=A[u],i=s.indexOf(","),m=s.slice(5,i),x=s.slice(i+1),a;'  # data: को network से नहीं — सीधे Response (Claude ऐप के preview जैसी सख़्त जगह fetch(data:) रोक देती है → पुराना गोलू)
+         'if(/;base64$/.test(m)){var b=atob(x),n=b.length;a=new Uint8Array(n);for(var j=0;j<n;j++)a[j]=b.charCodeAt(j);}else a=decodeURIComponent(x);'
+         'return Promise.resolve(new Response(a,{status:200,headers:{"Content-Type":m.split(";")[0]||"application/octet-stream"}}));}return F.call(this,u,o)};'
          'var d=Object.getOwnPropertyDescriptor(HTMLImageElement.prototype,"src");'
          'Object.defineProperty(HTMLImageElement.prototype,"src",{configurable:true,enumerable:d.enumerable,'
          'get:function(){return d.get.call(this)},set:function(v){if(typeof v==="string"&&A[v])v=A[v];d.set.call(this,v)}});'
