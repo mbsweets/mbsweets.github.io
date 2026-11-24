@@ -87,7 +87,7 @@ export class Festival {
   swapObs(t, extra) { return this.on && t === 'barrier' && !extra.need && chance(0.35) ? 'chugla' : t; }
   start() {
     if (!this.on) return;
-    setTimeout(() => { if (this.g.state === 'play') { this.g.zoneBanner('🪔', T('festSama')); this.g.cheer('fest', 1600, -1, true); } }, 1800);
+    setTimeout(() => { if (this.g.state === 'play') { this.g.zoneBanner('🪔', T('festSama')); this.g.cheer('fest', 1600, -1, true); } }, 2700); // शुरुआत वाला कैमरा-घुमाव (2 से.) पूरा होने के बाद
   }
   got() {
     const g = this.g;

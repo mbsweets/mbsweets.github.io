@@ -21,7 +21,9 @@ import { logErr } from './errlog.js';
 import { setLite } from './lite.js';
 import { ROOF } from './rail.js';
 import { clamp, lerp, damp, rand, randi, pick, store, storeNum, vibrate, VIB } from './util.js';
-import { SETTINGS, loadSettings, Missions, wallet, upTime, wardrobe, stats, checkBadges, buyHeadstart, HEADSTART_COST } from './meta.js';
+import { SETTINGS, loadSettings, Missions, wallet, upTime, wardrobe, stats, checkBadges, buyHeadstart, HEADSTART_COST, takeGift, upcomingGift, rajaState, giveRaja, itemById, ITEMS } from './meta.js';
+import { makeChar, CHARS } from './chars.js';
+import { kiteMesh } from './roofs.js';
 import { P, PORTAL } from './platform.js';
 import { MetaUI } from './metaui.js';
 import { countOpen, countGame } from './count.js';
@@ -232,10 +234,19 @@ class Game {
     this.world.speedAt = baseSpeed;
     this.world.sweets.camQ = this.cam.quaternion;
     this.golu = this.has3d ? new Golu3D() : new GoluCode();
-    shadows(this.golu.root, true, false);
-    this.golu.shadow.material = this.golu.shadow.material.clone();
-    this.golu.shadow.material.opacity = 0.16;
-    sc.add(this.golu.root);
+    // 🎭 सारे किरदार खेल खुलते ही बनकर दृश्य में (छिपे) — बदलते समय न झटका, न नया shader (24 नवंबर)
+    this.chars = { c_golu: this.golu }; this.charId = 'c_golu';
+    for (const id of Object.keys(CHARS)) { try { const c = makeChar(id); if (c) { c.root.visible = false; this.chars[id] = c; } } catch (e) { console.warn('char', id, e); } }
+    for (const c of Object.values(this.chars)) {
+      shadows(c.root, true, false);
+      c.shadow.material = c.shadow.material.clone();
+      c.shadow.material.opacity = 0.16;
+      sc.add(c.root);
+    }
+    // 🪁 छत-दौड़ के अंत की पतंग — पकड़कर उड़ान (समोसे की जगह); डोरियाँ हाथ तक
+    this.kiteRig = new THREE.Group(); { const k = kiteMesh(1.6); k.position.y = 0; this.kiteRig.add(k); this.kiteRig.userData.k = k;
+      const sm = new THREE.MeshBasicMaterial({ color: 0xf2f2f2 }); this.kiteRig.userData.s = [0, 1].map(() => { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 1, 4), sm); sc.add(c); c.visible = false; return c; }); }
+    this.kiteRig.visible = false; sc.add(this.kiteRig);
     this.samosa = makeSamosaMount();
     sc.add(this.samosa);
     this.skyShow = new SkyShow(sc);
@@ -389,7 +400,7 @@ class Game {
 
   doJump() {
     const p = this.p, big = this.pu.shoes > 0;
-    p.vy = big ? SHOE_V : JUMP_V; p.ground = false; p.roll = 0; p.rollQ = false; p.big = big; p.jbuf = 0; p.coy = 0; p.air = 0;
+    p.vy = big ? SHOE_V : JUMP_V * (this.power === 'jump' ? 1.12 : 1); p.ground = false; p.roll = 0; p.rollQ = false; p.big = big; p.jbuf = 0; p.coy = 0; p.air = 0;
     this.sound.jump(big); this.msBump('jumps');
     this.beatJump();
     // करतब सिखाना: पहली कुछ दौड़ों में एक बार
@@ -575,6 +586,7 @@ class Game {
     if (this.dl) { this.dl.reset(); this.tricks.reset(); this.emo.clear(); this.boat.visible = false; if (this.pu) this.pu.madhu = 0; this.ghost.off(); this.world.setSeed(null); }
     this.paintDaily(); if (this.story) this.story.paint();
     if (this.sound.ctx && !this.sound.playing) this.sound.startMusic();
+    this.checkRaja();
     if (!PORTAL && store('lang3') == null) $('#langS').hidden = false; // पहली बार: भाषा चुनो (फिर रोज़ का इनाम)
     else if (this.needProfile()) this.lb.askProfile(() => { if (!skipDaily) this.meta.maybeDaily(); }); // पुराने खिलाड़ी: एक बार नाम-ज़िला
     else if (!skipDaily && (!PORTAL || this.runs > 0)) this.meta.maybeDaily(); // पोर्टल पर पहली बार सीधे खेल (एक क्लिक)
@@ -616,13 +628,39 @@ class Game {
   afterLang() { if (this.needProfile()) this.lb.askProfile(() => this.meta.maybeDaily()); else this.meta.maybeDaily(); }
 
   // अलमारी: जो पहना है (या ट्राय वाला) गोलू पर
-  wearNow(of) { if (this.golu && this.golu.wear) this.golu.wear(of || wardrobe.outfit); }
+  wearNow(of) { const o = of || wardrobe.outfit; this.setChar(o.char || 'c_golu'); if (this.golu && this.golu.wear) this.golu.wear(o); }
+  // 🎭 किरदार बदलो (मेन्यू/अलमारी में) — जगह, दिशा, झोला, हेलमेट नए वाले पर
+  setChar(id) {
+    const nw = this.chars && (this.chars[id] || this.chars.c_golu), old = this.golu;
+    if (!nw || nw === old) return;
+    nw.root.position.copy(old.root.position); nw.root.rotation.copy(old.root.rotation);
+    nw.root.visible = old.root.visible; old.root.visible = false;
+    if (this.jhola && this.jhola.parent === old.handR) nw.handR.add(this.jhola);
+    if (this.dl && this.dl.helmG && nw.B && nw.B.head) nw.B.head.add(this.dl.helmG);
+    nw.dance = old.dance; nw.cur = null;
+    this.golu = nw; this.charId = nw === this.chars.c_golu ? 'c_golu' : id;
+  }
   celebrate(id) {
     this.golu.dance = 2.5; this.celebT = 2.2;
     this.sound.levelUp(); this.sayKind('unlock');
     void id;
   }
   sayKind(kind) { this.sayPair(pickCheer(kind), true); }
+  // गेम-ओवर पर "आगे क्या मिलेगा" — अगला तोहफ़ा / कल रसगुल्ला राजा / बस इतनी मिठाई और
+  paintNext() {
+    const el = $('#overNext'); if (!el) return;
+    const ug = upcomingGift(), rj = rajaState();
+    let h = '';
+    if (ug) { const it = itemById(ug); h = T('giftNext', it.icon + ' ' + L(it)); }
+    else if (rj === 'tomorrow') h = T('rajaTom');
+    else {
+      const w = wallet.v, nx = ITEMS.filter((it) => it.cost && !wardrobe.has(it.id) && it.cost > w).sort((a, b) => a.cost - b.cost)[0];
+      if (nx) h = T('nextBuy', (nx.cost - w).toLocaleString('en-IN'), nx.icon + ' ' + L(nx));
+    }
+    el.hidden = !h; el.textContent = h;
+  }
+  // 🍮 अगले दिन: रसगुल्ला राजा मुफ़्त
+  checkRaja() { if (rajaState() === 'due' && giveRaja()) setTimeout(() => this.meta.showUnlocks(['c_raja']), 700); }
 
   start(opts = {}) {
     this.lastOpts = opts;
@@ -640,12 +678,14 @@ class Game {
     this.monkeyTree.visible = false; this.peels = []; this.samDrops.clear(); this.emoM.clear(); this.monkey.userData.snack.visible = false; this.jholaBack = 0; this.lungeT = 0; this.cineK = 0; this.cine = 0; this.slowTs = 0; this.holdJhola();
     this.dl.reset(); this.tricks.reset(); this.emo.clear(); this.trickHint = false; this.camKick = 0; this.darshan.reset(); this.pcPond = 0; this.pcPondDone = false; this.pcLook = 0; this.lookK = 0; this.dlK = 0; this.dlCam = null; this.runDeliv = 0;
     this.fest.start(); this.boat.visible = false; this.madK = 0;
-    if (this.daily) setTimeout(() => { if (this.state === 'play') this.zoneBanner('📅', T('dailyOn')); }, 900);
+    if (this.daily) setTimeout(() => { if (this.state === 'play') this.zoneBanner('📅', T('dailyOn')); }, 2500);
     this.sound.init();
     if (!this.sound.playing) this.sound.startMusic();
     this.world.reset(!this.tutDone);
     this.p = { lane: 1, prevLane: 1, x: 0, tx: 0, vx: 0, y: 0, vy: 0, ground: true, roll: 0, rollQ: false, laneT: 9, big: false, stumT: 0, beesT: 0, invT: 0, slowT: 0, air: 0, fly: 0, boat: false, jbuf: 0, coy: 0, scooty: false, zip: false, zipK: 0 };
     this.pu = { magnet: 0, shoes: 0, shield: false, thali: 0, madhu: 0 };
+    this.kiteFly = false; if (this.kiteRig) { this.kiteRig.visible = false; for (const c of this.kiteRig.userData.s) c.visible = false; } this.lastHouse = null;
+    this.power = (CHARS[this.charId] || {}).power || null; this.smashLeft = this.power === 'smash' ? 1 : 0; // 🐒 ऊँची छलांग · 💪 एक टक्कर · 🍮 पास की मिठाई
     this.level = 0; this.samosa.visible = false; this.skyShow.reset();
     this.nightSaid = false; this.wild = 0; this.nfx.update(0, 0, 0, 0, this.world.chunks, this.cam.quaternion);
     this.rushT = 0; this.meter = 0;
@@ -659,7 +699,10 @@ class Game {
     $('#hint').hidden = true;
     this.hud = {};
     this.state = 'play';
-    this.cheer('go', 900, -1, true);
+    // 🎬 शुरुआत (24 नवंबर, मालिक: "स्टार्टिंग में कुछ शो नहीं करता"): कैमरा सामने से घूमकर पीछे — गोलू डिब्बा लिए भागता, ठीक पीछे मधुमक्खियाँ.
+    // खिलाड़ी उसी समय चला सकता है (पहली रुकावट ~3 सेकंड पर). नए खिलाड़ी (पहली 3 दौड़) को थोड़ा लंबा.
+    this.introDur = this.introT = opts.story != null ? 0 : ((stats.v.runs || 0) < 3 ? 2.0 : 1.3);
+    if (this.introT > 0) { this.sound.bees(true); this.cheer('bees', 1500, -1, true, 'warn'); } else this.cheer('go', 900, -1, true);
     this.clean = 0; this.sweetMark = 100;
     this.mult = this.ms.mult; this.rs = {}; this.hsT = 0;
     this.runGold = false; this.runMission = false; this.goldObj = null; if (this.goldMesh) this.goldMesh.visible = false;
@@ -837,6 +880,9 @@ class Game {
     vibrate(25);
     this.world.parts.burst(p.x, p.y, p.z, 0xffd24d, 22, 3.5, 3, 0.7);
     this.msBump('power');
+    if (p.kind === 'gola') { this.rushT = Math.max(this.rushT, 3.2); this.sound.power(); vibrate([20, 30, 20]); this.world.parts.burst(p.x, p.y, p.z, 0xcfeefa, 22, 3.5, 3, 0.7); this.toast('🍧 ' + T('golaT'), 1300, 'gold'); return; } // ठंडा गोला = थोड़ी देर तेज़ दौड़ (सब तोड़ो)
+    if (p.kind === 'ganna') { this.got += 8; this.score += 80 * this.mult; this.world.parts.burst(p.x, p.y, p.z, 0x9fe07a, 16, 3, 3, 0.6); this.sound.collect(3, 'rasgulla'); this.toast('🎋 ' + T('gannaT'), 800, 'gold'); this.msBump('sweets', this.got, true); return; }
+    if (p.kind === 'kite') { this.kiteFly = true; const ft = this.flyT; this.flyT = 7; this.startFly(); this.flyT = ft; this.cheer('kite', 1500, -1, true, 'rush'); return; }
     if (p.kind === 'samosa') { if (this.dl.active()) { this.got += 10; this.score += 100 * this.mult; this.floatText('+10 🥟', 'tp'); return; } this.startFly(); return; } // डिलीवरी में उड़ान नहीं
     if (p.kind === 'shield') this.pu.shield = true; else this.pu[p.kind] = upTime(p.kind);
     this.toast(T(p.kind), 900, 'gold');
@@ -858,6 +904,7 @@ class Game {
   endFly() {
     const p = this.p;
     p.fly = 0; p.vy = 2; p.invT = 2.2;
+    if (this.kiteFly) { this.kiteFly = false; this.kiteRig.visible = false; for (const c of this.kiteRig.userData.s) c.visible = false; }
     this.sound.fly(false);
     this.skyShow.stop();
     this.world.clearNear(-34, 4);
@@ -1165,6 +1212,12 @@ class Game {
       this.stumble();
       return;
     }
+    if (this.smashLeft > 0 && !this.pu.shield) { // 💪 पहलवान चाचा: दौड़ में एक बार रुकावट तोड़ दें
+      this.smashLeft--; p.invT = 1.2; this.shake = Math.max(this.shake || 0, 0.7);
+      this.sound.shieldBreak(); this.smash(e); vibrate([40, 30, 60]);
+      this.toast('💪 ' + T('pahalSmash'), 1300, 'gold');
+      return;
+    }
     if (this.pu.shield) {
       this.pu.shield = false;
       p.invT = 1.2;
@@ -1215,6 +1268,9 @@ class Game {
     $('#overMs').hidden = !parts.length;
     $('#overMs').innerHTML = parts.join('<br>');
     if (ms.setDone && ms.setDone.item) setTimeout(() => { if (this.state === 'over') this.meta.showUnlocks([ms.setDone.item]); }, 1100);
+    // 🎁 पहली 5 दौड़ में हर बार नया तोहफ़ा (24 नवंबर) + अगला इनाम क्या है
+    { const gid = this.runT > 2 ? takeGift() : null, pg = this.pendGift; this.pendGift = null; const ids = [pg, gid].filter(Boolean);
+      if (ids.length) setTimeout(() => { if (this.state === 'over') this.meta.showUnlocks(ids); else this.pendGift = ids[ids.length - 1]; }, ms.setDone && ms.setDone.item ? 1500 : 900); this.paintNext(); } // जल्दी 'फिर खेलो' दबाया तो अगली बार दिखे
     store('plays', storeNum('plays') + 1);
     countGame();
     $('#overTitle').textContent = this.cause === 'caught' ? T('caught') : T('crashed');
@@ -1406,6 +1462,7 @@ class Game {
     const dt = rdt * this.timeScale;
     const p = this.p;
     this.runT += dt;
+    if (this.introT > 0) { this.introT = Math.max(0, this.introT - dt); if (this.introT <= 0 && !(this.p.beesT > 0)) this.sound.bees(false); }
     // रफ़्तार
     const base = baseSpeed(this.world.dist);
     let sp = base;
@@ -1449,6 +1506,7 @@ class Game {
         p.y = floor; p.vy = 0; p.ground = true; p.air = 0;
         if (imp > 5 && !p.boat) { if (this.golu.land) this.golu.land(Math.min(1, imp / 16)); if (!p.rollQ) this.world.parts.burst(p.x, p.y + 0.08, 0.15, 0xd9c7a8, imp > 11 ? 7 : 4, 1.8, 0.7, 0.4, 0); } // उतरते ही हल्की लचक + धूल
         if (p.rollQ) { p.roll = ROLL_T; p.rollQ = false; this.sound.roll(); }
+        { const hz = floor > 2 ? this.world.houseAt(p.x) : null; if (hz && this.lastHouse && hz !== this.lastHouse && !this.lastHouse.dead) { this.score += 50 * this.mult; this.floatText('🏠 +' + 50 * this.mult, 'tp'); this.sound.ring(); vibrate(15); } if (hz) this.lastHouse = hz; } // 🏠 छत से छत पर कूदे
         this.tricks.land();
         if (p.jbuf > 0 && !p.roll && p.fly <= 0) this.doJump();
         if (this.zipLand) { this.zipLand = false; this.world.parts.burst(p.x, 0.15, 0.2, 0xd9c7a8, 18, 3.2, 1.6, 0.6); this.camKick = Math.max(this.camKick || 0, 0.35); if (this.sound.thud) this.sound.thud(); vibrate(25); } // रस्सी से उतरकर धप्प
@@ -1512,7 +1570,7 @@ class Game {
       else if (td.night < 0.2 && this.nightSaid) { this.nightSaid = false; this.zoneBanner('🌅', T('zDawn')); this.cheer('dawn', 1700, -1, true); }
       if (zn === 'jungle') this.msBump('jungle', dz);
     }
-    while (this.world.events.length) { const ev = this.world.events.shift(); if (ev === 'fish') { this.sound.plop(); continue; } if (ev === 'haat' || ev === 'mela') this.sound.levelUp(); else if (ev === 'baraat') { this.sound.baraat(); this.beatStart(); } else if (ev === 'rail') this.sound.train(); this.cheer(ev, 1800, -1, true); if (ev === 'haat') this.msBump('haat'); const ZB = { jungle: ['🌳', 'zJungle'], fields: ['🌼', 'zFields'], village: ['🏡', 'zVillage'] }; if (ZB[ev]) this.zoneBanner(ZB[ev][0], T(ZB[ev][1])); }
+    while (this.world.events.length) { const ev = this.world.events.shift(); if (ev === 'fish') { this.sound.plop(); continue; } if (ev === 'golaBell') { this.sound.ring(); setTimeout(() => this.sound.ring(), 180); continue; } if (ev === 'racerWon') { this.score += 100 * this.mult; this.floatText('🛞 +' + 100 * this.mult, 'tp'); this.sound.ring(); } if (ev === 'haat' || ev === 'mela') this.sound.levelUp(); else if (ev === 'baraat') { this.sound.baraat(); this.beatStart(); } else if (ev === 'rail') this.sound.train(); this.cheer(ev, 1800, -1, true); if (ev === 'haat') this.msBump('haat'); const ZB = { jungle: ['🌳', 'zJungle'], fields: ['🌼', 'zFields'], village: ['🏡', 'zVillage'], roof: ['🏠', 'zRoof'] }; if (ZB[ev]) this.zoneBanner(ZB[ev][0], T(ZB[ev][1])); }
     this.collide();
     this.updateGold(dz);
     this.story.check();
@@ -1527,7 +1585,7 @@ class Game {
     if (p.ground && gy > 1) this.msBump('roof', dz);
     // गोलू
     let mode = 'run';
-    if (p.fly > 0) mode = 'fly';
+    if (p.fly > 0) mode = this.kiteFly ? 'hang' : 'fly';
     else if (!p.ground) mode = 'jump';
     if (p.roll > 0) mode = 'roll';
     if (p.stumT > 0 && p.ground && p.roll <= 0) mode = 'stumble';
@@ -1582,7 +1640,16 @@ class Game {
     }
     // उड़न समोसा गोलू के नीचे
     const sm = this.samosa;
-    if (p.fly > 0 || (sm.visible && p.y > 0.3)) {
+    if (this.kiteFly && p.fly > 0) { // 🪁 पतंग ऊपर, गोलू डोर पकड़े लटका
+      sm.visible = false; const K = this.kiteRig; K.visible = true;
+      K.position.set(p.x + Math.sin(this.runT * 1.3) * 0.25, p.y + 5.2, -2.6); K.rotation.set(-0.35 + Math.sin(this.runT * 2) * 0.05, 0, Math.sin(this.runT * 1.6) * 0.12 + (p.tx - p.x) * -0.1); // आगे-ऊपर — स्क्रीन न ढके
+      const tv = this._kv || (this._kv = new THREE.Vector3()), a = this._ka || (this._ka = new THREE.Vector3()), Y = this._kY || (this._kY = new THREE.Vector3(0, 1, 0));
+      K.updateMatrixWorld(true);
+      K.userData.s.forEach((c, i) => {
+        a.set(p.x + (i ? 0.18 : -0.18), p.y + 2.55, 0.15); tv.set(i ? 0.5 : -0.5, -0.4, 0).applyMatrix4(K.matrixWorld);
+        c.visible = true; tv.sub(a); const L = tv.length(); c.position.copy(a).addScaledVector(tv, 0.5); c.scale.y = L; c.quaternion.setFromUnitVectors(Y, tv.normalize());
+      });
+    } else if (p.fly > 0 || (sm.visible && p.y > 0.3)) {
       sm.visible = true;
       sm.position.set(p.x, p.y + 0.05 + Math.sin(this.runT * 5) * 0.08, 0.1);
       sm.rotation.set(Math.sin(this.runT * 3) * 0.05, twirl, (p.tx - p.x) * -0.12 + Math.sin(this.runT * 2.2) * 0.04 + roll);
@@ -1598,7 +1665,7 @@ class Game {
       else if (fx === 'trail' && Math.random() < 0.55) this.world.parts.burst(p.x + rand(-0.3, 0.3), p.y + rand(0.6, 1.6), 0.9, [0xffd24d, 0xd8457f, 0x7fd3ff, 0xffffff][Math.floor(Math.random() * 4)], 1, 0.4, 0.6, 0.7, 0);
     }
     this.toMonkey -= dz;
-    if (this.toMonkey <= 0 && this.mk.st === 'off' && p.fly <= 0 && !p.boat && !p.zip && !this.world.zip && !this.world.pond && !this.dl.active() && this.world.railObs <= 0 && this.world.melaObs <= 0 && this.rushT <= 0 && p.invT <= 0) this.monkeyStart();
+    if (this.toMonkey <= 0 && this.mk.st === 'off' && p.fly <= 0 && !p.boat && !p.zip && !this.world.zip && !this.world.pond && !this.dl.active() && this.world.railObs <= 0 && this.world.roofObs <= 0 && this.world.melaObs <= 0 && this.rushT <= 0 && p.invT <= 0) this.monkeyStart();
     this.updateMonkey(dt);
     this.updateBees(dt);
     this.updateCam(rdt);
@@ -1615,6 +1682,7 @@ class Game {
     return {
       px: p.x, py: p.y + (this.zipOff || 0), ph: p.roll > 0 ? H_ROLL : H_STAND, mouth: 1.75,
       magnet: this.state === 'play' && (this.pu.magnet > 0 || this.rushT > 0),
+      mini: this.state === 'play' && this.power === 'magnet', // 🍮 रसगुल्ला राजा: बगल की लेन तक की मिठाई
       collect: (it) => this.collect(it),
     };
   }
@@ -1660,7 +1728,7 @@ class Game {
       e.px = ox; e.pz = oz;
     }
     for (const u of this.world.pups) {
-      if (!u.taken && Math.abs(u.x - p.x) < 1.0 && Math.abs(u.z) < 1.0 && p.y < 2.4) this.takePu(u);
+      if (!u.taken && Math.abs(u.x - p.x) < 1.0 && Math.abs(u.z) < 1.0 && Math.abs(p.y - (u.y - 1.05)) < 2.4) this.takePu(u); // छत पर रखी चीज़ (पतंग) भी
     }
   }
 
@@ -1702,6 +1770,7 @@ class Game {
     let tx = p.x, ty = 2.2, tz = 18;
     if (this.state === 'dying' || this.state === 'over' || this.state === 'revive') { ty = 1.7; tz = 0.4; }
     else if (p.beesT > 0) { ty = p.y + 1.7; tz = 2.4; }
+    else if (this.introT > (this.introDur || 2) * 0.5) { ty = p.y + 1.8; tz = 1.6; } // 🎬 शुरुआत: झुंड ठीक पीछे (सामने वाले कैमरे में दिखे), कैमरा पीछे पहुँचे उससे पहले पीछे छूटता है
     this.beeC.x = damp(this.beeC.x, tx, 6, dt); this.beeC.y = damp(this.beeC.y, ty, 6, dt); this.beeC.z = damp(this.beeC.z, tz, 4, dt);
     const t = performance.now() / 1000;
     const close = this.state === 'dying' || this.state === 'over' || this.state === 'revive';
@@ -1741,6 +1810,13 @@ class Game {
     if (dc) { const C2 = this.dlCam || (this.dlCam = { pos: dc.pos.slice(), look: dc.look.slice() }); const kk = this.dlK < 0.05 ? 1 : 1 - Math.exp(-3 * dt); for (let i = 0; i < 3; i++) { C2.pos[i] += (dc.pos[i] - C2.pos[i]) * kk; C2.look[i] += (dc.look[i] - C2.look[i]) * kk; } } // अलग पलों के बीच कैमरा धीरे खिसके
     if (this.dlK > 0.002 && this.dlCam) { const e = this.dlK * this.dlK * (3 - 2 * this.dlK), c = this.dlCam, T2 = this._lt2 || (this._lt2 = new THREE.Vector3()); this.cam.position.lerp(T2.set(c.pos[0], c.pos[1], c.pos[2]), e); LT.lerp(T2.set(c.look[0], c.look[1], c.look[2]), e); }
     else this.dlCam = null;
+    // 🎬 शुरुआत: कैमरा गोलू के सामने से (गोलू + पीछे झुंड) बगल से घूमकर अपनी जगह — बीच से नहीं गुज़रता
+    if (this.introT > 0 && this.state === 'play' && this.introDur) {
+      const u = 1 - this.introT / this.introDur, e = u * u * (3 - 2 * u), th = Math.PI * (0.84 - 0.84 * e), r = 7.2;
+      const w = 1 - Math.pow(e, 3), I = this._it || (this._it = new THREE.Vector3());
+      this.cam.position.lerp(I.set(p.x * 0.6 + Math.sin(th) * r * 0.42, 2.0 + p.y * 0.5 + Math.sin(th) * 1.6 + e * 1.6, Math.cos(th) * r), w); // बगल में ज़्यादा नहीं — मकानों में न घुसे
+      LT.lerp(I.set(p.x, 1.4 + p.y * 0.6, 0.6), w);
+    }
     this.cam.lookAt(LT);
     if (this.flyK > 0.01) this.cam.rotateZ((p.tx - p.x) * 0.035 * this.flyK);
   }
