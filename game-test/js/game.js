@@ -994,7 +994,7 @@ class Game {
 
   // शाबाशी: चुनी भाषा बड़ी + बोली; नीचे छोटी — हिंदी/मैथिली में English, English में मैथिली (मिथिला का स्वाद)
   cheer(kind = 'near', ms = 900, tier = -1, prio = false, cls = 'cheer', small = null) {
-    if (!prio && kind !== 'level' && this.toastLow()) return; // लेवल की पट्टी के समय छोटी शाबाशी छोड़ो — स्क्रीन पर एक बार में एक ही बड़ी बात
+    if (!prio && kind !== 'level' && (this.toastLow() || document.body.classList.contains('ordBig'))) return; // लेवल की पट्टी या बड़ा ऑर्डर कार्ड (2.6 सेकंड) के समय छोटी शाबाशी छोड़ो — स्क्रीन पर एक बार में एक ही बड़ी बात, सड़क खाली
     const ln = pickCheer(kind, tier), [en, mai, hi] = ln;
     const big = LANG === 'en' ? en : LANG === 'hi' ? hi : mai;
     const t = $('#toast');
